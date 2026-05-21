@@ -16,7 +16,17 @@ import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    return localStorage.getItem('phudit_tj_currentUser') || null;
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('phudit_tj_currentUser', currentUser);
+    } else {
+      localStorage.removeItem('phudit_tj_currentUser');
+    }
+  }, [currentUser]);
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
   const [trades, setTrades] = useState([]);
@@ -99,6 +109,12 @@ export default function App() {
     const updatedTrades = trades.filter(t => t.id !== id);
     setTrades(updatedTrades);
     saveTrades(currentUser, updatedTrades);
+  };
+
+  // ล้างประวัติการเทรดทั้งหมด
+  const handleClearAllTrades = () => {
+    setTrades([]);
+    saveTrades(currentUser, []);
   };
 
   const [theme, setTheme] = useState(() => {
@@ -258,6 +274,7 @@ export default function App() {
                 trades={trades}
                 onUpdateTrade={handleUpdateTrade}
                 onDeleteTrade={handleDeleteTrade}
+                onClearAllTrades={handleClearAllTrades}
               />
             )}
 

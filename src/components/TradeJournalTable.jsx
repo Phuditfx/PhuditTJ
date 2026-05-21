@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import * as XLSX from 'xlsx';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade, onClearAllTrades }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
@@ -227,6 +227,18 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
             className="bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
           >
             📊 Export Excel
+          </button>
+
+          {/* ปุ่ม Clear Log */}
+          <button
+            onClick={() => {
+              if (window.confirm("⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดอย่างถาวร? (ไม่สามารถกู้คืนได้)")) {
+                if (onClearAllTrades) onClearAllTrades();
+              }
+            }}
+            className="bg-rose-50 dark:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+          >
+            🗑️ Clear All Logs
           </button>
         </div>
       </div>
