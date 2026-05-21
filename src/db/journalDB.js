@@ -157,10 +157,11 @@ export const saveTargetRR = (email, rr) => {
 export const getUserRegistry = () => {
     const data = localStorage.getItem('phudit_tj_users');
     if (!data) {
-        // แอด Owner ลงทะเบียนตัวแรกแบบ auto approved
+        // แอด Owner ลงทะเบียนตัวแรกแบบ auto approved พร้อมกำหนดรหัสผ่านเริ่มต้น Cm223355 ตามคำขอ
         const initialRegistry = {
             'phudit.mahawongsanan@gmail.com': {
                 email: 'phudit.mahawongsanan@gmail.com',
+                password: 'Cm223355',
                 status: 'approved',
                 createdAt: new Date().toISOString()
             }
@@ -168,7 +169,15 @@ export const getUserRegistry = () => {
         localStorage.setItem('phudit_tj_users', JSON.stringify(initialRegistry));
         return initialRegistry;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // อัปเดต/ตั้งรหัสผ่านเริ่มต้นให้กับ Owner หากยังไม่มีรหัสผ่าน หรือเพื่อรีเซ็ตรหัสผ่านตามที่ร้องขอ
+    if (parsed['phudit.mahawongsanan@gmail.com']) {
+        if (!parsed['phudit.mahawongsanan@gmail.com'].password || parsed['phudit.mahawongsanan@gmail.com'].password !== 'Cm223355') {
+            parsed['phudit.mahawongsanan@gmail.com'].password = 'Cm223355';
+            localStorage.setItem('phudit_tj_users', JSON.stringify(parsed));
+        }
+    }
+    return parsed;
 };
 
 export const saveUserRegistry = (registry) => {
