@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { auth } from './firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 import { 
   getStoredTrades, 
   saveTrades, 
@@ -8,7 +10,8 @@ import {
   saveTargetRR, 
   RANK_SYSTEM,
   getStoredProfile,
-  saveProfile
+  saveProfile,
+  logoutUser
 } from './db/journalDB';
 import Dashboard from './components/Dashboard';
 import QuickOrderWidget from './components/QuickOrderWidget';
@@ -18,32 +21,24 @@ import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    return localStorage.getItem('phudit_tj_currentUser') || sessionStorage.getItem('phudit_tj_currentUser') || null;
-  });
-
-  const [rememberSession, setRememberSession] = useState(() => {
-    return !!localStorage.getItem('phudit_tj_currentUser');
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      if (rememberSession) {
-        localStorage.setItem('phudit_tj_currentUser', currentUser);
-        sessionStorage.removeItem('phudit_tj_currentUser');
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user.email);
       } else {
-        sessionStorage.setItem('phudit_tj_currentUser', currentUser);
-        localStorage.removeItem('phudit_tj_currentUser');
+        setCurrentUser(null);
       }
-    } else {
-      localStorage.removeItem('phudit_tj_currentUser');
-      sessionStorage.removeItem('phudit_tj_currentUser');
-    }
-  }, [currentUser, rememberSession]);
+      setAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleLogin = (email, rememberMe) => {
-    setRememberSession(rememberMe);
-    setCurrentUser(email);
+    // Login logic is now handled by Login component and Firebase Auth
   };
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
@@ -54,12 +49,27 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   useEffect(() => {
-    if (currentUser) {
-      setTrades(getStoredTrades(currentUser));
-      setInitialBalanceState(getStoredInitialBalance(currentUser));
-      setTargetRRState(getStoredTargetRR(currentUser));
-      setProfile(getStoredProfile(currentUser));
-    }
+    let isMounted = true;
+    const loadData = async () => {
+      if (currentUser) {
+        setDataLoading(true);
+        const t = await getStoredTrades(currentUser);
+        const b = await getStoredInitialBalance(currentUser);
+        const rr = await getStoredTargetRR(currentUser);
+        const p = await getStoredProfile(currentUser);
+        if (isMounted) {
+          setTrades(t);
+          setInitialBalanceState(b);
+          setTargetRRState(rr);
+          setProfile(p);
+          setDataLoading(false);
+        }
+      } else {
+        setTrades([]);
+      }
+    };
+    loadData();
+    return () => { isMounted = false; };
   }, [currentUser]);
 
   // ซิงค์ขนาดตัวอักษรของระบบ
@@ -268,16 +278,33 @@ export default function App() {
     localStorage.setItem('phudit_tj_theme', theme);
   }, [theme]);
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setTrades([]);
+  const handleLogout = async () => {
+    await logoutUser();
     setActiveTab('dashboard');
   };
 
   const [showManual, setShowManual] = useState(false);
 
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center">
+        <div className="text-indigo-600 dark:text-indigo-400 text-5xl mb-4 animate-spin">⏳</div>
+        <div className="text-slate-500 font-bold tracking-widest animate-pulse">CONNECTING...</div>
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center">
+        <div className="text-indigo-600 dark:text-indigo-400 text-5xl mb-4 animate-spin">⌛</div>
+        <div className="text-slate-500 font-bold tracking-widest animate-pulse">LOADING TRADER STATION...</div>
+      </div>
+    );
   }
 
   return (

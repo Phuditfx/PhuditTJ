@@ -1,4 +1,6 @@
-// Database & Rank system สำหรับ Trade Journal
+import { db, auth } from '../firebaseConfig';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 // ตารางยศและข้อจำกัดของพอร์ต (อ้างอิงจาก Dashboard.js เดิม)
 export const RANK_SYSTEM = [
@@ -19,304 +21,205 @@ export const RANK_SYSTEM = [
     { level: 15, name: "♾️ Immortal", minPort: 2000000, risk1: 10000, maxRisk: 20000, maxAlloc: 5 }
 ];
 
-// ข้อมูลจำลองตั้งต้น (Initial Mock Data)
-const INITIAL_TRADES = [
-    {
-        id: "t-1",
-        symbol: "AAPL",
-        direction: "Long",
-        dateTime: "2026-05-18T10:15",
-        entryPrice: 150.00,
-        stopLoss: 145.00,
-        takeProfit: 165.00,
-        actualExitPrice: 162.50,
-        shares: 10.0000,
-        status: "Closed",
-        pnl: 125.00,
-        actualRR: 2.5,
-        contextScore: 8,
-        aiScore: 9,
-        aiFeedback: "ยอดเยี่ยม! เทรดตามสัญญาณแนวรับที่แข็งแกร่งและปิดออเดอร์ใกล้เป้าหมายหลัก รักษาจุดตัดขาดทุนได้ดีมากตามแผน",
-        planAdherence: "เทรดตาม Teacher's (Ajarn) Live (+100%)",
-        planAdherenceScore: 100
-    },
-    {
-        id: "t-2",
-        symbol: "TSLA",
-        direction: "Short",
-        dateTime: "2026-05-19T14:30",
-        entryPrice: 220.00,
-        stopLoss: 225.00,
-        takeProfit: 200.00,
-        actualExitPrice: 224.80,
-        shares: 5.0000,
-        status: "Closed",
-        pnl: -24.00,
-        actualRR: -0.96,
-        contextScore: 5,
-        aiScore: 7,
-        aiFeedback: "ตัดขาดทุนได้ทันท่วงทีก่อนที่ราคาจะทะยานไปชน Stop Loss เต็มๆ การเลือกทางผิดเกิดได้เสมอแต่วินัยดีมาก",
-        planAdherence: "ตามแผนส่วนตัว (+100%)",
-        planAdherenceScore: 100
-    },
-    {
-        id: "t-3",
-        symbol: "NVDA",
-        direction: "Long",
-        dateTime: "2026-05-20T09:45",
-        entryPrice: 480.00,
-        stopLoss: 470.00,
-        takeProfit: 510.00,
-        actualExitPrice: null,
-        shares: 1.5543,
-        status: "Open",
-        pnl: 0,
-        actualRR: 0,
-        contextScore: 7,
-        aiScore: null,
-        aiFeedback: "",
-        planAdherence: "",
-        planAdherenceScore: 0
-    },
-    {
-        id: "t-4",
-        symbol: "MSFT",
-        direction: "Long",
-        dateTime: "2026-05-20T11:00",
-        entryPrice: 350.00,
-        stopLoss: 345.00,
-        takeProfit: 365.00,
-        actualExitPrice: 344.90,
-        shares: 15.0000,
-        status: "Closed",
-        pnl: -76.50,
-        actualRR: -1.02,
-        contextScore: 4,
-        aiScore: 4,
-        aiFeedback: "จุดนี้ซื้อในภาวะตลาดที่มีความผันผวนสูง (Context Score ต่ำ) และเป็นการรีบเข้าตามอารมณ์ คราวหลังควรรอปัจจัยยืนยันมากกว่านี้",
-        planAdherence: "เทรดด้วยอารมณ์/FOMO (0%)",
-        planAdherenceScore: 0
+export const getStoredTrades = async (email) => {
+    if (!email) return [];
+    try {
+        const userRef = doc(db, 'users', email);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().trades) {
+            return docSnap.data().trades;
+        }
+    } catch (e) {
+        console.error("Error fetching trades:", e);
     }
-];
-
-// โหลดข้อมูลเทรดทั้งหมดจาก LocalStorage
-export const getStoredTrades = (email) => {
-    if (!email) return INITIAL_TRADES;
-    const key = `phudit_tj_trades_${email}`;
-    const data = localStorage.getItem(key);
-    if (!data) {
-        localStorage.setItem(key, JSON.stringify(INITIAL_TRADES));
-        return INITIAL_TRADES;
-    }
-    return JSON.parse(data);
+    return [];
 };
 
-// บันทึกข้อมูลเทรดทั้งหมดลง LocalStorage
-export const saveTrades = (email, trades) => {
+export const saveTrades = async (email, trades) => {
     if (!email) return;
-    localStorage.setItem(`phudit_tj_trades_${email}`, JSON.stringify(trades));
+    try {
+        const userRef = doc(db, 'users', email);
+        await setDoc(userRef, { trades }, { merge: true });
+    } catch (e) {
+        console.error("Error saving trades:", e);
+    }
 };
 
-// โหลดเงินพอร์ตตั้งต้น (Default คือ $10,000)
-export const getStoredInitialBalance = (email) => {
+export const getStoredInitialBalance = async (email) => {
     if (!email) return 10000;
-    const key = `phudit_tj_initial_balance_${email}`;
-    const data = localStorage.getItem(key);
-    if (!data) {
-        localStorage.setItem(key, '10000');
-        return 10000;
+    try {
+        const userRef = doc(db, 'users', email);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().initialBalance !== undefined) {
+            return docSnap.data().initialBalance;
+        }
+    } catch (e) {
+        console.error("Error fetching balance:", e);
     }
-    return parseFloat(data);
+    return 10000;
 };
 
-// บันทึกเงินพอร์ตตั้งต้น
-export const saveInitialBalance = (email, balance) => {
+export const saveInitialBalance = async (email, balance) => {
     if (!email) return;
-    localStorage.setItem(`phudit_tj_initial_balance_${email}`, balance.toString());
+    try {
+        const userRef = doc(db, 'users', email);
+        await setDoc(userRef, { initialBalance: balance }, { merge: true });
+    } catch (e) {
+        console.error("Error saving balance:", e);
+    }
 };
 
-// โหลดเป้าหมาย RR ประจำเดือน (Default คือ 20 RR)
-export const getStoredTargetRR = (email) => {
+export const getStoredTargetRR = async (email) => {
     if (!email) return 20;
-    const key = `phudit_tj_target_rr_${email}`;
-    const data = localStorage.getItem(key);
-    if (!data) {
-        localStorage.setItem(key, '20');
-        return 20;
-    }
-    return parseFloat(data);
-};
-
-// บันทึกเป้าหมาย RR
-export const saveTargetRR = (email, rr) => {
-    if (!email) return;
-    localStorage.setItem(`phudit_tj_target_rr_${email}`, rr.toString());
-};
-
-// ฟังก์ชันจัดการฐานข้อมูลผู้ใช้ลงทะเบียนและสิทธิ์ (จำลองระบบใน LocalStorage)
-export const getUserRegistry = () => {
-    const data = localStorage.getItem('phudit_tj_users');
-    if (!data) {
-        // แอด Owner ลงทะเบียนตัวแรกแบบ auto approved พร้อมกำหนดรหัสผ่านเริ่มต้น Cm223355 ตามคำขอ
-        const initialRegistry = {
-            'phudit.mahawongsanan@gmail.com': {
-                email: 'phudit.mahawongsanan@gmail.com',
-                password: 'Cm223355',
-                status: 'approved',
-                createdAt: new Date().toISOString()
-            }
-        };
-        localStorage.setItem('phudit_tj_users', JSON.stringify(initialRegistry));
-        return initialRegistry;
-    }
-    const parsed = JSON.parse(data);
-    // อัปเดต/ตั้งรหัสผ่านเริ่มต้นให้กับ Owner หากยังไม่มีรหัสผ่าน หรือเพื่อรีเซ็ตรหัสผ่านตามที่ร้องขอ
-    if (parsed['phudit.mahawongsanan@gmail.com']) {
-        if (!parsed['phudit.mahawongsanan@gmail.com'].password || parsed['phudit.mahawongsanan@gmail.com'].password !== 'Cm223355') {
-            parsed['phudit.mahawongsanan@gmail.com'].password = 'Cm223355';
-            localStorage.setItem('phudit_tj_users', JSON.stringify(parsed));
+    try {
+        const userRef = doc(db, 'users', email);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().targetRR !== undefined) {
+            return docSnap.data().targetRR;
         }
+    } catch (e) {
+        console.error("Error fetching RR:", e);
     }
-    return parsed;
+    return 20;
 };
 
-export const saveUserRegistry = (registry) => {
-    localStorage.setItem('phudit_tj_users', JSON.stringify(registry));
+export const saveTargetRR = async (email, rr) => {
+    if (!email) return;
+    try {
+        const userRef = doc(db, 'users', email);
+        await setDoc(userRef, { targetRR: rr }, { merge: true });
+    } catch (e) {
+        console.error("Error saving RR:", e);
+    }
 };
 
-// เช็คว่ามีผู้ใช้นี้ในระบบหรือยัง
-export const checkUserExists = (email) => {
+export const getStoredProfile = async (email) => {
+    const defaultProfile = { name: email ? email.split('@')[0] : 'Trader', photo: '', fontSize: 'normal' };
+    if (!email) return defaultProfile;
+    try {
+        const userRef = doc(db, 'users', email);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().profile) {
+            return { ...defaultProfile, ...docSnap.data().profile };
+        }
+    } catch (e) {
+        console.error("Error fetching profile:", e);
+    }
+    return defaultProfile;
+};
+
+export const saveProfile = async (email, profile) => {
+    if (!email) return;
+    try {
+        const userRef = doc(db, 'users', email);
+        await setDoc(userRef, { profile }, { merge: true });
+    } catch (e) {
+        console.error("Error saving profile:", e);
+    }
+};
+
+export const checkUserExists = async (email) => {
     if (!email) return false;
-    const registry = getUserRegistry();
-    return !!registry[email.trim().toLowerCase()];
-};
-
-// ลงทะเบียนผู้ใช้ใหม่พร้อมรหัสผ่าน
-export const registerUser = (email, password) => {
-    if (!email) return { success: false, error: 'Email is required' };
-    
-    // Support for old call without password (just in case)
-    if (!password && arguments.length === 1) {
+    try {
         const cleanEmail = email.trim().toLowerCase();
-        const registry = getUserRegistry();
-        if (!registry[cleanEmail]) {
-            registry[cleanEmail] = {
-                email: cleanEmail,
-                status: cleanEmail === 'phudit.mahawongsanan@gmail.com' ? 'approved' : 'pending',
-                createdAt: new Date().toISOString()
-            };
-            saveUserRegistry(registry);
-        }
-        return registry[cleanEmail];
+        const docRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists();
+    } catch (e) {
+        console.error("Error checking user:", e);
+        return false;
     }
-    
-    // New Auth Flow
-    const cleanEmail = email.trim().toLowerCase();
-    const registry = getUserRegistry();
-    if (registry[cleanEmail]) {
-        return { success: false, error: 'User already exists' };
-    }
-    
-    registry[cleanEmail] = {
-        email: cleanEmail,
-        password: password,
-        status: 'approved', // Auto approve when registering with password per new requirements
-        createdAt: new Date().toISOString()
-    };
-    saveUserRegistry(registry);
-    return { success: true };
 };
 
-// ตรวจสอบรหัสผ่าน
-export const verifyUser = (email, password) => {
-    if (!email || !password) return false;
-    const cleanEmail = email.trim().toLowerCase();
-    const registry = getUserRegistry();
-    const user = registry[cleanEmail];
-    if (!user) return false;
-    
-    // If it's the owner and they don't have a password yet (from legacy), let them in or require them to have one
-    // But since login component requires password, they must match.
-    // If legacy user has no password, they can't login until they register again or we allow it.
-    // Assuming they just match passwords:
-    return user.password === password;
+export const registerUser = async (email, password) => {
+    if (!email || !password) return { success: false, error: 'Email and password are required' };
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, {
+            email: cleanEmail,
+            status: 'approved',
+            createdAt: new Date().toISOString(),
+            initialBalance: 10000,
+            targetRR: 20,
+            trades: [],
+            profile: {
+                name: cleanEmail.split('@')[0],
+                photo: '',
+                fontSize: 'normal'
+            }
+        });
+        
+        return { success: true, user: userCredential.user };
+    } catch (error) {
+        let msg = error.message;
+        if (error.code === 'auth/email-already-in-use') msg = 'อีเมลนี้ถูกใช้งานแล้ว';
+        else if (error.code === 'auth/weak-password') msg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
+        return { success: false, error: msg };
+    }
 };
 
-export const approveUser = (email) => {
+export const verifyUser = async (email, password) => {
+    if (!email || !password) return { success: false, error: 'Email and password are required' };
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
+        return { success: true, user: userCredential.user };
+    } catch (error) {
+        let msg = error.message;
+        if (error.code === 'auth/invalid-credential') msg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        return { success: false, error: msg };
+    }
+};
+
+export const logoutUser = async () => {
+    try {
+        await signOut(auth);
+    } catch (error) {
+        console.error("Logout error:", error);
+    }
+};
+
+export const deleteUser = async (email) => {
     if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    const registry = getUserRegistry();
-    if (registry[cleanEmail]) {
-        registry[cleanEmail].status = 'approved';
-        saveUserRegistry(registry);
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        await deleteDoc(doc(db, 'users', cleanEmail));
+    } catch (e) {
+        console.error("Error deleting user:", e);
     }
 };
 
-export const deleteUser = (email) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    // 1. ลบจาก registry
-    const registry = getUserRegistry();
-    if (registry[cleanEmail]) {
-        delete registry[cleanEmail];
-        saveUserRegistry(registry);
-    }
-
-    // 2. ลบข้อมูลของเขาทุกอย่างใน LocalStorage
-    localStorage.removeItem(`phudit_tj_trades_${cleanEmail}`);
-    localStorage.removeItem(`phudit_tj_initial_balance_${cleanEmail}`);
-    localStorage.removeItem(`phudit_tj_target_rr_${cleanEmail}`);
-};
-
-export const checkUserStatus = (email) => {
-    if (!email) return 'pending';
-    const cleanEmail = email.trim().toLowerCase();
-    // พิเศษ: Owner เข้าได้เสมอ
-    if (cleanEmail === 'phudit.mahawongsanan@gmail.com') return 'approved';
-    
-    const registry = getUserRegistry();
-    if (!registry[cleanEmail]) {
-        // ลงทะเบียนผู้ใช้ใหม่โดยเริ่มต้นเป็น pending
-        registerUser(cleanEmail);
-        return 'pending';
-    }
-    return registry[cleanEmail].status;
-};
-
-// ฟังก์ชันดึงข้อมูลผู้ใช้ทั้งหมดสำหรับหน้า Owner (ดึงจากทะเบียนผู้ใช้)
-export const getAllUsersData = () => {
-    const registry = getUserRegistry();
-    const users = [];
-    
-    Object.keys(registry).forEach(email => {
-        try {
-            const tradesKey = `phudit_tj_trades_${email}`;
-            const trades = JSON.parse(localStorage.getItem(tradesKey)) || [];
-            const initBal = parseFloat(localStorage.getItem(`phudit_tj_initial_balance_${email}`)) || 10000;
+export const getAllUsersData = async () => {
+    try {
+        const usersCol = collection(db, 'users');
+        const userSnapshot = await getDocs(usersCol);
+        const users = [];
+        
+        userSnapshot.forEach((doc) => {
+            const data = doc.data();
+            const trades = data.trades || [];
+            const initBal = data.initialBalance || 10000;
             const netPnL = trades.reduce((acc, t) => acc + (t.status === 'Closed' ? (parseFloat(t.pnl) || 0) : 0), 0);
             const currentBal = initBal + netPnL;
+            
             users.push({
-                email,
-                status: registry[email].status,
-                createdAt: registry[email].createdAt,
+                email: data.email || doc.id,
+                status: data.status || 'approved',
+                createdAt: data.createdAt || new Date().toISOString(),
                 tradesCount: trades.length,
                 currentBal,
                 netPnL
             });
-        } catch (e) {
-            users.push({
-                email,
-                status: registry[email].status,
-                createdAt: registry[email].createdAt,
-                tradesCount: 0,
-                currentBal: 10000,
-                netPnL: 0
-            });
-        }
-    });
-    
-    return users.sort((a, b) => b.currentBal - a.currentBal);
+        });
+        
+        return users.sort((a, b) => b.currentBal - a.currentBal);
+    } catch (e) {
+        console.error("Error fetching all users:", e);
+        return [];
+    }
 };
 
 // ฟังก์ชันจำลอง AI ในการวิเคราะห์คุณภาพการเทรด (⚡ AI Assess)
@@ -377,21 +280,21 @@ export const simulateAIAssessment = (trade) => {
     // สร้าง Feedback ภาษาไทยตามเงื่อนไข
     if (scorePlan === 100) {
         if (isWin) {
-            feedback = `🌟 ยอดเยี่ยมมาก! การเทรดครั้งนี้ทำตามแผนอย่างเคร่งครัด 100% ควบคู่กับสภาวะตลาดที่เอื้ออำนวย (Context: ${scoreContext}/10) ได้รับกำไร $${trade.pnl.toFixed(2)} (${calculatedRR.toFixed(2)} RR) วินัยชั้นยอดแบบนี้ทำให้พอร์ตเติบโตอย่างมั่นคงแน่นอน!`;
+            feedback = \`🌟 ยอดเยี่ยมมาก! การเทรดครั้งนี้ทำตามแผนอย่างเคร่งครัด 100% ควบคู่กับสภาวะตลาดที่เอื้ออำนวย (Context: \${scoreContext}/10) ได้รับกำไร $\${trade.pnl.toFixed(2)} (\${calculatedRR.toFixed(2)} RR) วินัยชั้นยอดแบบนี้ทำให้พอร์ตเติบโตอย่างมั่นคงแน่นอน!\`;
         } else {
-            feedback = `👍 แม้ออเดอร์นี้จะจบด้วยการขาดทุน (-$${Math.abs(trade.pnl).toFixed(2)}) แต่การรักษาแผนการเทรด 100% ถือว่าสมบูรณ์แบบ วินัยที่ดีย่อมสำคัญกว่าผลลัพธ์ระยะสั้น การตัดขาดทุนตรงเวลาเป็นเกราะคุ้มครองพอร์ตที่ดีที่สุดครับ`;
+            feedback = \`👍 แม้ออเดอร์นี้จะจบด้วยการขาดทุน (-$\${Math.abs(trade.pnl).toFixed(2)}) แต่การรักษาแผนการเทรด 100% ถือว่าสมบูรณ์แบบ วินัยที่ดีย่อมสำคัญกว่าผลลัพธ์ระยะสั้น การตัดขาดทุนตรงเวลาเป็นเกราะคุ้มครองพอร์ตที่ดีที่สุดครับ\`;
         }
     } else if (scorePlan === 50) {
         if (isWin) {
-            feedback = `⚠️ ออเดอร์นี้ได้กำไรแต่ต้องระวัง เพราะทำตามแผนได้เพียงบางส่วน (50%) มีความเสี่ยงที่คุณจะใช้อารมณ์ร่วมหรือละเลยเช็คลิสต์บางอย่าง ควรทบทวนระบบเทรดและรักษาวินัยให้สม่ำเสมอ`;
+            feedback = \`⚠️ ออเดอร์นี้ได้กำไรแต่ต้องระวัง เพราะทำตามแผนได้เพียงบางส่วน (50%) มีความเสี่ยงที่คุณจะใช้อารมณ์ร่วมหรือละเลยเช็คลิสต์บางอย่าง ควรทบทวนระบบเทรดและรักษาวินัยให้สม่ำเสมอ\`;
         } else {
-            feedback = `❌ เสียหายจากการขาดวินัยบางส่วน! ออเดอร์นี้หลุดจากแผนที่ตั้งไว้ ส่งผลให้ขาดทุน $${Math.abs(trade.pnl).toFixed(2)} คราวหน้าควรยึดมั่นตามเช็คลิสต์หรือรอเข้าเทรดพร้อมคำแนะนำจาก Ajarn Live เพื่อความชัวร์`;
+            feedback = \`❌ เสียหายจากการขาดวินัยบางส่วน! ออเดอร์นี้หลุดจากแผนที่ตั้งไว้ ส่งผลให้ขาดทุน $\${Math.abs(trade.pnl).toFixed(2)} คราวหน้าควรยึดมั่นตามเช็คลิสต์หรือรอเข้าเทรดพร้อมคำแนะนำจาก Ajarn Live เพื่อความชัวร์\`;
         }
     } else {
         if (isWin) {
-            feedback = `🚨 โชคดีที่ได้กำไร! ออเดอร์นี้เป็นการเทรดด้วยอารมณ์หรือ FOMO 100% (วินัย 0%) แม้จะได้เงินแต่การเข้าออเดอร์นอกแผนแบบนี้จะทำลายพอร์ตในระยะยาวได้ง่ายมาก ควรระงับอารมณ์และห้ามเทรดไล่ราคาโดยไม่มีแผนเด็ดขาด`;
+            feedback = \`🚨 โชคดีที่ได้กำไร! ออเดอร์นี้เป็นการเทรดด้วยอารมณ์หรือ FOMO 100% (วินัย 0%) แม้จะได้เงินแต่การเข้าออเดอร์นอกแผนแบบนี้จะทำลายพอร์ตในระยะยาวได้ง่ายมาก ควรระงับอารมณ์และห้ามเทรดไล่ราคาโดยไม่มีแผนเด็ดขาด\`;
         } else {
-            feedback = `🚨 ความพ่ายแพ้จากการใช้อารมณ์ (FOMO)! ออเดอร์นี้แหกกฎ 100% และขาดทุน $${Math.abs(trade.pnl).toFixed(2)} นี่คือเครื่องเตือนใจว่าการเทรดด้วยอารมณ์จะพาไปสู่ความเสียหาย ควรปิดหน้าจอไปพักผ่อนเพื่อปรับอารมณ์ก่อนเริ่มเทรดไม้ถัดไป`;
+            feedback = \`🚨 ความพ่ายแพ้จากการใช้อารมณ์ (FOMO)! ออเดอร์นี้แหกกฎ 100% และขาดทุน $\${Math.abs(trade.pnl).toFixed(2)} นี่คือเครื่องเตือนใจว่าการเทรดด้วยอารมณ์จะพาไปสู่ความเสียหาย ควรปิดหน้าจอไปพักผ่อนเพื่อปรับอารมณ์ก่อนเริ่มเทรดไม้ถัดไป\`;
         }
     }
 
@@ -400,35 +303,3 @@ export const simulateAIAssessment = (trade) => {
         aiFeedback: feedback
     };
 };
-
-// โหลดข้อมูลโปรไฟล์จาก LocalStorage
-export const getStoredProfile = (email) => {
-    if (!email) return { name: 'Trader', photo: '', fontSize: 'normal' };
-    const key = `phudit_tj_profile_${email}`;
-    const data = localStorage.getItem(key);
-    if (!data) {
-        const defaultName = email.split('@')[0];
-        const defaultProfile = { name: defaultName, photo: '', fontSize: 'normal' };
-        localStorage.setItem(key, JSON.stringify(defaultProfile));
-        return defaultProfile;
-    }
-    try {
-        const parsed = JSON.parse(data);
-        // Ensure default properties exist
-        return {
-            name: parsed.name || email.split('@')[0],
-            photo: parsed.photo || '',
-            fontSize: parsed.fontSize || 'normal'
-        };
-    } catch (e) {
-        return { name: email.split('@')[0], photo: '', fontSize: 'normal' };
-    }
-};
-
-// บันทึกข้อมูลโปรไฟล์ลง LocalStorage
-export const saveProfile = (email, profile) => {
-    if (!email) return;
-    localStorage.setItem(`phudit_tj_profile_${email}`, JSON.stringify(profile));
-};
-
-

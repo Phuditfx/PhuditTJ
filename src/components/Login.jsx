@@ -8,19 +8,20 @@ export default function Login({ onLogin }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
 
-  const handleEmailChange = (e) => {
+  const handleEmailChange = async (e) => {
     const val = e.target.value.trim().toLowerCase();
     setEmail(val);
     if (val && val.includes('@')) {
       // Check if user exists to switch mode
-      setIsRegistering(!checkUserExists(val));
+      const exists = await checkUserExists(val);
+      setIsRegistering(!exists);
     } else {
       setIsRegistering(false);
     }
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@') || !password) {
@@ -29,18 +30,18 @@ export default function Login({ onLogin }) {
     }
 
     if (isRegistering) {
-      const res = registerUser(cleanEmail, password);
+      const res = await registerUser(cleanEmail, password);
       if (res.success) {
-        onLogin(cleanEmail, rememberMe);
+        if (onLogin) onLogin(cleanEmail, rememberMe);
       } else {
         setError(res.error);
       }
     } else {
-      const isValid = verifyUser(cleanEmail, password);
-      if (isValid) {
-        onLogin(cleanEmail, rememberMe);
+      const res = await verifyUser(cleanEmail, password);
+      if (res.success) {
+        if (onLogin) onLogin(cleanEmail, rememberMe);
       } else {
-        setError("รหัสผ่านไม่ถูกต้อง");
+        setError(res.error || "รหัสผ่านไม่ถูกต้อง");
       }
     }
   };
