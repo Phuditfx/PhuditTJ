@@ -255,7 +255,13 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
           {/* ปุ่ม Clear Log */}
           <button
             onClick={() => {
-              if (window.confirm("⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดอย่างถาวร? (ไม่สามารถกู้คืนได้)")) {
+              if (requestConfirm) {
+                requestConfirm(
+                  "⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดอย่างถาวร? (ไม่สามารถกู้คืนได้)",
+                  () => { if (onClearAllTrades) onClearAllTrades(); },
+                  "danger"
+                );
+              } else if (window.confirm("⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดอย่างถาวร? (ไม่สามารถกู้คืนได้)")) {
                 if (onClearAllTrades) onClearAllTrades();
               }
             }}

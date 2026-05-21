@@ -224,7 +224,7 @@ export default function Dashboard({
 
         {/* Monthly Goal RR Card */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl flex flex-col justify-between shadow-lg lg:col-span-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
           <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-6">
               <div>
