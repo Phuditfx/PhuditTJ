@@ -11,6 +11,19 @@ export default function Dashboard({
   trades,
   currentRank 
 }) {
+  const [localBalance, setLocalBalance] = React.useState(initialBalance);
+  const [localRR, setLocalRR] = React.useState(targetRR);
+  const [isBalanceSaved, setIsBalanceSaved] = React.useState(false);
+  const [isRRSaved, setIsRRSaved] = React.useState(false);
+
+  React.useEffect(() => {
+    setLocalBalance(initialBalance);
+  }, [initialBalance]);
+
+  React.useEffect(() => {
+    setLocalRR(targetRR);
+  }, [targetRR]);
+
   // คำนวณสถิติของพอร์ตจากประวัติออเดอร์
   const closedTrades = trades.filter(t => t.status === 'Closed');
   const totalClosed = closedTrades.length;
@@ -81,14 +94,32 @@ export default function Dashboard({
           <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <div className="flex justify-between items-center mt-3 text-xs pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span className="text-slate-500">Initial Balance:</span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-mono">$</span>
               <input 
                 type="number" 
-                value={initialBalance} 
-                onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)} 
+                value={localBalance} 
+                onChange={(e) => {
+                  setLocalBalance(parseFloat(e.target.value) || 0);
+                  setIsBalanceSaved(false);
+                }} 
                 className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-1 text-right font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-[11px]"
               />
+              <button
+                onClick={() => {
+                  setInitialBalance(localBalance);
+                  setIsBalanceSaved(true);
+                  setTimeout(() => setIsBalanceSaved(false), 2000);
+                }}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                  isBalanceSaved 
+                    ? 'bg-emerald-650 text-white shadow-sm' 
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                }`}
+                title="คลิกเพื่อบันทึกเงินต้น"
+              >
+                {isBalanceSaved ? '✓' : 'Save'}
+              </button>
             </div>
           </div>
         </div>
@@ -210,13 +241,31 @@ export default function Dashboard({
                 <div className="text-slate-400 dark:text-slate-600 text-2xl">/</div>
                 <div className="text-left">
                   <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">Target RR</div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <input 
                       type="number" 
-                      value={targetRR} 
-                      onChange={(e) => setTargetRR(parseFloat(e.target.value) || 0)} 
+                      value={localRR} 
+                      onChange={(e) => {
+                        setLocalRR(parseFloat(e.target.value) || 0);
+                        setIsRRSaved(false);
+                      }} 
                       className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-1 font-mono font-bold text-xl text-center text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     />
+                    <button
+                      onClick={() => {
+                        setTargetRR(localRR);
+                        setIsRRSaved(true);
+                        setTimeout(() => setIsRRSaved(false), 2000);
+                      }}
+                      className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                        isRRSaved
+                          ? 'bg-emerald-650 text-white shadow-sm font-sans'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm font-sans'
+                      }`}
+                      title="บันทึกเป้าหมาย RR"
+                    >
+                      {isRRSaved ? '✓' : 'Save'}
+                    </button>
                   </div>
                 </div>
               </div>

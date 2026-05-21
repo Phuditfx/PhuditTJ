@@ -348,3 +348,34 @@ export const simulateAIAssessment = (trade) => {
         aiFeedback: feedback
     };
 };
+
+// โหลดข้อมูลโปรไฟล์จาก LocalStorage
+export const getStoredProfile = (email) => {
+    if (!email) return { name: 'Trader', photo: '', fontSize: 'normal' };
+    const key = `phudit_tj_profile_${email}`;
+    const data = localStorage.getItem(key);
+    if (!data) {
+        const defaultName = email.split('@')[0];
+        const defaultProfile = { name: defaultName, photo: '', fontSize: 'normal' };
+        localStorage.setItem(key, JSON.stringify(defaultProfile));
+        return defaultProfile;
+    }
+    try {
+        const parsed = JSON.parse(data);
+        // Ensure default properties exist
+        return {
+            name: parsed.name || email.split('@')[0],
+            photo: parsed.photo || '',
+            fontSize: parsed.fontSize || 'normal'
+        };
+    } catch (e) {
+        return { name: email.split('@')[0], photo: '', fontSize: 'normal' };
+    }
+};
+
+// บันทึกข้อมูลโปรไฟล์ลง LocalStorage
+export const saveProfile = (email, profile) => {
+    if (!email) return;
+    localStorage.setItem(`phudit_tj_profile_${email}`, JSON.stringify(profile));
+};
+

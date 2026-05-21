@@ -6,7 +6,9 @@ import {
   saveInitialBalance, 
   getStoredTargetRR, 
   saveTargetRR, 
-  RANK_SYSTEM 
+  RANK_SYSTEM,
+  getStoredProfile,
+  saveProfile
 } from './db/journalDB';
 import Dashboard from './components/Dashboard';
 import QuickOrderWidget from './components/QuickOrderWidget';
@@ -32,14 +34,101 @@ export default function App() {
   const [trades, setTrades] = useState([]);
   const [initialBalance, setInitialBalanceState] = useState(10000);
   const [targetRR, setTargetRRState] = useState(20);
+  const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   useEffect(() => {
     if (currentUser) {
       setTrades(getStoredTrades(currentUser));
       setInitialBalanceState(getStoredInitialBalance(currentUser));
       setTargetRRState(getStoredTargetRR(currentUser));
+      setProfile(getStoredProfile(currentUser));
     }
   }, [currentUser]);
+
+  // ซิงค์ขนาดตัวอักษรของระบบ
+  useEffect(() => {
+    if (currentUser && profile && profile.fontSize) {
+      const sizes = {
+        small: '14px',
+        normal: '16px',
+        large: '18px',
+        xlarge: '20px'
+      };
+      const rootSize = sizes[profile.fontSize] || '16px';
+      document.documentElement.style.fontSize = rootSize;
+    } else {
+      document.documentElement.style.fontSize = '16px';
+    }
+  }, [currentUser, profile]);
+
+  // ค่าการตั้งค่าโปรไฟล์ชั่วคราว
+  const [tempProfileName, setTempProfileName] = useState('');
+  const [tempProfilePhoto, setTempProfilePhoto] = useState('');
+  const [tempFontSize, setTempFontSize] = useState('normal');
+
+  useEffect(() => {
+    if (showSettingsModal) {
+      setTempProfileName(profile.name || currentUser.split('@')[0]);
+      setTempProfilePhoto(profile.photo || '');
+      setTempFontSize(profile.fontSize || 'normal');
+    }
+  }, [showSettingsModal, profile]);
+
+  const handleTempFontSizeChange = (size) => {
+    setTempFontSize(size);
+    const sizes = {
+      small: '14px',
+      normal: '16px',
+      large: '18px',
+      xlarge: '20px'
+    };
+    document.documentElement.style.fontSize = sizes[size] || '16px';
+  };
+
+  const handleCancelSettings = () => {
+    const sizes = {
+      small: '14px',
+      normal: '16px',
+      large: '18px',
+      xlarge: '20px'
+    };
+    document.documentElement.style.fontSize = sizes[profile.fontSize] || '16px';
+    setShowSettingsModal(false);
+  };
+
+  const handleSaveSettings = () => {
+    const updated = {
+      name: tempProfileName.trim() || currentUser.split('@')[0],
+      photo: tempProfilePhoto,
+      fontSize: tempFontSize
+    };
+    setProfile(updated);
+    saveProfile(currentUser, updated);
+    setShowSettingsModal(false);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 1024 * 1024) {
+        alert("⚠️ ขนาดรูปภาพเกิน 1MB! กรุณาเลือกรูปขนาดเล็กเพื่อความเร็วในการโหลดข้อมูล");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempProfilePhoto(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const fontSizesList = [
+    { value: 'small', label: '🔎 เล็ก (Small)', desc: 'ขนาดกะทัดรัด (14px)' },
+    { value: 'normal', label: '📱 ปกติ (Normal)', desc: 'ขนาดมาตรฐาน (16px)' },
+    { value: 'large', label: '🖥️ ใหญ่ (Large)', desc: 'ขนาดใหญ่อ่านง่าย (18px)' },
+    { value: 'xlarge', label: '📢 ใหญ่มาก (X-Large)', desc: 'ขนาดขยายพิเศษ (20px)' },
+  ];
 
   // จัดเก็บค่าแถบเมนูหลักที่แสดงอยู่
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | journal | fighter | owner
@@ -117,6 +206,18 @@ export default function App() {
     saveTrades(currentUser, []);
   };
 
+  // ลบข้อมูลการเทรดรายเดือน
+  const handleDeleteTradesByMonth = (month) => {
+    const updatedTrades = trades.filter(t => {
+      if (!t.dateTime) return true;
+      const d = new Date(t.dateTime);
+      const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return mStr !== month;
+    });
+    setTrades(updatedTrades);
+    saveTrades(currentUser, updatedTrades);
+  };
+
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('phudit_tj_theme') || 'dark';
   });
@@ -163,19 +264,55 @@ export default function App() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 px-4 py-1.5 rounded-xl shadow-inner">
             
-            <div className="flex flex-col text-right pr-4 border-r border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{currentUser}</span>
+            {/* กล่องแสดงโปรไฟล์ผู้ใช้และข้อมูล */}
+            <div 
+              className="flex items-center gap-2 cursor-pointer group hover:opacity-90 active:scale-95 transition-all" 
+              onClick={() => setShowSettingsModal(true)}
+              title="คลิกเพื่อตั้งค่าโปรไฟล์และขนาดตัวอักษร"
+            >
+              {profile.photo ? (
+                <img 
+                  src={profile.photo} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-sm"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-150 dark:border-indigo-900/50 flex items-center justify-center shadow-sm text-[13px]">
+                  👤
+                </div>
+              )}
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase leading-tight group-hover:underline">
+                  {profile.name || currentUser.split('@')[0]}
+                </span>
+                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none">
+                  {currentUser}
+                </span>
+              </div>
+            </div>
+
+            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
+
+            <div className="flex flex-col text-right">
+              <button 
+                onClick={() => setShowSettingsModal(true)}
+                className="text-[9px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-750 dark:hover:text-indigo-300 font-bold uppercase tracking-widest cursor-pointer text-right flex items-center gap-0.5"
+              >
+                ⚙️ Settings
+              </button>
               <button 
                 onClick={handleLogout}
-                className="text-[9px] text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 font-bold uppercase tracking-widest mt-0.5 text-right cursor-pointer"
+                className="text-[9px] text-rose-500 dark:text-rose-450 hover:text-rose-600 dark:hover:text-rose-350 font-bold uppercase tracking-widest mt-0.5 text-right cursor-pointer"
               >
                 Logout
               </button>
             </div>
 
+            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
+
             <div className="text-right">
               <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold">Rank Level</span>
-              <span className="text-sm font-extrabold text-amber-600 dark:text-amber-400 block font-sans">{currentRank.name}</span>
+              <span className="text-sm font-extrabold text-amber-605 dark:text-amber-400 block font-sans">{currentRank.name}</span>
             </div>
             <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
             <div className="text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
@@ -275,6 +412,7 @@ export default function App() {
                 onUpdateTrade={handleUpdateTrade}
                 onDeleteTrade={handleDeleteTrade}
                 onClearAllTrades={handleClearAllTrades}
+                onDeleteTradesByMonth={handleDeleteTradesByMonth}
               />
             )}
 
@@ -335,6 +473,126 @@ export default function App() {
             <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-850 mt-2">
               <button onClick={() => setShowManual(false)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold text-sm cursor-pointer">เข้าใจแล้ว</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ⚙️ Profile Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl"></div>
+            
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
+              <div>
+                <h3 className="text-lg font-black text-indigo-650 dark:text-indigo-400">⚙️ Personal Station Settings</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">Customize your Profile & App Settings</p>
+              </div>
+              <button 
+                onClick={handleCancelSettings} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 font-black cursor-pointer text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Profile Avatar Upload & Preview */}
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="relative group">
+                {tempProfilePhoto ? (
+                  <img 
+                    src={tempProfilePhoto} 
+                    alt="Preview" 
+                    className="w-24 h-24 rounded-full object-cover border-4 border-indigo-500 shadow-md"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-950 flex items-center justify-center border-4 border-slate-200 dark:border-slate-800 shadow-inner text-4xl">
+                    👤
+                  </div>
+                )}
+                <label className="absolute inset-0 bg-slate-950/60 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold cursor-pointer transition-opacity">
+                  Upload Photo
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                  />
+                </label>
+              </div>
+              
+              <div className="flex gap-2">
+                <label className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors shadow-sm">
+                  Upload Photo
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                  />
+                </label>
+                {tempProfilePhoto && (
+                  <button 
+                    onClick={() => setTempProfilePhoto('')}
+                    className="bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-250 dark:border-rose-900/50 text-rose-650 dark:text-rose-400 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors shadow-sm"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase">Recommended size under 1MB</p>
+            </div>
+
+            {/* Profile Display Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Display Name</label>
+              <input 
+                type="text" 
+                value={tempProfileName} 
+                onChange={(e) => setTempProfileName(e.target.value)}
+                placeholder="กรอกชื่อของคุณ..." 
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 font-sans text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-inner"
+              />
+            </div>
+
+            {/* Typography Font Size Scaling */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Text Size (ขนาดตัวอักษรของระบบ)</label>
+              <div className="grid grid-cols-2 gap-2">
+                {fontSizesList.map((sz) => (
+                  <button
+                    key={sz.value}
+                    onClick={() => handleTempFontSizeChange(sz.value)}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                      tempFontSize === sz.value
+                        ? 'bg-indigo-650 text-white border-indigo-655 shadow-md shadow-indigo-950/20'
+                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    <span className="text-xs font-bold leading-tight">{sz.label}</span>
+                    <span className={`text-[9px] mt-0.5 ${tempFontSize === sz.value ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'}`}>{sz.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions buttons */}
+            <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 pt-4 mt-2">
+              <button 
+                onClick={handleCancelSettings}
+                className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-250 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveSettings}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md"
+              >
+                Save Settings ⚙️
+              </button>
+            </div>
+
           </div>
         </div>
       )}

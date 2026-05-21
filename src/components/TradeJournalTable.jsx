@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import * as XLSX from 'xlsx';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade, onClearAllTrades }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
@@ -193,16 +193,35 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
           />
 
           {/* ฟิลเตอร์เดือน */}
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
-          >
-            <option value="All">ทุกเดือน</option>
-            {availableMonths.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-1.5">
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer h-[32px]"
+            >
+              <option value="All">ทุกเดือน</option>
+              {availableMonths.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+
+            {filterMonth !== 'All' && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth} อย่างถาวร? (ไม่สามารถกู้คืนได้)`)) {
+                    if (onDeleteTradesByMonth) {
+                      onDeleteTradesByMonth(filterMonth);
+                      setFilterMonth('All');
+                    }
+                  }
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white border border-rose-500/20 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer h-[32px] flex items-center gap-1 shadow-sm"
+                title={`ลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth}`}
+              >
+                🗑️ ลบเดือน {filterMonth}
+              </button>
+            )}
+          </div>
 
           {/* ฟิลเตอร์สถานะ */}
           <div className="flex bg-slate-55 dark:bg-slate-950 p-1 rounded border border-slate-200 dark:border-slate-800">
