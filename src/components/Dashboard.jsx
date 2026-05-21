@@ -100,14 +100,16 @@ export default function Dashboard({
                 type="number" 
                 value={localBalance} 
                 onChange={(e) => {
-                  setLocalBalance(parseFloat(e.target.value) || 0);
+                  setLocalBalance(e.target.value);
                   setIsBalanceSaved(false);
                 }} 
                 className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-1 text-right font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-[11px]"
               />
               <button
                 onClick={() => {
-                  setInitialBalance(localBalance);
+                  const val = parseFloat(localBalance) || 0;
+                  setInitialBalance(val);
+                  setLocalBalance(val);
                   setIsBalanceSaved(true);
                   setTimeout(() => setIsBalanceSaved(false), 2000);
                 }}
@@ -246,14 +248,16 @@ export default function Dashboard({
                       type="number" 
                       value={localRR} 
                       onChange={(e) => {
-                        setLocalRR(parseFloat(e.target.value) || 0);
+                        setLocalRR(e.target.value);
                         setIsRRSaved(false);
                       }} 
                       className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-1 font-mono font-bold text-xl text-center text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     />
                     <button
                       onClick={() => {
-                        setTargetRR(localRR);
+                        const val = parseFloat(localRR) || 0;
+                        setTargetRR(val);
+                        setLocalRR(val);
                         setIsRRSaved(true);
                         setTimeout(() => setIsRRSaved(false), 2000);
                       }}

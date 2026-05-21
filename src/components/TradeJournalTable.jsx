@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import * as XLSX from 'xlsx';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
@@ -208,12 +208,16 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
             {filterMonth !== 'All' && (
               <button
                 onClick={() => {
-                  if (window.confirm(`⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth} อย่างถาวร? (ไม่สามารถกู้คืนได้)`)) {
-                    if (onDeleteTradesByMonth) {
-                      onDeleteTradesByMonth(filterMonth);
-                      setFilterMonth('All');
+                  requestConfirm(
+                    "ลบข้อมูลทั้งเดือน",
+                    `⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth} อย่างถาวร? (ไม่สามารถกู้คืนได้)`,
+                    () => {
+                      if (onDeleteTradesByMonth) {
+                        onDeleteTradesByMonth(filterMonth);
+                        setFilterMonth('All');
+                      }
                     }
-                  }
+                  );
                 }}
                 className="bg-rose-600 hover:bg-rose-500 text-white border border-rose-500/20 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer h-[32px] flex items-center gap-1 shadow-sm"
                 title={`ลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth}`}
@@ -408,9 +412,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
                         )}
                         <button
                           onClick={() => {
-                            if (window.confirm("คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal?")) {
-                              onDeleteTrade(trade.id);
-                            }
+                            requestConfirm(
+                              "ลบออเดอร์",
+                              "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
+                              () => onDeleteTrade(trade.id)
+                            );
                           }}
                           className="bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-slate-405 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/40 px-2 py-1 rounded text-xs transition-colors cursor-pointer font-semibold"
                         >

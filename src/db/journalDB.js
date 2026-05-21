@@ -175,19 +175,62 @@ export const saveUserRegistry = (registry) => {
     localStorage.setItem('phudit_tj_users', JSON.stringify(registry));
 };
 
-export const registerUser = (email) => {
-    if (!email) return null;
+// เช็คว่ามีผู้ใช้นี้ในระบบหรือยัง
+export const checkUserExists = (email) => {
+    if (!email) return false;
+    const registry = getUserRegistry();
+    return !!registry[email.trim().toLowerCase()];
+};
+
+// ลงทะเบียนผู้ใช้ใหม่พร้อมรหัสผ่าน
+export const registerUser = (email, password) => {
+    if (!email) return { success: false, error: 'Email is required' };
+    
+    // Support for old call without password (just in case)
+    if (!password && arguments.length === 1) {
+        const cleanEmail = email.trim().toLowerCase();
+        const registry = getUserRegistry();
+        if (!registry[cleanEmail]) {
+            registry[cleanEmail] = {
+                email: cleanEmail,
+                status: cleanEmail === 'phudit.mahawongsanan@gmail.com' ? 'approved' : 'pending',
+                createdAt: new Date().toISOString()
+            };
+            saveUserRegistry(registry);
+        }
+        return registry[cleanEmail];
+    }
+    
+    // New Auth Flow
     const cleanEmail = email.trim().toLowerCase();
     const registry = getUserRegistry();
-    if (!registry[cleanEmail]) {
-        registry[cleanEmail] = {
-            email: cleanEmail,
-            status: cleanEmail === 'phudit.mahawongsanan@gmail.com' ? 'approved' : 'pending',
-            createdAt: new Date().toISOString()
-        };
-        saveUserRegistry(registry);
+    if (registry[cleanEmail]) {
+        return { success: false, error: 'User already exists' };
     }
-    return registry[cleanEmail];
+    
+    registry[cleanEmail] = {
+        email: cleanEmail,
+        password: password,
+        status: 'approved', // Auto approve when registering with password per new requirements
+        createdAt: new Date().toISOString()
+    };
+    saveUserRegistry(registry);
+    return { success: true };
+};
+
+// ตรวจสอบรหัสผ่าน
+export const verifyUser = (email, password) => {
+    if (!email || !password) return false;
+    const cleanEmail = email.trim().toLowerCase();
+    const registry = getUserRegistry();
+    const user = registry[cleanEmail];
+    if (!user) return false;
+    
+    // If it's the owner and they don't have a password yet (from legacy), let them in or require them to have one
+    // But since login component requires password, they must match.
+    // If legacy user has no password, they can't login until they register again or we allow it.
+    // Assuming they just match passwords:
+    return user.password === password;
 };
 
 export const approveUser = (email) => {
@@ -378,4 +421,5 @@ export const saveProfile = (email, profile) => {
     if (!email) return;
     localStorage.setItem(`phudit_tj_profile_${email}`, JSON.stringify(profile));
 };
+
 

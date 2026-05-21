@@ -19,16 +19,32 @@ import OwnerDashboard from './components/OwnerDashboard';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
-    return localStorage.getItem('phudit_tj_currentUser') || null;
+    return localStorage.getItem('phudit_tj_currentUser') || sessionStorage.getItem('phudit_tj_currentUser') || null;
+  });
+
+  const [rememberSession, setRememberSession] = useState(() => {
+    return !!localStorage.getItem('phudit_tj_currentUser');
   });
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('phudit_tj_currentUser', currentUser);
+      if (rememberSession) {
+        localStorage.setItem('phudit_tj_currentUser', currentUser);
+        sessionStorage.removeItem('phudit_tj_currentUser');
+      } else {
+        sessionStorage.setItem('phudit_tj_currentUser', currentUser);
+        localStorage.removeItem('phudit_tj_currentUser');
+      }
     } else {
       localStorage.removeItem('phudit_tj_currentUser');
+      sessionStorage.removeItem('phudit_tj_currentUser');
     }
-  }, [currentUser]);
+  }, [currentUser, rememberSession]);
+
+  const handleLogin = (email, rememberMe) => {
+    setRememberSession(rememberMe);
+    setCurrentUser(email);
+  };
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
   const [trades, setTrades] = useState([]);
@@ -193,6 +209,27 @@ export default function App() {
     saveTrades(currentUser, updatedTrades);
   };
 
+  // ระบบ Global Confirm Modal
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
+  const requestConfirm = (title, message, onConfirm) => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm
+    });
+  };
+
+  const closeConfirm = () => {
+    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
   // ลบข้อมูลการเทรด
   const handleDeleteTrade = (id) => {
     const updatedTrades = trades.filter(t => t.id !== id);
@@ -240,7 +277,7 @@ export default function App() {
   const [showManual, setShowManual] = useState(false);
 
   if (!currentUser) {
-    return <Login onLogin={setCurrentUser} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
@@ -413,6 +450,7 @@ export default function App() {
                 onDeleteTrade={handleDeleteTrade}
                 onClearAllTrades={handleClearAllTrades}
                 onDeleteTradesByMonth={handleDeleteTradesByMonth}
+                requestConfirm={requestConfirm}
               />
             )}
 
@@ -481,10 +519,10 @@ export default function App() {
       {showSettingsModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
             
             {/* Header */}
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3 relative z-10">
               <div>
                 <h3 className="text-lg font-black text-indigo-650 dark:text-indigo-400">⚙️ Personal Station Settings</h3>
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">Customize your Profile & App Settings</p>
@@ -593,6 +631,46 @@ export default function App() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+    {/* 🔴 Global Confirm Modal */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center text-2xl flex-shrink-0 border border-red-200 dark:border-red-500/30">
+                ⚠️
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{confirmDialog.title}</h2>
+              </div>
+            </div>
+            
+            <p className="text-sm text-slate-600 dark:text-slate-400 relative z-10">
+              {confirmDialog.message}
+            </p>
+            
+            <div className="flex justify-end gap-3 mt-4 relative z-10">
+              <button 
+                onClick={closeConfirm}
+                className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer"
+              >
+                ยกเลิก (Cancel)
+              </button>
+              <button 
+                onClick={() => {
+                  if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                  closeConfirm();
+                }}
+                className="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-red-900/20 cursor-pointer"
+              >
+                ยืนยัน (Confirm)
+              </button>
+            </div>
           </div>
         </div>
       )}
