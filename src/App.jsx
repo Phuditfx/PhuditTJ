@@ -39,7 +39,8 @@ export default function App() {
   }, []);
 
   const handleLogin = (email, rememberMe) => {
-    // Login logic is now handled by Login component and Firebase Auth
+    // Explicitly set the user to ensure UI updates immediately
+    setCurrentUser(email);
   };
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
