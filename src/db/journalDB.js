@@ -23,98 +23,160 @@ export const RANK_SYSTEM = [
 
 export const getStoredTrades = async (email) => {
     if (!email) return [];
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
     try {
-        const userRef = doc(db, 'users', email);
+        const userRef = doc(db, 'users', cleanEmail);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists() && docSnap.data().trades) {
-            return docSnap.data().trades;
+            fbData = docSnap.data().trades;
         }
     } catch (e) {
-        console.error("Error fetching trades:", e);
+        console.error("Error fetching trades from Firebase:", e);
+    }
+    
+    if (fbData) return fbData;
+    
+    // Fallback to local storage
+    try {
+        const local = localStorage.getItem(`phudit_trades_${cleanEmail}`);
+        if (local) return JSON.parse(local);
+    } catch (e) {
+        console.error("Error reading trades from LocalStorage:", e);
     }
     return [];
 };
 
 export const saveTrades = async (email, trades) => {
     if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Save to LocalStorage first
     try {
-        const userRef = doc(db, 'users', email);
+        localStorage.setItem(`phudit_trades_${cleanEmail}`, JSON.stringify(trades));
+    } catch (e) {
+        console.error("Error saving trades to LocalStorage:", e);
+    }
+    
+    // Attempt to save to Firebase
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
         await setDoc(userRef, { trades }, { merge: true });
     } catch (e) {
-        console.error("Error saving trades:", e);
+        console.error("Error saving trades to Firebase:", e);
     }
 };
 
 export const getStoredInitialBalance = async (email) => {
     if (!email) return 10000;
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
     try {
-        const userRef = doc(db, 'users', email);
+        const userRef = doc(db, 'users', cleanEmail);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists() && docSnap.data().initialBalance !== undefined) {
-            return docSnap.data().initialBalance;
+            fbData = docSnap.data().initialBalance;
         }
     } catch (e) {
-        console.error("Error fetching balance:", e);
+        console.error("Error fetching balance from Firebase:", e);
     }
-    return 10000;
+    
+    if (fbData !== null) return fbData;
+    
+    const local = localStorage.getItem(`phudit_balance_${cleanEmail}`);
+    return local ? parseFloat(local) : 10000;
 };
 
 export const saveInitialBalance = async (email, balance) => {
     if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
     try {
-        const userRef = doc(db, 'users', email);
+        localStorage.setItem(`phudit_balance_${cleanEmail}`, balance.toString());
+    } catch (e) {}
+
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
         await setDoc(userRef, { initialBalance: balance }, { merge: true });
     } catch (e) {
-        console.error("Error saving balance:", e);
+        console.error("Error saving balance to Firebase:", e);
     }
 };
 
 export const getStoredTargetRR = async (email) => {
     if (!email) return 20;
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
     try {
-        const userRef = doc(db, 'users', email);
+        const userRef = doc(db, 'users', cleanEmail);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists() && docSnap.data().targetRR !== undefined) {
-            return docSnap.data().targetRR;
+            fbData = docSnap.data().targetRR;
         }
     } catch (e) {
-        console.error("Error fetching RR:", e);
+        console.error("Error fetching RR from Firebase:", e);
     }
-    return 20;
+    
+    if (fbData !== null) return fbData;
+    
+    const local = localStorage.getItem(`phudit_rr_${cleanEmail}`);
+    return local ? parseFloat(local) : 20;
 };
 
 export const saveTargetRR = async (email, rr) => {
     if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
     try {
-        const userRef = doc(db, 'users', email);
+        localStorage.setItem(`phudit_rr_${cleanEmail}`, rr.toString());
+    } catch (e) {}
+
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
         await setDoc(userRef, { targetRR: rr }, { merge: true });
     } catch (e) {
-        console.error("Error saving RR:", e);
+        console.error("Error saving RR to Firebase:", e);
     }
 };
 
 export const getStoredProfile = async (email) => {
     const defaultProfile = { name: email ? email.split('@')[0] : 'Trader', photo: '', fontSize: 'normal' };
     if (!email) return defaultProfile;
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
     try {
-        const userRef = doc(db, 'users', email);
+        const userRef = doc(db, 'users', cleanEmail);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists() && docSnap.data().profile) {
-            return { ...defaultProfile, ...docSnap.data().profile };
+            fbData = { ...defaultProfile, ...docSnap.data().profile };
         }
     } catch (e) {
-        console.error("Error fetching profile:", e);
+        console.error("Error fetching profile from Firebase:", e);
     }
+    
+    if (fbData !== null) return fbData;
+    
+    try {
+        const local = localStorage.getItem(`phudit_profile_${cleanEmail}`);
+        if (local) return { ...defaultProfile, ...JSON.parse(local) };
+    } catch (e) {}
+    
     return defaultProfile;
 };
 
 export const saveProfile = async (email, profile) => {
     if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
     try {
-        const userRef = doc(db, 'users', email);
+        localStorage.setItem(`phudit_profile_${cleanEmail}`, JSON.stringify(profile));
+    } catch (e) {}
+
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
         await setDoc(userRef, { profile }, { merge: true });
     } catch (e) {
-        console.error("Error saving profile:", e);
+        console.error("Error saving profile to Firebase:", e);
     }
 };
 
