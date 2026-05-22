@@ -238,7 +238,8 @@ export const verifyUser = async (email, password) => {
         const user = userCredential.user;
         
         if (!user.emailVerified) {
-            // ถ้ายืนยันอีเมลยังไม่สำเร็จ ให้ Sign out และแจ้งเตือน
+            // ถ้ายืนยันอีเมลยังไม่สำเร็จ ให้แจ้งเตือนและ Sign out
+            alert('⚠️ กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ (เช็คที่กล่องจดหมาย หรือ Junk/Spam)');
             await signOut(auth);
             return { 
                 success: false, 
@@ -254,6 +255,7 @@ export const verifyUser = async (email, password) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
             if (userData.status === 'pending') {
+                alert('⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ (Admin) กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน');
                 await signOut(auth);
                 return {
                     success: false,
