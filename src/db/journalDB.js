@@ -1,6 +1,6 @@
 import { db, auth } from '../firebaseConfig';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 
 // ตารางยศและข้อจำกัดของพอร์ต (อ้างอิงจาก Dashboard.js เดิม)
 export const RANK_SYSTEM = [
@@ -137,6 +137,9 @@ export const registerUser = async (email, password) => {
         const cleanEmail = email.trim().toLowerCase();
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         
+        // ส่งอีเมลยืนยันตัวตน
+        await sendEmailVerification(userCredential.user);
+        
         const userRef = doc(db, 'users', cleanEmail);
         await setDoc(userRef, {
             email: cleanEmail,
@@ -152,7 +155,10 @@ export const registerUser = async (email, password) => {
             }
         });
         
-        return { success: true, user: userCredential.user };
+        // Sign out ทันทีหลังจากลงทะเบียน เพื่อบังคับให้ผู้ใช้ต้องยืนยันอีเมลก่อนเข้าสู่ระบบ
+        await signOut(auth);
+        
+        return { success: true, needsVerification: true, user: userCredential.user };
     } catch (error) {
         let msg = error.message;
         if (error.code === 'auth/email-already-in-use') msg = 'อีเมลนี้ถูกใช้งานแล้ว';
@@ -166,10 +172,49 @@ export const verifyUser = async (email, password) => {
     try {
         const cleanEmail = email.trim().toLowerCase();
         const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
-        return { success: true, user: userCredential.user };
+        const user = userCredential.user;
+        
+        if (!user.emailVerified) {
+            // ถ้ายืนยันอีเมลยังไม่สำเร็จ ให้ Sign out และแจ้งเตือน
+            await signOut(auth);
+            return { 
+                success: false, 
+                error: 'กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ (เช็คที่กล่องจดหมาย หรือ Junk/Spam)', 
+                needsVerification: true,
+                user: user
+            };
+        }
+        
+        return { success: true, user: user };
     } catch (error) {
         let msg = error.message;
         if (error.code === 'auth/invalid-credential') msg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        return { success: false, error: msg };
+    }
+};
+
+export const sendVerificationEmail = async (email, password) => {
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
+        await signOut(auth);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
+export const resetPassword = async (email) => {
+    if (!email) return { success: false, error: 'กรุณากรอกอีเมล' };
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        await sendPasswordResetEmail(auth, cleanEmail);
+        return { success: true };
+    } catch (error) {
+        let msg = error.message;
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+            msg = 'ไม่พบผู้ใช้นี้ในระบบ หรืออีเมลไม่ถูกต้อง';
+        }
         return { success: false, error: msg };
     }
 };
@@ -189,6 +234,17 @@ export const deleteUser = async (email) => {
         await deleteDoc(doc(db, 'users', cleanEmail));
     } catch (e) {
         console.error("Error deleting user:", e);
+    }
+};
+
+export const approveUser = async (email) => {
+    if (!email) return;
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { status: 'approved' }, { merge: true });
+    } catch (e) {
+        console.error("Error approving user:", e);
     }
 };
 
@@ -280,21 +336,21 @@ export const simulateAIAssessment = (trade) => {
     // สร้าง Feedback ภาษาไทยตามเงื่อนไข
     if (scorePlan === 100) {
         if (isWin) {
-            feedback = \`🌟 ยอดเยี่ยมมาก! การเทรดครั้งนี้ทำตามแผนอย่างเคร่งครัด 100% ควบคู่กับสภาวะตลาดที่เอื้ออำนวย (Context: \${scoreContext}/10) ได้รับกำไร $\${trade.pnl.toFixed(2)} (\${calculatedRR.toFixed(2)} RR) วินัยชั้นยอดแบบนี้ทำให้พอร์ตเติบโตอย่างมั่นคงแน่นอน!\`;
+            feedback = `🌟 ยอดเยี่ยมมาก! การเทรดครั้งนี้ทำตามแผนอย่างเคร่งครัด 100% ควบคู่กับสภาวะตลาดที่เอื้ออำนวย (Context: ${scoreContext}/10) ได้รับกำไร $${trade.pnl.toFixed(2)} (${calculatedRR.toFixed(2)} RR) วินัยชั้นยอดแบบนี้ทำให้พอร์ตเติบโตอย่างมั่นคงแน่นอน!`;
         } else {
-            feedback = \`👍 แม้ออเดอร์นี้จะจบด้วยการขาดทุน (-$\${Math.abs(trade.pnl).toFixed(2)}) แต่การรักษาแผนการเทรด 100% ถือว่าสมบูรณ์แบบ วินัยที่ดีย่อมสำคัญกว่าผลลัพธ์ระยะสั้น การตัดขาดทุนตรงเวลาเป็นเกราะคุ้มครองพอร์ตที่ดีที่สุดครับ\`;
+            feedback = `👍 แม้ออเดอร์นี้จะจบด้วยการขาดทุน (-$${Math.abs(trade.pnl).toFixed(2)}) แต่การรักษาแผนการเทรด 100% ถือว่าสมบูรณ์แบบ วินัยที่ดีย่อมสำคัญกว่าผลลัพธ์ระยะสั้น การตัดขาดทุนตรงเวลาเป็นเกราะคุ้มครองพอร์ตที่ดีที่สุดครับ`;
         }
     } else if (scorePlan === 50) {
         if (isWin) {
-            feedback = \`⚠️ ออเดอร์นี้ได้กำไรแต่ต้องระวัง เพราะทำตามแผนได้เพียงบางส่วน (50%) มีความเสี่ยงที่คุณจะใช้อารมณ์ร่วมหรือละเลยเช็คลิสต์บางอย่าง ควรทบทวนระบบเทรดและรักษาวินัยให้สม่ำเสมอ\`;
+            feedback = `⚠️ ออเดอร์นี้ได้กำไรแต่ต้องระวัง เพราะทำตามแผนได้เพียงบางส่วน (50%) มีความเสี่ยงที่คุณจะใช้อารมณ์ร่วมหรือละเลยเช็คลิสต์บางอย่าง ควรทบทวนระบบเทรดและรักษาวินัยให้สม่ำเสมอ`;
         } else {
-            feedback = \`❌ เสียหายจากการขาดวินัยบางส่วน! ออเดอร์นี้หลุดจากแผนที่ตั้งไว้ ส่งผลให้ขาดทุน $\${Math.abs(trade.pnl).toFixed(2)} คราวหน้าควรยึดมั่นตามเช็คลิสต์หรือรอเข้าเทรดพร้อมคำแนะนำจาก Ajarn Live เพื่อความชัวร์\`;
+            feedback = `❌ เสียหายจากการขาดวินัยบางส่วน! ออเดอร์นี้หลุดจากแผนที่ตั้งไว้ ส่งผลให้ขาดทุน $${Math.abs(trade.pnl).toFixed(2)} คราวหน้าควรยึดมั่นตามเช็คลิสต์หรือรอเข้าเทรดพร้อมคำแนะนำจาก Ajarn Live เพื่อความชัวร์`;
         }
     } else {
         if (isWin) {
-            feedback = \`🚨 โชคดีที่ได้กำไร! ออเดอร์นี้เป็นการเทรดด้วยอารมณ์หรือ FOMO 100% (วินัย 0%) แม้จะได้เงินแต่การเข้าออเดอร์นอกแผนแบบนี้จะทำลายพอร์ตในระยะยาวได้ง่ายมาก ควรระงับอารมณ์และห้ามเทรดไล่ราคาโดยไม่มีแผนเด็ดขาด\`;
+            feedback = `🚨 โชคดีที่ได้กำไร! ออเดอร์นี้เป็นการเทรดด้วยอารมณ์หรือ FOMO 100% (วินัย 0%) แม้จะได้เงินแต่การเข้าออเดอร์นอกแผนแบบนี้จะทำลายพอร์ตในระยะยาวได้ง่ายมาก ควรระงับอารมณ์และห้ามเทรดไล่ราคาโดยไม่มีแผนเด็ดขาด`;
         } else {
-            feedback = \`🚨 ความพ่ายแพ้จากการใช้อารมณ์ (FOMO)! ออเดอร์นี้แหกกฎ 100% และขาดทุน $\${Math.abs(trade.pnl).toFixed(2)} นี่คือเครื่องเตือนใจว่าการเทรดด้วยอารมณ์จะพาไปสู่ความเสียหาย ควรปิดหน้าจอไปพักผ่อนเพื่อปรับอารมณ์ก่อนเริ่มเทรดไม้ถัดไป\`;
+            feedback = `🚨 ความพ่ายแพ้จากการใช้อารมณ์ (FOMO)! ออเดอร์นี้แหกกฎ 100% และขาดทุน $${Math.abs(trade.pnl).toFixed(2)} นี่คือเครื่องเตือนใจว่าการเทรดด้วยอารมณ์จะพาไปสู่ความเสียหาย ควรปิดหน้าจอไปพักผ่อนเพื่อปรับอารมณ์ก่อนเริ่มเทรดไม้ถัดไป`;
         }
     }
 

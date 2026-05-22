@@ -1,29 +1,55 @@
 import React, { useState } from 'react';
-import { checkUserExists, registerUser, verifyUser } from '../db/journalDB';
+import { checkUserExists, registerUser, verifyUser, sendVerificationEmail, resetPassword } from '../db/journalDB';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const handleEmailChange = async (e) => {
     const val = e.target.value.trim().toLowerCase();
     setEmail(val);
-    if (val && val.includes('@')) {
+    setError('');
+    setSuccessMsg('');
+    setNeedsVerification(false);
+    
+    if (!isResettingPassword && val && val.includes('@')) {
       // Check if user exists to switch mode
       const exists = await checkUserExists(val);
       setIsRegistering(!exists);
     } else {
       setIsRegistering(false);
     }
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+    setNeedsVerification(false);
+    
     const cleanEmail = email.trim().toLowerCase();
+    
+    if (isResettingPassword) {
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        setError("กรุณากรอกอีเมลให้ถูกต้อง");
+        return;
+      }
+      const res = await resetPassword(cleanEmail);
+      if (res.success) {
+        setSuccessMsg("ส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปยังอีเมลของคุณเรียบร้อยแล้ว กรุณาตรวจสอบกล่องจดหมายเข้า (Inbox/Junk) ของคุณ");
+        setIsResettingPassword(false);
+      } else {
+        setError(res.error);
+      }
+      return;
+    }
+
     if (!cleanEmail || !cleanEmail.includes('@') || !password) {
       setError("กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน");
       return;
@@ -32,7 +58,13 @@ export default function Login({ onLogin }) {
     if (isRegistering) {
       const res = await registerUser(cleanEmail, password);
       if (res.success) {
-        if (onLogin) onLogin(cleanEmail, rememberMe);
+        if (res.needsVerification) {
+          setSuccessMsg("สมัครสมาชิกสำเร็จ! ระบบได้ส่งอีเมลยืนยันตัวตนไปยังอีเมลของคุณแล้ว กรุณากดยืนยันก่อนเข้าสู่ระบบ");
+          setIsRegistering(false); // เปลี่ยนกลับเป็นโหมดล็อคอิน
+          setPassword('');
+        } else {
+          if (onLogin) onLogin(cleanEmail, rememberMe);
+        }
       } else {
         setError(res.error);
       }
@@ -42,8 +74,28 @@ export default function Login({ onLogin }) {
         if (onLogin) onLogin(cleanEmail, rememberMe);
       } else {
         setError(res.error || "รหัสผ่านไม่ถูกต้อง");
+        if (res.needsVerification) {
+            setNeedsVerification(true);
+        }
       }
     }
+  };
+
+  const handleResendVerification = async () => {
+      setError('');
+      setSuccessMsg('');
+      const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail || !password) {
+          setError("กรุณากรอกอีเมลและรหัสผ่านเพื่อส่งอีเมลยืนยันอีกครั้ง");
+          return;
+      }
+      const res = await sendVerificationEmail(cleanEmail, password);
+      if (res.success) {
+          setSuccessMsg("ส่งอีเมลยืนยันตัวตนซ้ำสำเร็จแล้ว! กรุณาตรวจสอบกล่องจดหมายของคุณ");
+          setNeedsVerification(false);
+      } else {
+          setError(res.error);
+      }
   };
 
   return (
@@ -72,23 +124,32 @@ export default function Login({ onLogin }) {
             />
           </div>
           
-          <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase mb-1.5 block">Password</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={e => {
-                setPassword(e.target.value);
-                setError('');
-              }}
-              placeholder={isRegistering ? "ตั้งรหัสผ่านใหม่ (สำหรับใช้ครั้งแรก)" : "••••••••"}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              required
-            />
-            {isRegistering && email.includes('@') && (
-              <p className="text-[10px] text-amber-500 mt-1">✨ บัญชีใหม่: รหัสผ่านที่คุณกรอกจะถูกใช้สำหรับการเข้าสู่ระบบครั้งถัดไป</p>
-            )}
-          </div>
+          {!isResettingPassword && (
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase mb-1.5 flex justify-between">
+                <span>Password</span>
+                {!isRegistering && (
+                  <button type="button" onClick={() => setIsResettingPassword(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 cursor-pointer">
+                    ลืมรหัสผ่าน?
+                  </button>
+                )}
+              </label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={e => {
+                  setPassword(e.target.value);
+                  setError('');
+                }}
+                placeholder={isRegistering ? "ตั้งรหัสผ่านใหม่ (สำหรับใช้ครั้งแรก)" : "••••••••"}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                required={!isResettingPassword}
+              />
+              {isRegistering && email.includes('@') && (
+                <p className="text-[10px] text-amber-500 mt-1">✨ บัญชีใหม่: รหัสผ่านที่คุณกรอกจะถูกใช้สำหรับการเข้าสู่ระบบครั้งถัดไป</p>
+              )}
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs p-3 rounded-lg text-center font-bold animate-pulse">
@@ -96,25 +157,57 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
-          <div className="flex items-center gap-2 mt-2">
-            <input 
-              type="checkbox" 
-              id="rememberMe"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900"
-            />
-            <label htmlFor="rememberMe" className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-              Remember me (จดจำการเข้าสู่ระบบ)
-            </label>
-          </div>
+          {successMsg && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs p-3 rounded-lg text-center font-bold animate-fade-in">
+              {successMsg}
+            </div>
+          )}
+
+          {needsVerification && (
+            <button 
+              type="button"
+              onClick={handleResendVerification}
+              className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2 rounded-lg transition-all text-xs border border-slate-200 dark:border-slate-700 cursor-pointer mt-1"
+            >
+              📧 ส่งอีเมลยืนยันตัวตนอีกครั้ง
+            </button>
+          )}
+
+          {!isResettingPassword && (
+            <div className="flex items-center gap-2 mt-2">
+              <input 
+                type="checkbox" 
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 cursor-pointer"
+              />
+              <label htmlFor="rememberMe" className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                Remember me (จดจำการเข้าสู่ระบบ)
+              </label>
+            </div>
+          )}
 
           <button 
             type="submit"
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3.5 rounded-lg transition-all shadow-lg shadow-indigo-950/40 text-sm mt-2 cursor-pointer"
           >
-            {isRegistering ? "CREATE ACCOUNT & LOGIN" : "LOGIN TO STATION"}
+            {isResettingPassword ? "ส่งลิงก์รีเซ็ตรหัสผ่าน" : (isRegistering ? "CREATE ACCOUNT & LOGIN" : "LOGIN TO STATION")}
           </button>
+          
+          {isResettingPassword && (
+            <button
+              type="button"
+              onClick={() => {
+                  setIsResettingPassword(false);
+                  setError('');
+                  setSuccessMsg('');
+              }}
+              className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-center cursor-pointer mt-2"
+            >
+              กลับไปหน้าเข้าสู่ระบบ
+            </button>
+          )}
         </form>
       </div>
     </div>
