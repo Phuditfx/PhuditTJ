@@ -1,5 +1,5 @@
 import { db, auth } from '../firebaseConfig';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 
 // ตารางยศและข้อจำกัดของพอร์ต (อ้างอิงจาก Dashboard.js เดิม)
@@ -320,6 +320,7 @@ export const logoutUser = async () => {
         console.error("Logout error:", error);
     }
 };
+
 
 export const deleteUser = async (email) => {
     if (!email) return;

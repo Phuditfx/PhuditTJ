@@ -4,21 +4,39 @@ import { getAllUsersData, approveUser, deleteUser } from '../db/journalDB';
 export default function OwnerDashboard({ currentUser }) {
   const [users, setUsers] = useState([]);
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    const data = await getAllUsersData();
+    setUsers(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    setUsers(getAllUsersData());
+    fetchUsers();
   }, []);
 
-  const handleApprove = (email) => {
-    approveUser(email);
-    setUsers(getAllUsersData());
+  const handleApprove = async (email) => {
+    await approveUser(email);
+    await fetchUsers();
   };
 
-  const handleDelete = (email) => {
+  const handleDelete = async (email) => {
     if (window.confirm(`⚠️ คุณต้องการลบผู้ใช้ ${email} และเคลียร์ข้อมูลการเทรดทั้งหมดใน LocalStorage หรือไม่?\n(การกระทำนี้จะถูกล้างข้อมูลประวัติและข้อมูลเงินทุนทั้งหมดอย่างถาวร!)`)) {
-      deleteUser(email);
-      setUsers(getAllUsersData());
+      await deleteUser(email);
+      await fetchUsers();
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 shadow-lg flex flex-col justify-center items-center h-[500px]">
+        <div className="text-amber-500 text-5xl mb-4 animate-spin">⏳</div>
+        <div className="text-slate-500 font-bold tracking-widest animate-pulse">LOADING DASHBOARD...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg flex flex-col gap-6 transition-colors duration-300">
