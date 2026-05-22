@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import * as XLSX from 'xlsx';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
@@ -10,9 +10,18 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
   // สถานะสำหรับ Modal ปิดออเดอร์
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [exitPrice, setExitPrice] = useState('');
-  const [contextScore, setContextScore] = useState(7);
+  const [closeShares, setCloseShares] = useState('');
+  const [notes, setNotes] = useState('');
+  
+  // Context Score Survey States
+  const [qMarketTrend, setQMarketTrend] = useState(1); // 0, 1, 3
+  const [qRelativeStrength, setQRelativeStrength] = useState(1); // 0, 1, 3
+  const [qSetupQuality, setQSetupQuality] = useState(2); // 1, 2, 4
+  
   const [planAdherence, setPlanAdherence] = useState("ตามแผนส่วนตัว (+100%)");
   const [aiResult, setAiResult] = useState(null); // { aiScore, aiFeedback }
+
+  const calculateContextScore = () => Math.min(10, Math.max(1, qMarketTrend + qRelativeStrength + qSetupQuality));
 
   // สถานะสำหรับการดูรายละเอียดข้อเสนอแนะ AI ของออเดอร์ที่ปิดแล้ว
   const [activeFeedbackTradeId, setActiveFeedbackTradeId] = useState(null);
@@ -68,7 +77,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
   const handleOpenCloseModal = (trade) => {
     setSelectedTrade(trade);
     setExitPrice(trade.entryPrice.toString()); // ตั้งค่าเริ่มต้นเป็นราคาเข้าซื้อ
-    setContextScore(7);
+    setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
+    setNotes(trade.notes || '');
+    setQMarketTrend(1);
+    setQRelativeStrength(1);
+    setQSetupQuality(2);
     setPlanAdherence("ตามแผนส่วนตัว (+100%)");
     setAiResult(null);
   };
@@ -90,18 +103,20 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
     }
 
     // คำนวณ PnL ล่วงหน้าเพื่อนำไปประเมิน
-    const shares = parseFloat(selectedTrade.shares);
+    const shares = parseFloat(closeShares) || parseFloat(selectedTrade.shares);
     const entry = parseFloat(selectedTrade.entryPrice);
     const sl = parseFloat(selectedTrade.stopLoss);
     const isLong = selectedTrade.direction === 'Long';
     const pnl = isLong ? (pExit - entry) * shares : (entry - pExit) * shares;
+    
+    const currentContextScore = calculateContextScore();
 
     const mockTradeForAI = {
       ...selectedTrade,
       actualExitPrice: pExit,
       pnl,
       planAdherenceScore: score,
-      contextScore: parseInt(contextScore) || 7
+      contextScore: currentContextScore
     };
 
     const assessment = simulateAIAssessment(mockTradeForAI);
@@ -124,11 +139,18 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
       score = 50;
     }
 
-    const shares = parseFloat(selectedTrade.shares);
+    const sharesToClose = parseFloat(closeShares) || 0;
+    const originalShares = parseFloat(selectedTrade.shares);
+    
+    if (sharesToClose <= 0 || sharesToClose > originalShares) {
+      alert("กรุณากรอกจำนวนหุ้นที่ต้องการปิดให้ถูกต้อง (ต้องไม่เกินจำนวนหุ้นที่มีอยู่)");
+      return;
+    }
+
     const entry = parseFloat(selectedTrade.entryPrice);
     const sl = parseFloat(selectedTrade.stopLoss);
     const isLong = selectedTrade.direction === 'Long';
-    const pnl = isLong ? (pExit - entry) * shares : (entry - pExit) * shares;
+    const pnl = isLong ? (pExit - entry) * sharesToClose : (entry - pExit) * sharesToClose;
 
     // คำนวณ RR ที่ทำได้จริง
     let actualRR = 0;
@@ -136,6 +158,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
     if (gap > 0) {
       actualRR = isLong ? (pExit - entry) / gap : (entry - pExit) / gap;
     }
+
+    const currentContextScore = calculateContextScore();
 
     // หากยังไม่ได้กด AI Assess ให้ทำการประเมินก่อน
     let finalAI = aiResult;
@@ -145,25 +169,48 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
         actualExitPrice: pExit,
         pnl,
         planAdherenceScore: score,
-        contextScore: parseInt(contextScore) || 7
+        contextScore: currentContextScore
       };
       finalAI = simulateAIAssessment(mockTradeForAI);
     }
 
     const updatedTrade = {
       ...selectedTrade,
+      shares: sharesToClose,
       actualExitPrice: pExit,
       status: 'Closed',
       pnl,
       actualRR,
-      contextScore: parseInt(contextScore) || 7,
+      contextScore: currentContextScore,
       planAdherence,
       planAdherenceScore: score,
       aiScore: finalAI.aiScore,
-      aiFeedback: finalAI.aiFeedback
+      aiFeedback: finalAI.aiFeedback,
+      notes
     };
 
     onUpdateTrade(updatedTrade);
+    
+    // แบ่งไม้เทรด (Split Trade) ถ้ายอดที่ปิดน้อยกว่ายอดที่มี
+    if (sharesToClose < originalShares) {
+      const remainingShares = originalShares - sharesToClose;
+      const splitTrade = {
+        ...selectedTrade,
+        id: 't-' + Date.now() + '-split', // สร้าง ID ใหม่
+        shares: remainingShares,
+        status: 'Open',
+        actualExitPrice: null,
+        pnl: 0,
+        actualRR: 0,
+        aiScore: null,
+        aiFeedback: '',
+        notes: ''
+      };
+      if (onAddTrade) {
+        onAddTrade(splitTrade);
+      }
+    }
+
     setSelectedTrade(null);
   };
 
@@ -401,6 +448,13 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
                                 ? 'bg-amber-400' 
                                 : 'bg-rose-400'
                           }`} title={trade.planAdherence}></div>
+
+                          {/* Notes Icon */}
+                          {trade.notes && (
+                            <span className="text-[12px] cursor-help ml-1" title={trade.notes}>
+                              📝
+                            </span>
+                          )}
                         </div>
                       )}
                     </td>
@@ -456,9 +510,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
                   ✕ ปิดข้อแนะนำ
                 </button>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans mt-1">
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans mt-1 whitespace-pre-wrap">
                 {t.aiFeedback}
               </p>
+              {t.notes && (
+                <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 font-sans whitespace-pre-wrap">
+                  <span className="font-bold">📝 หมายเหตุ:</span><br/>{t.notes}
+                </div>
+              )}
               <div className="flex gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/20">
                 <span>สภาวะตลาด: <strong className="text-slate-800 dark:text-slate-200 font-mono">{t.contextScore}/10</strong></span>
                 <span>ระดับวินัย: <strong className="text-emerald-600 dark:text-emerald-400">{t.planAdherence}</strong></span>
@@ -491,42 +550,88 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
 
             {/* Inputs Form */}
             <div className="flex flex-col gap-4">
-              {/* Actual Exit Price */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Actual Exit Price ($)</label>
-                <input 
-                  type="number"
-                  value={exitPrice}
-                  onChange={(e) => {
-                    setExitPrice(e.target.value);
-                    setAiResult(null); // เคลียร์ผลลัพธ์ AI เดิมเพื่อให้ประเมินใหม่
-                  }}
-                  placeholder="กรอกราคาปิดออเดอร์..."
-                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 text-sm"
-                />
+              <div className="flex gap-4">
+                {/* Actual Exit Price */}
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Actual Exit Price ($)</label>
+                  <input 
+                    type="number"
+                    value={exitPrice}
+                    onChange={(e) => {
+                      setExitPrice(e.target.value);
+                      setAiResult(null); // เคลียร์ผลลัพธ์ AI เดิมเพื่อให้ประเมินใหม่
+                    }}
+                    placeholder="ราคาปิด..."
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 text-sm"
+                  />
+                </div>
+
+                {/* Shares to Close */}
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares to Close</label>
+                  <input 
+                    type="number"
+                    value={closeShares}
+                    onChange={(e) => {
+                      setCloseShares(e.target.value);
+                      setAiResult(null);
+                    }}
+                    placeholder="จำนวนหุ้น..."
+                    max={selectedTrade.shares}
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-sm"
+                  />
+                </div>
               </div>
 
-              {/* Context Score Slider */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold">Context Score (Market Setup)</span>
-                  <span className="font-mono font-bold text-indigo-650 dark:text-indigo-400">{contextScore} / 10</span>
+              {/* Context Score Survey */}
+              <div className="flex flex-col gap-2.5 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Context Score Survey</span>
+                  <span className="font-mono font-bold text-indigo-650 dark:text-indigo-400 text-sm">{calculateContextScore()} / 10</span>
                 </div>
-                <input 
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={contextScore}
-                  onChange={(e) => {
-                    setContextScore(parseInt(e.target.value));
-                    setAiResult(null);
-                  }}
-                  className="w-full accent-indigo-500 h-1 bg-slate-100 dark:bg-slate-950 rounded-lg cursor-pointer"
-                />
-                <div className="flex justify-between text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                  <span>🔴 ตลาดแย่มาก</span>
-                  <span>🟡 ตลาดปานกลาง</span>
-                  <span>🟢 ตลาดสมบูรณ์แบบ</span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Market Trend */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">1. แนวโน้มตลาด (Market Trend)</label>
+                    <select
+                      value={qMarketTrend}
+                      onChange={(e) => { setQMarketTrend(parseInt(e.target.value)); setAiResult(null); }}
+                      className="bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="3">ขาขึ้นชัดเจน (Bullish) (+3)</option>
+                      <option value="1">ไซด์เวย์ (Sideways) (+1)</option>
+                      <option value="0">ขาลง (Bearish) (0)</option>
+                    </select>
+                  </div>
+
+                  {/* Relative Strength */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">2. ความแข็งแกร่ง (Relative Strength)</label>
+                    <select
+                      value={qRelativeStrength}
+                      onChange={(e) => { setQRelativeStrength(parseInt(e.target.value)); setAiResult(null); }}
+                      className="bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="3">แข็งแกร่งกว่าตลาด (+3)</option>
+                      <option value="1">ตามตลาด (In-line) (+1)</option>
+                      <option value="0">อ่อนแอกว่าตลาด (0)</option>
+                    </select>
+                  </div>
+
+                  {/* Setup Quality */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">3. รูปแบบกราฟ (Setup Quality)</label>
+                    <select
+                      value={qSetupQuality}
+                      onChange={(e) => { setQSetupQuality(parseInt(e.target.value)); setAiResult(null); }}
+                      className="bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="4">สวยงามมาก / A+ Setup (+4)</option>
+                      <option value="2">พอใช้ได้ / B Setup (+2)</option>
+                      <option value="1">สัญญาณไม่ชัดเจน / C Setup (+1)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -546,6 +651,18 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onDeleteTrade
                   <option value="ตามแผนบ้างบางส่วน (+50%)">ตามแผนบ้างบางส่วน (มีแหกกฎลิมิตเล็กน้อย 50%)</option>
                   <option value="เทรดด้วยอารมณ์/FOMO (0%)">เทรดหลุดแผน/เทรดด้วยอารมณ์ FOMO ไล่ราคา (0%)</option>
                 </select>
+              </div>
+
+              {/* Notes Section */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Notes (หมายเหตุ)</label>
+                <textarea 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="บันทึกเพิ่มเติม (ถ้ามี)..."
+                  rows="2"
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-sans text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-xs resize-none"
+                />
               </div>
             </div>
 

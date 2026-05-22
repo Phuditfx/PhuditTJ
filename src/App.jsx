@@ -230,6 +230,13 @@ export default function App() {
     saveTrades(currentUser, updatedTrades);
   };
 
+  // เพิ่มออเดอร์โดยตรง (เช่น จากการแบ่งปิดออเดอร์)
+  const handleAddTradeDirect = (newTrade) => {
+    const updatedTrades = [newTrade, ...trades];
+    setTrades(updatedTrades);
+    saveTrades(currentUser, updatedTrades);
+  };
+
   // ระบบ Global Confirm Modal
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -500,6 +507,7 @@ export default function App() {
               <TradeJournalTable 
                 trades={trades}
                 onUpdateTrade={handleUpdateTrade}
+                onAddTrade={handleAddTradeDirect}
                 onDeleteTrade={handleDeleteTrade}
                 onClearAllTrades={handleClearAllTrades}
                 onDeleteTradesByMonth={handleDeleteTradesByMonth}
