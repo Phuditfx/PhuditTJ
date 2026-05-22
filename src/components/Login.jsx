@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { checkUserExists, registerUser, verifyUser, sendVerificationEmail, resetPassword } from '../db/journalDB';
+import { registerUser, verifyUser, sendVerificationEmail, resetPassword } from '../db/journalDB';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [needsVerification, setNeedsVerification] = useState(false);
+
+  const isRegistering = activeTab === 'register';
 
   const handleEmailChange = async (e) => {
     const val = e.target.value.trim().toLowerCase();
@@ -17,14 +19,6 @@ export default function Login({ onLogin }) {
     setError('');
     setSuccessMsg('');
     setNeedsVerification(false);
-    
-    if (!isResettingPassword && val && val.includes('@')) {
-      // Check if user exists to switch mode
-      const exists = await checkUserExists(val);
-      setIsRegistering(!exists);
-    } else {
-      setIsRegistering(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -60,7 +54,7 @@ export default function Login({ onLogin }) {
       if (res.success) {
         if (res.needsVerification) {
           setSuccessMsg("สมัครสมาชิกสำเร็จ! ระบบได้ส่งอีเมลยืนยันตัวตนไปยังอีเมลของคุณแล้ว กรุณากดยืนยันก่อนเข้าสู่ระบบ");
-          setIsRegistering(false); // เปลี่ยนกลับเป็นโหมดล็อคอิน
+          setActiveTab('login'); // เปลี่ยนกลับเป็นโหมดล็อคอิน
           setPassword('');
         } else {
           if (onLogin) onLogin(cleanEmail, rememberMe);
@@ -109,6 +103,23 @@ export default function Login({ onLogin }) {
           </div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">PHUDIT <span className="text-indigo-600 dark:text-indigo-400">TJ</span></h1>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-1">Gamified Trader Station</p>
+        </div>
+
+        <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl mb-6 relative z-10">
+          <button
+            type="button"
+            onClick={() => { setActiveTab('login'); setIsResettingPassword(false); setError(''); setSuccessMsg(''); }}
+            className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${activeTab === 'login' && !isResettingPassword ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer'}`}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('register'); setIsResettingPassword(false); setError(''); setSuccessMsg(''); }}
+            className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${activeTab === 'register' && !isResettingPassword ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer'}`}
+          >
+            Register
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 relative z-10">
@@ -192,7 +203,7 @@ export default function Login({ onLogin }) {
             type="submit"
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3.5 rounded-lg transition-all shadow-lg shadow-indigo-950/40 text-sm mt-2 cursor-pointer"
           >
-            {isResettingPassword ? "ส่งลิงก์รีเซ็ตรหัสผ่าน" : (isRegistering ? "CREATE ACCOUNT & LOGIN" : "LOGIN TO STATION")}
+            {isResettingPassword ? "ส่งลิงก์รีเซ็ตรหัสผ่าน" : (isRegistering ? "CREATE ACCOUNT" : "LOGIN TO STATION")}
           </button>
           
           {isResettingPassword && (
