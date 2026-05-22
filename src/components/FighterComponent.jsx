@@ -46,7 +46,22 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
     setShares(calculatedShares);
     const totalCost = calculatedShares * pEntry;
     setCalcBudget(totalCost);
-    setRiskDollar(calculatedShares * gapDistance);
+    const currentActualRisk = calculatedShares * gapDistance;
+    setRiskDollar(currentActualRisk);
+
+    // Sync calculated shares and actual risk dollar to sharedOrder
+    if (setSharedOrder) {
+      setSharedOrder(prev => {
+        if (prev.calculatedShares === calculatedShares && prev.actualRiskDollar === currentActualRisk) {
+          return prev;
+        }
+        return {
+          ...prev,
+          calculatedShares,
+          actualRiskDollar: currentActualRisk
+        };
+      });
+    }
 
     // 🔓 ระบบตรวจสอบสถานะวงเงินพอร์ต (Locked / Unlocked Sim)
     if (totalCost > accountBalance) {
@@ -64,7 +79,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
       setStatusMessage('✅ ยอดวงเงินพอร์ตปัจจุบันเพียงพอสำหรับการเทรดนี้');
       setStatusColor('text-emerald-400 bg-emerald-950/30 border-emerald-900/50');
     }
-  }, [symbol, entry, stopLoss, sizingMode, inputValue, isUnlocked, accountBalance]);
+  }, [symbol, entry, stopLoss, sizingMode, inputValue, isUnlocked, accountBalance, setSharedOrder]);
 
   // ระบบ Auto-calculate TP1, TP2, TP3 เมื่อ Entry หรือ StopLoss เปลี่ยน
   useEffect(() => {

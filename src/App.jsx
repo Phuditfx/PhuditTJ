@@ -542,6 +542,7 @@ export default function App() {
             onSaveTrade={handleSaveTrade}
             sharedOrder={sharedOrder}
             setSharedOrder={setSharedOrder}
+            activeTab={activeTab}
           />
           
           {/* ข้อมูลคำเตือนเล็กๆ ท้ายบอร์ด */}

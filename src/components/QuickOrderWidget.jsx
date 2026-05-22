@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder }) {
+export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab }) {
   const { symbol, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
     symbol: 'AAPL', entry: '', stopLoss: '', tp1: ''
   };
@@ -35,7 +35,9 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const gap = Math.abs(pEntry - pSl) || 0;
   
   // คำนวณจำนวนหุ้นทศนิยม 4 ตำแหน่ง (Fractional Shares)
-  const fractionalShares = gap > 0 && pRisk > 0 ? (pRisk / gap).toFixed(4) : "0.0000";
+  const fractionalShares = activeTab === 'fighter' 
+    ? (sharedOrder?.calculatedShares !== undefined ? sharedOrder.calculatedShares.toFixed(4) : "0.0000")
+    : (gap > 0 && pRisk > 0 ? (pRisk / gap).toFixed(4) : "0.0000");
   const actualShares = shareInputMode === 'calculated' ? parseFloat(fractionalShares) : (parseFloat(customShares) || 0);
   const buyingPowerRequired = (actualShares * pEntry).toFixed(2);
 
@@ -80,7 +82,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       stopLoss: pSl,
       takeProfit: parseFloat(tp) || 0,
       shares: actualShares,
-      plannedRisk: pRisk, // บันทึกเงิน Risk ของไม้แรกไว้ใช้อ้างอิง RR
+      plannedRisk: activeTab === 'fighter' ? (sharedOrder?.actualRiskDollar || 0) : pRisk, // บันทึกเงิน Risk ของไม้แรกไว้ใช้อ้างอิง RR
       status: 'Open',
       contextScore: 5, // Default ค่อยแก้ตอนปิดดีล
       planAdherenceScore: 100, // Default ค่อยแก้ตอนปิดดีล
@@ -179,14 +181,23 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         <div className="flex flex-col gap-1">
           <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">
             <span>Risk Capital Allocation ($)</span>
-            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-normal">Level Min: ${currentRank?.risk1}</span>
+            {activeTab === 'fighter' ? (
+              <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold animate-pulse">Synced with Fighter</span>
+            ) : (
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-normal">Level Min: ${currentRank?.risk1}</span>
+            )}
           </div>
           <input 
-            type="number" 
-            value={riskAmount} 
+            type={activeTab === 'fighter' ? "text" : "number"} 
+            value={activeTab === 'fighter' ? (sharedOrder?.actualRiskDollar !== undefined ? `$${sharedOrder.actualRiskDollar.toFixed(2)}` : 'Synced') : riskAmount} 
             onChange={e => setRiskAmount(e.target.value)} 
+            disabled={activeTab === 'fighter'}
             placeholder={currentRank?.risk1?.toString()}
-            className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono text-rose-600 dark:text-rose-400 font-bold text-sm focus:outline-none focus:border-indigo-500" 
+            className={`font-mono text-rose-600 dark:text-rose-400 font-bold text-sm focus:outline-none focus:border-indigo-500 p-2.5 rounded border ${
+              activeTab === 'fighter' 
+                ? 'bg-slate-100 dark:bg-slate-950/40 border-slate-300 dark:border-slate-850 cursor-not-allowed opacity-80' 
+                : 'bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800'
+            }`} 
           />
         </div>
       </div>
