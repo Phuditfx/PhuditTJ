@@ -530,7 +530,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (
         <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 relative glow-card-emerald">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 relative glow-card-emerald max-h-[90vh] overflow-y-auto">
             
             {/* Header Modal */}
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
