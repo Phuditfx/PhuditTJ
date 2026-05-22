@@ -322,22 +322,34 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/30 transition-colors duration-300">
       
       {/* 🧭 Top Glassmorphism Navigation Bar */}
-      <header className="glass-panel sticky top-0 z-40 px-6 py-4 flex justify-between items-center shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-lg text-white font-black text-xl shadow-md shadow-indigo-950/40 select-none animate-pulse">
-            💎
+      <header className="glass-panel sticky top-0 z-40 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
+        {/* Logo and Theme toggle row for mobile */}
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-600 p-2 rounded-lg text-white font-black text-xl shadow-md shadow-indigo-950/40 select-none animate-pulse">
+              💎
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white m-0 leading-none">
+                PHUDIT <span className="text-indigo-600 dark:text-indigo-400">TRADE JOURNAL</span>
+              </h1>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest font-bold hidden sm:block">Gamified Trader Station & AI Coach</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white m-0 leading-none">
-              PHUDIT <span className="text-indigo-600 dark:text-indigo-400">TRADE JOURNAL</span>
-            </h1>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest font-bold">Gamified Trader Station & AI Coach</p>
-          </div>
+          
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="md:hidden p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
+            title={theme === 'dark' ? 'เปิดโหมดสว่าง (Soft Slate)' : 'เปิดโหมดมืด (Dark Mode)'}
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
         </div>
 
         {/* ยศของพอร์ตรวมปัจจุบัน & สลับธีม */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 px-4 py-1.5 rounded-xl shadow-inner">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-center">
+          <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 px-4 py-1.5 rounded-xl shadow-inner w-full md:w-auto justify-between md:justify-center">
             
             {/* กล่องแสดงโปรไฟล์ผู้ใช้และข้อมูล */}
             <div 
@@ -357,10 +369,10 @@ export default function App() {
                 </div>
               )}
               <div className="flex flex-col text-left">
-                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase leading-tight group-hover:underline">
+                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">
                   {profile.name || currentUser.split('@')[0]}
                 </span>
-                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none">
+                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none max-w-[100px] sm:max-w-none truncate">
                   {currentUser}
                 </span>
               </div>
@@ -371,7 +383,7 @@ export default function App() {
             <div className="flex flex-col text-right">
               <button 
                 onClick={() => setShowSettingsModal(true)}
-                className="text-[9px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-750 dark:hover:text-indigo-300 font-bold uppercase tracking-widest cursor-pointer text-right flex items-center gap-0.5"
+                className="text-[9px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-750 dark:hover:text-indigo-300 font-bold uppercase tracking-widest cursor-pointer text-right flex items-center justify-end gap-0.5"
               >
                 ⚙️ Settings
               </button>
@@ -383,21 +395,24 @@ export default function App() {
               </button>
             </div>
 
-            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
+            {/* ซ่อนเส้นคั่น และ ยศ/เงิน ในจอมือถือ (เล็กกว่า md) */}
+            <div className="hidden md:block w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
 
-            <div className="text-right">
+            <div className="hidden md:block text-right">
               <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold">Rank Level</span>
               <span className="text-sm font-extrabold text-amber-605 dark:text-amber-400 block font-sans">{currentRank.name}</span>
             </div>
-            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
-            <div className="text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+            
+            <div className="hidden md:block w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
+            
+            <div className="hidden md:block text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
               ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
+            className="hidden md:flex p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm items-center justify-center w-9 h-9 border-solid"
             title={theme === 'dark' ? 'เปิดโหมดสว่าง (Soft Slate)' : 'เปิดโหมดมืด (Dark Mode)'}
             aria-label="Toggle Theme"
           >
@@ -414,7 +429,7 @@ export default function App() {
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
             {/* แถบ Tab เลือกสลับการแสดงผลหลัก */}
-            <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800/80 gap-2 p-1 bg-white dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-800/40 w-full sm:w-max">
+            <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b border-slate-200 dark:border-slate-800/80 gap-2 p-1 bg-white dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-800/40 w-full sm:w-max snap-x">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
