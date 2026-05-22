@@ -584,53 +584,101 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
 
               {/* Context Score Survey */}
-              <div className="flex flex-col gap-2.5 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="flex justify-between items-center border-b border-slate-250 dark:border-slate-800 pb-2">
                   <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Context Score Survey</span>
                   <span className="font-mono font-bold text-indigo-650 dark:text-indigo-400 text-sm">{calculateContextScore()} / 10</span>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex flex-col gap-3.5 mt-1">
                   {/* Market Trend */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">1. แนวโน้มตลาด (Market Trend)</label>
-                    <select
-                      value={qMarketTrend}
-                      onChange={(e) => { setQMarketTrend(parseInt(e.target.value)); setAiResult(null); }}
-                      className="bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="3">ขาขึ้นชัดเจน (Bullish) (+3)</option>
-                      <option value="1">ไซด์เวย์ (Sideways) (+1)</option>
-                      <option value="0">ขาลง (Bearish) (0)</option>
-                    </select>
+                    <label className="text-[10px] text-slate-550 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      1. แนวโน้มตลาด (Market Trend)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: 'ขาลง (Bearish) (+0)', value: 0 },
+                        { label: 'ไซด์เวย์ (Sideways) (+1)', value: 1 },
+                        { label: 'ขาขึ้น (Bullish) (+3)', value: 3 }
+                      ].map((opt) => {
+                        const active = qMarketTrend === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => { setQMarketTrend(opt.value); setAiResult(null); }}
+                            className={`py-2 px-1 rounded-lg text-[10.5px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[38px] ${
+                              active
+                                ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.01]'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Relative Strength */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">2. ความแข็งแกร่ง (Relative Strength)</label>
-                    <select
-                      value={qRelativeStrength}
-                      onChange={(e) => { setQRelativeStrength(parseInt(e.target.value)); setAiResult(null); }}
-                      className="bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="3">แข็งแกร่งกว่าตลาด (+3)</option>
-                      <option value="1">ตามตลาด (In-line) (+1)</option>
-                      <option value="0">อ่อนแอกว่าตลาด (0)</option>
-                    </select>
+                    <label className="text-[10px] text-slate-555 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      2. ความแข็งแกร่ง (Relative Strength)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: 'อ่อนแอกว่าตลาด (+0)', value: 0 },
+                        { label: 'ตามตลาด (In-line) (+1)', value: 1 },
+                        { label: 'แข็งแกร่งกว่าตลาด (+3)', value: 3 }
+                      ].map((opt) => {
+                        const active = qRelativeStrength === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => { setQRelativeStrength(opt.value); setAiResult(null); }}
+                            className={`py-2 px-1 rounded-lg text-[10.5px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[38px] ${
+                              active
+                                ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.01]'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Setup Quality */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">3. รูปแบบกราฟ (Setup Quality)</label>
-                    <select
-                      value={qSetupQuality}
-                      onChange={(e) => { setQSetupQuality(parseInt(e.target.value)); setAiResult(null); }}
-                      className="bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="4">สวยงามมาก / A+ Setup (+4)</option>
-                      <option value="2">พอใช้ได้ / B Setup (+2)</option>
-                      <option value="1">สัญญาณไม่ชัดเจน / C Setup (+1)</option>
-                    </select>
+                    <label className="text-[10px] text-slate-555 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      3. รูปแบบกราฟ (Setup Quality)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: 'ไม่ชัดเจน (C) (+1)', value: 1 },
+                        { label: 'พอใช้ได้ (B) (+2)', value: 2 },
+                        { label: 'สวยงามมาก (A+) (+4)', value: 4 }
+                      ].map((opt) => {
+                        const active = qSetupQuality === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => { setQSetupQuality(opt.value); setAiResult(null); }}
+                            className={`py-2 px-1 rounded-lg text-[10.5px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[38px] ${
+                              active
+                                ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.01]'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
