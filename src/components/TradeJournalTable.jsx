@@ -73,17 +73,28 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     XLSX.writeFile(wb, "TradeJournal_Export.xlsx");
   };
 
-  // เปิด Modal ปิดออเดอร์
+  // เปิด Modal ปิดออเดอร์ (หรือแก้ไขออเดอร์ที่ปิดแล้ว)
   const handleOpenCloseModal = (trade) => {
     setSelectedTrade(trade);
-    setExitPrice(trade.entryPrice.toString()); // ตั้งค่าเริ่มต้นเป็นราคาเข้าซื้อ
-    setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
-    setNotes(trade.notes || '');
-    setQMarketTrend(1);
-    setQRelativeStrength(1);
-    setQSetupQuality(2);
-    setPlanAdherence("ตามแผนส่วนตัว (+100%)");
-    setAiResult(null);
+    if (trade.status === 'Closed') {
+      setExitPrice(trade.actualExitPrice ? trade.actualExitPrice.toString() : trade.entryPrice.toString());
+      setCloseShares(trade.shares.toString());
+      setNotes(trade.notes || '');
+      setQMarketTrend(trade.qMarketTrend !== undefined ? trade.qMarketTrend : 1);
+      setQRelativeStrength(trade.qRelativeStrength !== undefined ? trade.qRelativeStrength : 1);
+      setQSetupQuality(trade.qSetupQuality !== undefined ? trade.qSetupQuality : 2);
+      setPlanAdherence(trade.planAdherence || "ตามแผนส่วนตัว (+100%)");
+      setAiResult(trade.aiScore ? { aiScore: trade.aiScore, aiFeedback: trade.aiFeedback } : null);
+    } else {
+      setExitPrice(trade.entryPrice.toString()); // ตั้งค่าเริ่มต้นเป็นราคาเข้าซื้อ
+      setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
+      setNotes(trade.notes || '');
+      setQMarketTrend(1);
+      setQRelativeStrength(1);
+      setQSetupQuality(2);
+      setPlanAdherence("ตามแผนส่วนตัว (+100%)");
+      setAiResult(null);
+    }
   };
 
   // เรียกจำลองประเมินผลอัจฉริยะด้วย AI
@@ -182,6 +193,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       pnl,
       actualRR,
       contextScore: currentContextScore,
+      qMarketTrend,
+      qRelativeStrength,
+      qSetupQuality,
       planAdherence,
       planAdherenceScore: score,
       aiScore: finalAI.aiScore,
@@ -459,15 +473,22 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                       )}
                     </td>
                     
-                    {/* จัดการปุ่ม Close / Delete */}
+                    {/* จัดการปุ่ม Close / Edit / Delete */}
                     <td className="py-4 px-4 text-right font-sans">
                       <div className="flex justify-end gap-2">
-                        {!isClosed && (
+                        {!isClosed ? (
                           <button
                             onClick={() => handleOpenCloseModal(trade)}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded text-xs transition-colors cursor-pointer"
                           >
                             Close
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleOpenCloseModal(trade)}
+                            className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-800/80 font-bold px-3 py-1 rounded text-xs transition-colors cursor-pointer"
+                          >
+                            Edit
                           </button>
                         )}
                         <button
@@ -535,7 +556,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             {/* Header Modal */}
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
               <div>
-                <h3 className="text-lg font-bold text-emerald-650 dark:text-emerald-400">🚪 Close Trade Setup - {selectedTrade.symbol}</h3>
+                <h3 className="text-lg font-bold text-emerald-650 dark:text-emerald-400">
+                  {selectedTrade.status === 'Closed' ? '✏️ Edit Trade Setup' : '🚪 Close Trade Setup'} - {selectedTrade.symbol}
+                </h3>
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
                   {selectedTrade.direction} • {selectedTrade.shares.toFixed(4)} Shares
                 </p>
@@ -750,7 +773,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 onClick={handleConfirmClose}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
               >
-                Confirm Close Trade 🚪
+                {selectedTrade.status === 'Closed' ? 'Save Changes 💾' : 'Confirm Close Trade 🚪'}
               </button>
             </div>
 
