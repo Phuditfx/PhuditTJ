@@ -11,7 +11,8 @@ import {
   RANK_SYSTEM,
   getStoredProfile,
   saveProfile,
-  logoutUser
+  logoutUser,
+  getUserStatus
 } from './db/journalDB';
 import Dashboard from './components/Dashboard';
 import QuickOrderWidget from './components/QuickOrderWidget';
@@ -53,6 +54,15 @@ export default function App() {
     const loadData = async () => {
       if (currentUser) {
         setDataLoading(true);
+        
+        const status = await getUserStatus(currentUser);
+        if (status === 'pending') {
+          alert("⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
+          await logoutUser();
+          if (isMounted) setDataLoading(false);
+          return;
+        }
+
         const t = await getStoredTrades(currentUser);
         const b = await getStoredInitialBalance(currentUser);
         const rr = await getStoredTargetRR(currentUser);

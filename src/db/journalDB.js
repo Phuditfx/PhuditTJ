@@ -203,9 +203,10 @@ export const registerUser = async (email, password) => {
         await sendEmailVerification(userCredential.user);
         
         const userRef = doc(db, 'users', cleanEmail);
+        const initialStatus = cleanEmail === 'phudit.mahawongsanan@gmail.com' ? 'approved' : 'pending';
         await setDoc(userRef, {
             email: cleanEmail,
-            status: 'approved',
+            status: initialStatus,
             createdAt: new Date().toISOString(),
             initialBalance: 10000,
             targetRR: 20,
@@ -247,6 +248,20 @@ export const verifyUser = async (email, password) => {
             };
         }
         
+        // ตรวจสอบสถานะการอนุมัติจากแอดมินใน Firestore
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const userData = docSnap.data();
+            if (userData.status === 'pending') {
+                await signOut(auth);
+                return {
+                    success: false,
+                    error: '⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ (Admin) กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน'
+                };
+            }
+        }
+        
         return { success: true, user: user };
     } catch (error) {
         let msg = error.message;
@@ -264,6 +279,21 @@ export const sendVerificationEmail = async (email, password) => {
     } catch (error) {
         return { success: false, error: error.message };
     }
+};
+
+export const getUserStatus = async (email) => {
+    if (!email) return null;
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            return docSnap.data().status;
+        }
+    } catch (e) {
+        console.error("Error fetching user status:", e);
+    }
+    return null;
 };
 
 export const resetPassword = async (email) => {
