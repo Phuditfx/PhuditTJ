@@ -163,11 +163,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     const isLong = selectedTrade.direction === 'Long';
     const pnl = isLong ? (pExit - entry) * sharesToClose : (entry - pExit) * sharesToClose;
 
-    // คำนวณ RR ที่ทำได้จริง
+    // คำนวณ RR ที่ทำได้จริง (แก้ไขให้คำนวณจาก PnL / Risk ตั้งต้น)
     let actualRR = 0;
     const gap = Math.abs(entry - sl);
-    if (gap > 0) {
-      actualRR = isLong ? (pExit - entry) / gap : (entry - pExit) / gap;
+    // กรณีออเดอร์เก่าไม่มี plannedRisk จะคำนวณ Risk จาก gap * จำนวนหุ้นตั้งต้น
+    const initialRisk = selectedTrade.plannedRisk || (gap * originalShares);
+    
+    if (initialRisk > 0) {
+      actualRR = pnl / initialRisk;
     }
 
     const currentContextScore = calculateContextScore();
@@ -212,13 +215,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
         ...selectedTrade,
         id: 't-' + Date.now() + '-split', // สร้าง ID ใหม่
         shares: remainingShares,
+        isSplit: true,
         status: 'Open',
         actualExitPrice: null,
         pnl: 0,
         actualRR: 0,
         aiScore: null,
         aiFeedback: '',
-        notes: ''
+        notes: selectedTrade.notes ? selectedTrade.notes + '\n[ไม้แบ่งปิดออเดอร์]' : '[ไม้แบ่งปิดออเดอร์]'
       };
       if (onAddTrade) {
         onAddTrade(splitTrade);
@@ -419,15 +423,22 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                       {!isClosed ? (
                         <span className="text-slate-500">-</span>
                       ) : (
-                        <span className={`px-2 py-0.5 rounded font-black text-xs ${
-                          trade.actualRR >= 2 
-                            ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
-                            : trade.actualRR >= 0 
-                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
-                              : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                        }`}>
-                          {trade.actualRR.toFixed(4)} R
-                        </span>
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <span className={`px-2 py-0.5 rounded font-black text-xs ${
+                            trade.actualRR >= 2 
+                              ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                              : trade.actualRR >= 0 
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
+                                : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                          }`}>
+                            {trade.actualRR.toFixed(4)} R
+                          </span>
+                          {trade.isSplit && (
+                            <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
+                              SPLIT
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     

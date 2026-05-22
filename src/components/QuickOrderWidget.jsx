@@ -80,6 +80,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       stopLoss: pSl,
       takeProfit: parseFloat(tp) || 0,
       shares: actualShares,
+      plannedRisk: pRisk, // บันทึกเงิน Risk ของไม้แรกไว้ใช้อ้างอิง RR
       status: 'Open',
       contextScore: 5, // Default ค่อยแก้ตอนปิดดีล
       planAdherenceScore: 100, // Default ค่อยแก้ตอนปิดดีล
