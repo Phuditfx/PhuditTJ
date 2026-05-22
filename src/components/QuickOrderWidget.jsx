@@ -12,6 +12,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const [direction, setDirection] = useState('Long'); // Long or Short
   const [riskAmount, setRiskAmount] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [shareInputMode, setShareInputMode] = useState('calculated'); // 'calculated' | 'custom'
+  const [customShares, setCustomShares] = useState('');
 
   // เมื่อเปลี่ยนยศ ให้ดึงค่าความเสี่ยงขั้นต่ำเริ่มต้นของยศนั้นมาใช้
   useEffect(() => {
@@ -34,7 +36,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   
   // คำนวณจำนวนหุ้นทศนิยม 4 ตำแหน่ง (Fractional Shares)
   const fractionalShares = gap > 0 && pRisk > 0 ? (pRisk / gap).toFixed(4) : "0.0000";
-  const buyingPowerRequired = (parseFloat(fractionalShares) * pEntry).toFixed(2);
+  const actualShares = shareInputMode === 'calculated' ? parseFloat(fractionalShares) : (parseFloat(customShares) || 0);
+  const buyingPowerRequired = (actualShares * pEntry).toFixed(2);
 
   // คำนวณวงเงินสูงสุดของยศในการเข้าเทรด
   const maxBudget = accountBalance * (currentRank.maxAlloc / 100);
@@ -60,6 +63,10 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       setShowConfirm(true);
       return;
     }
+    if (actualShares <= 0) {
+      alert("กรุณาระบุจำนวนหุ้นให้มากกว่า 0");
+      return;
+    }
 
     performSave();
   };
@@ -72,7 +79,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       entryPrice: pEntry,
       stopLoss: pSl,
       takeProfit: parseFloat(tp) || 0,
-      shares: parseFloat(fractionalShares),
+      shares: actualShares,
       status: 'Open',
       contextScore: 5, // Default ค่อยแก้ตอนปิดดีล
       planAdherenceScore: 100, // Default ค่อยแก้ตอนปิดดีล
@@ -85,6 +92,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     updateShared('entry', '');
     updateShared('stopLoss', '');
     updateShared('tp1', '');
+    setCustomShares('');
+    setShareInputMode('calculated');
     setShowConfirm(false);
   };
 
@@ -191,8 +200,30 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       {/* Output Panel */}
       <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 p-4 rounded-lg flex flex-col gap-3">
         <div>
-          <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold">Shares to Purchase</div>
-          <div className="text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-1 select-all">{fractionalShares}</div>
+          <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">
+            <span>Shares to Purchase</span>
+            <div className="flex gap-1 bg-slate-200 dark:bg-slate-800 p-0.5 rounded-md shadow-inner">
+              <button 
+                onClick={() => setShareInputMode('calculated')}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${shareInputMode === 'calculated' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >Auto</button>
+              <button 
+                onClick={() => setShareInputMode('custom')}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${shareInputMode === 'custom' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >Custom</button>
+            </div>
+          </div>
+          {shareInputMode === 'calculated' ? (
+            <div className="text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-1 select-all">{fractionalShares}</div>
+          ) : (
+            <input 
+              type="number"
+              value={customShares}
+              onChange={(e) => setCustomShares(e.target.value)}
+              placeholder={fractionalShares}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-2 text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-indigo-500 w-full mt-1 placeholder-emerald-600/30 dark:placeholder-emerald-400/30"
+            />
+          )}
         </div>
 
         <div className="border-t border-slate-200 dark:border-slate-800/60 pt-3 flex flex-col gap-2">

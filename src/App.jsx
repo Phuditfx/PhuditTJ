@@ -225,16 +225,20 @@ export default function App() {
 
   // อัปเดตข้อมูลการเทรด (เช่น เมื่อปิดดีลเทรด)
   const handleUpdateTrade = (updatedTrade) => {
-    const updatedTrades = trades.map(t => t.id === updatedTrade.id ? updatedTrade : t);
-    setTrades(updatedTrades);
-    saveTrades(currentUser, updatedTrades);
+    setTrades(prevTrades => {
+      const updatedTradesList = prevTrades.map(t => t.id === updatedTrade.id ? updatedTrade : t);
+      saveTrades(currentUser, updatedTradesList);
+      return updatedTradesList;
+    });
   };
 
   // เพิ่มออเดอร์โดยตรง (เช่น จากการแบ่งปิดออเดอร์)
   const handleAddTradeDirect = (newTrade) => {
-    const updatedTrades = [newTrade, ...trades];
-    setTrades(updatedTrades);
-    saveTrades(currentUser, updatedTrades);
+    setTrades(prevTrades => {
+      const updatedTradesList = [newTrade, ...prevTrades];
+      saveTrades(currentUser, updatedTradesList);
+      return updatedTradesList;
+    });
   };
 
   // ระบบ Global Confirm Modal
