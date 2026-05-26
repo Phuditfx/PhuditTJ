@@ -1,16 +1,53 @@
-# React + Vite
+# Phudit Trade Journal (Gamified Trader Station & AI Coach)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Welcome to the **Phudit Trade Journal**, a professional, gamified trading journal and analysis platform designed for swing traders.
 
-Currently, two official plugins are available:
+## 🚀 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 1. 📊 Gamified Dashboard & Rank System
+- Set your **Initial Balance** and track your real-time **Account Balance**.
+- Automatic **Rank Level** progression based on your portfolio value.
+- Visual progress bars and performance metrics.
 
-## React Compiler
+### 2. ⚡ Alpha Trader (TI Swing Pick Optimizer)
+- **Deep Dark Aesthetic:** Professional interface with sharp edges and neon accents.
+- **TradingView Integration:** Live embedded charts defaulting to TF60 (1-hour timeframe) syncing automatically with your input ticker.
+- **TI Entry Alert Tracking:** Log the Day Breakout price and compare it with your actual Custom Entry (TF60) to measure precision (Variance %).
+- **Smart Calculators:** 
+  - **Quick SL:** Instant Stop Loss calculation (-1%, -2%, -3%, -5%).
+  - **🤖 AI Auto-SL (Beta):** Heuristic proxy swing low calculation (-2.5%).
+  - **Auto-TP:** Dynamic Take Profit targets (1R, 2R, 3R) based on your Entry and SL.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 3. 📓 Intelligent Trade Journal
+- Log your trades via the **Quick Order Widget**.
+- Track your Entry, Exit, SL, TP, Shares, PnL, and Actual RR.
+- **Variance Tracking:** Shows whether your entry was sharper (cheaper) or more expensive compared to the Day Breakout (TI Entry).
+- **AI Coach Evaluation:** Upon closing a trade, complete a quick Context Score Survey (Market Trend, Relative Strength, Setup Quality). The AI will generate a score out of 10 and provide feedback based on your plan adherence and performance.
+- Export your trading history to **Excel** for further analysis.
 
-## Expanding the ESLint configuration
+### 4. 👑 Owner Dashboard
+- Exclusive access for the system administrator (`phudit.mahawongsanan@gmail.com`) to monitor global user statistics, active users, and system-wide metrics.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Technology Stack
+- **Frontend:** React (Vite), TailwindCSS
+- **Backend/Database:** Firebase Authentication, LocalStorage (for fast, decentralized local data saving per user)
+- **Tools:** TradingView Advanced Chart Widget, XLSX for Excel exports
+
+## 💻 Running Locally
+
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start Development Server:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Build for Production:**
+   ```bash
+   npm run build
+   ```
+
+*Designed and optimized for professional trading performance.*
