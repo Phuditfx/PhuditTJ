@@ -1,6 +1,6 @@
 import { db, auth } from '../firebaseConfig';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 
 // ตารางยศและข้อจำกัดของพอร์ต (อ้างอิงจาก Dashboard.js เดิม)
 export const RANK_SYSTEM = [
@@ -199,9 +199,6 @@ export const registerUser = async (email, password) => {
         const cleanEmail = email.trim().toLowerCase();
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         
-        // ส่งอีเมลยืนยันตัวตน
-        await sendEmailVerification(userCredential.user);
-        
         const userRef = doc(db, 'users', cleanEmail);
         const initialStatus = cleanEmail === 'phudit.mahawongsanan@gmail.com' ? 'approved' : 'pending';
         await setDoc(userRef, {
@@ -218,10 +215,10 @@ export const registerUser = async (email, password) => {
             }
         });
         
-        // Sign out ทันทีหลังจากลงทะเบียน เพื่อบังคับให้ผู้ใช้ต้องยืนยันอีเมลก่อนเข้าสู่ระบบ
+        // Sign out ทันทีหลังจากลงทะเบียน เพื่อบังคับให้ผู้ใช้ต้องรออนุมัติก่อนเข้าสู่ระบบ
         await signOut(auth);
         
-        return { success: true, needsVerification: true, user: userCredential.user };
+        return { success: true, user: userCredential.user };
     } catch (error) {
         let msg = error.message;
         if (error.code === 'auth/email-already-in-use') msg = 'อีเมลนี้ถูกใช้งานแล้ว';
@@ -236,18 +233,6 @@ export const verifyUser = async (email, password) => {
         const cleanEmail = email.trim().toLowerCase();
         const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
         const user = userCredential.user;
-        
-        if (!user.emailVerified) {
-            // ถ้ายืนยันอีเมลยังไม่สำเร็จ ให้แจ้งเตือนและ Sign out
-            alert('⚠️ กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ (เช็คที่กล่องจดหมาย หรือ Junk/Spam)');
-            await signOut(auth);
-            return { 
-                success: false, 
-                error: 'กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ (เช็คที่กล่องจดหมาย หรือ Junk/Spam)', 
-                needsVerification: true,
-                user: user
-            };
-        }
         
         // ตรวจสอบสถานะการอนุมัติจากแอดมินใน Firestore
         const userRef = doc(db, 'users', cleanEmail);
@@ -272,16 +257,6 @@ export const verifyUser = async (email, password) => {
     }
 };
 
-export const sendVerificationEmail = async (email, password) => {
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        await sendEmailVerification(userCredential.user);
-        await signOut(auth);
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-};
 
 export const getUserStatus = async (email) => {
     if (!email) return null;

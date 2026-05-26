@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { registerUser, verifyUser, sendVerificationEmail, resetPassword } from '../db/journalDB';
+import { registerUser, verifyUser, resetPassword } from '../db/journalDB';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -9,7 +9,6 @@ export default function Login({ onLogin }) {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [needsVerification, setNeedsVerification] = useState(false);
 
   const isRegistering = activeTab === 'register';
 
@@ -18,14 +17,12 @@ export default function Login({ onLogin }) {
     setEmail(val);
     setError('');
     setSuccessMsg('');
-    setNeedsVerification(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
-    setNeedsVerification(false);
     
     const cleanEmail = email.trim().toLowerCase();
     
@@ -52,13 +49,9 @@ export default function Login({ onLogin }) {
     if (isRegistering) {
       const res = await registerUser(cleanEmail, password);
       if (res.success) {
-        if (res.needsVerification) {
-          setSuccessMsg("สมัครสมาชิกสำเร็จ! ระบบได้ส่งอีเมลยืนยันตัวตนไปยังอีเมลของคุณแล้ว กรุณากดยืนยันก่อนเข้าสู่ระบบ");
-          setActiveTab('login'); // เปลี่ยนกลับเป็นโหมดล็อคอิน
-          setPassword('');
-        } else {
-          if (onLogin) onLogin(cleanEmail, rememberMe);
-        }
+        setSuccessMsg("สมัครสมาชิกสำเร็จ! บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณารอการยืนยันก่อนเข้าใช้งาน");
+        setActiveTab('login'); // เปลี่ยนกลับเป็นโหมดล็อคอิน
+        setPassword('');
       } else {
         setError(res.error);
       }
@@ -68,29 +61,11 @@ export default function Login({ onLogin }) {
         if (onLogin) onLogin(cleanEmail, rememberMe);
       } else {
         setError(res.error || "รหัสผ่านไม่ถูกต้อง");
-        if (res.needsVerification) {
-            setNeedsVerification(true);
-        }
       }
     }
   };
 
-  const handleResendVerification = async () => {
-      setError('');
-      setSuccessMsg('');
-      const cleanEmail = email.trim().toLowerCase();
-      if (!cleanEmail || !password) {
-          setError("กรุณากรอกอีเมลและรหัสผ่านเพื่อส่งอีเมลยืนยันอีกครั้ง");
-          return;
-      }
-      const res = await sendVerificationEmail(cleanEmail, password);
-      if (res.success) {
-          setSuccessMsg("ส่งอีเมลยืนยันตัวตนซ้ำสำเร็จแล้ว! กรุณาตรวจสอบกล่องจดหมายของคุณ");
-          setNeedsVerification(false);
-      } else {
-          setError(res.error);
-      }
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 selection:bg-indigo-500/30 transition-colors duration-300">
@@ -174,15 +149,7 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
-          {needsVerification && (
-            <button 
-              type="button"
-              onClick={handleResendVerification}
-              className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2 rounded-lg transition-all text-xs border border-slate-200 dark:border-slate-700 cursor-pointer mt-1"
-            >
-              📧 ส่งอีเมลยืนยันตัวตนอีกครั้ง
-            </button>
-          )}
+
 
           {!isResettingPassword && (
             <div className="flex items-center gap-2 mt-2">
