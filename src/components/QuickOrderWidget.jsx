@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab }) {
-  const { symbol, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
-    symbol: 'AAPL', entry: '', stopLoss: '', tp1: ''
+  const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
+    symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: ''
   };
 
   const updateShared = (key, value) => {
@@ -78,6 +78,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     const tradeData = {
       symbol: symbol.toUpperCase(),
       direction,
+      tiEntryAlert: parseFloat(tiEntryAlert) || 0,
       entryPrice: pEntry,
       stopLoss: pSl,
       takeProfit: parseFloat(tp) || 0,
@@ -92,6 +93,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     
     // เคลียร์ค่าฟอร์มบางส่วนเพื่อความสะดวก
     updateShared('symbol', 'AAPL');
+    updateShared('tiEntryAlert', '');
     updateShared('entry', '');
     updateShared('stopLoss', '');
     updateShared('tp1', '');
@@ -119,6 +121,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             type="text" 
             value={symbol} 
             onChange={e => updateShared('symbol', e.target.value.toUpperCase())} 
+            onFocus={(e) => e.target.select()}
             placeholder="AAPL"
             className="bg-slate-50 dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 uppercase" 
           />
@@ -144,6 +147,18 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
 
       {/* Entry, Stop Loss, Take Profit */}
       <div className="flex flex-col gap-3">
+        {/* Row for TI Entry Alert (Full width or split) */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] text-amber-600 dark:text-amber-400 uppercase font-semibold">TI Entry Alert ($) <span className="text-[9px] text-slate-500">(Day Breakout)</span></label>
+          <input 
+            type="number" 
+            value={tiEntryAlert} 
+            onChange={e => updateShared('tiEntryAlert', e.target.value)} 
+            onFocus={(e) => e.target.select()}
+            placeholder="152"
+            className="bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-900/50 font-mono text-amber-700 dark:text-amber-400 font-bold text-sm focus:outline-none focus:border-amber-500" 
+          />
+        </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry ($)</label>
@@ -151,6 +166,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
               type="number" 
               value={entry} 
               onChange={e => updateShared('entry', e.target.value)} 
+              onFocus={(e) => e.target.select()}
               placeholder="150"
               className="bg-slate-50 dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 font-mono text-emerald-600 dark:text-emerald-400 font-bold text-sm focus:outline-none focus:border-emerald-500" 
             />
@@ -161,6 +177,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
               type="number" 
               value={sl} 
               onChange={e => updateShared('stopLoss', e.target.value)} 
+              onFocus={(e) => e.target.select()}
               placeholder="145"
               className="bg-slate-50 dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 font-mono text-rose-600 dark:text-rose-400 font-bold text-sm focus:outline-none focus:border-rose-500" 
             />
@@ -171,6 +188,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
               type="number" 
               value={tp} 
               onChange={e => updateShared('tp1', e.target.value)} 
+              onFocus={(e) => e.target.select()}
               placeholder="165"
               className="bg-slate-50 dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 font-mono text-indigo-600 dark:text-indigo-400 font-bold text-sm focus:outline-none focus:border-indigo-500" 
             />
@@ -191,6 +209,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             type={activeTab === 'fighter' ? "text" : "number"} 
             value={activeTab === 'fighter' ? (sharedOrder?.actualRiskDollar !== undefined ? `$${sharedOrder.actualRiskDollar.toFixed(2)}` : 'Synced') : riskAmount} 
             onChange={e => setRiskAmount(e.target.value)} 
+            onFocus={(e) => { if(activeTab !== 'fighter') e.target.select() }}
             disabled={activeTab === 'fighter'}
             placeholder={currentRank?.risk1?.toString()}
             className={`font-mono text-rose-600 dark:text-rose-400 font-bold text-sm focus:outline-none focus:border-indigo-500 p-2.5 rounded border ${
@@ -232,6 +251,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
               type="number"
               value={customShares}
               onChange={(e) => setCustomShares(e.target.value)}
+              onFocus={(e) => e.target.select()}
               placeholder={fractionalShares}
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-2 text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-indigo-500 w-full mt-1 placeholder-emerald-600/30 dark:placeholder-emerald-400/30"
             />

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 export default function FighterComponent({ accountBalance, sharedOrder, setSharedOrder }) {
   // Use sharedOrder state from parent (App.jsx)
-  const { symbol, entry, stopLoss, tp1, tp2, tp3 } = sharedOrder || {
-    symbol: 'AAPL', entry: 150, stopLoss: 145, tp1: 165, tp2: 180, tp3: 195
+  const { symbol, tiEntryAlert, entry, stopLoss, tp1, tp2, tp3 } = sharedOrder || {
+    symbol: 'AAPL', tiEntryAlert: '', entry: 150, stopLoss: 145, tp1: 165, tp2: 180, tp3: 195
   };
 
   const updateShared = (key, value) => {
@@ -24,6 +24,24 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
   const [riskDollar, setRiskDollar] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusColor, setStatusColor] = useState('');
+
+  const handleQuickSL = (percent) => {
+    const pEntry = parseFloat(entry) || 0;
+    if (pEntry > 0) {
+      const newSl = pEntry * (1 - (percent / 100));
+      updateShared('stopLoss', newSl.toFixed(2));
+    }
+  };
+
+  const handleAutoSL = () => {
+    const pEntry = parseFloat(entry) || 0;
+    if (pEntry > 0) {
+      const newSl = pEntry * 0.975; // Heuristic: -2.5% for swing low proxy
+      updateShared('stopLoss', newSl.toFixed(2));
+      setStatusMessage('🤖 AI แนะนำจุด SL ที่ -2.5% (Approx. Swing Low)');
+      setStatusColor('text-amber-400 bg-amber-950/30 border-amber-500/50');
+    }
+  };
 
   // ⚡ คำนวณ Position Sizing Engine อัตโนมัติเมื่อค่าเปลี่ยน
   useEffect(() => {
@@ -138,138 +156,191 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg flex flex-col gap-6 relative overflow-hidden transition-colors duration-300">
-      <div className="absolute top-0 right-0 w-36 h-36 bg-indigo-500/5 rounded-full blur-3xl"></div>
+    <div className="bg-slate-950 dark:bg-[#0a0a0a] border border-slate-800 dark:border-amber-900/50 rounded-sm p-6 shadow-2xl flex flex-col gap-6 relative overflow-hidden transition-colors duration-300">
+      <div className="absolute top-0 right-0 w-36 h-36 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Header */}
-      <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800/80 pb-4">
+      <div className="flex justify-between items-center border-b border-slate-800 pb-4 relative z-10">
         <div>
-          <h2 className="text-xl font-bold tracking-wide text-indigo-650 dark:text-indigo-400">⚡ FIGHTER POSITION ENGINE 2.0</h2>
-          <p className="text-slate-550 dark:text-slate-400 text-xs mt-1">เครื่องคำนวณตำแหน่งซื้อ (Position Sizing) และจัดทำแผนเป้าหมายกำไรอย่างเป็นระบบ</p>
+          <h2 className="text-xl font-black tracking-widest text-amber-500 flex items-center gap-2">
+            <span>⚡ ALPHA TRADER</span>
+            <span className="text-slate-300 text-lg font-bold">| TI SWING PICK OPTIMIZER</span>
+          </h2>
+          <p className="text-slate-400 text-xs mt-1 font-medium">เครื่องมือปรับจูนจุดเข้าซื้อและ Risk/Reward (RR) สำหรับการทำกำไรระยะสั้น (TF60/TF15)</p>
         </div>
-        <div className="bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800/80 text-right shadow-inner">
-          <span className="text-[10px] text-slate-500 block font-semibold">Active Balance</span>
-          <span className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">${accountBalance.toLocaleString()}</span>
+        <div className="bg-[#111] px-4 py-2 rounded-sm border border-slate-800 text-right shadow-inner">
+          <span className="text-[10px] text-amber-600/70 block font-black uppercase tracking-widest">Active Balance</span>
+          <span className="text-lg font-mono font-black text-amber-500">${accountBalance.toLocaleString()}</span>
         </div>
       </div>
 
       {/* Grid โซนกรอกข้อมูลอินพุต */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800/60">
-          <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1.5 uppercase font-bold">SYMBOL</label>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 relative z-10">
+        <div className="bg-[#111] p-3 rounded-sm border border-slate-800">
+          <label className="text-[10px] text-slate-500 block mb-1.5 uppercase font-bold tracking-wider">SYMBOL</label>
           <input 
             type="text" 
             value={symbol} 
             onChange={(e) => updateShared('symbol', e.target.value.toUpperCase())} 
-            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-2 font-mono font-bold text-indigo-650 dark:text-indigo-300 focus:outline-none focus:border-indigo-500 text-sm uppercase text-slate-800 dark:text-white" 
+            onFocus={(e) => e.target.select()}
+            className="w-full bg-[#0a0a0a] border border-slate-700 rounded-sm p-2 font-mono font-black text-amber-500 focus:outline-none focus:border-amber-500 text-sm uppercase shadow-inner" 
           />
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800/60">
-          <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1.5 uppercase font-bold">ENTRY PRICE ($)</label>
+        <div className="bg-[#111] p-3 rounded-sm border border-slate-800 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-amber-600"></div>
+          <label className="text-[10px] text-amber-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">TI ENTRY ALERT</label>
+          <input 
+            type="number" 
+            value={tiEntryAlert} 
+            onChange={(e) => updateShared('tiEntryAlert', e.target.value)} 
+            onFocus={(e) => e.target.select()}
+            placeholder="Day Breakout"
+            className="w-full bg-[#0a0a0a] border border-amber-900/50 rounded-sm p-2 font-mono font-black text-amber-400 focus:outline-none focus:border-amber-500 text-sm shadow-inner" 
+          />
+        </div>
+
+        <div className="bg-[#111] p-3 rounded-sm border border-slate-800 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-600"></div>
+          <label className="text-[10px] text-emerald-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">CUSTOM ENTRY (TF60)</label>
           <input 
             type="number" 
             value={entry} 
             onChange={(e) => updateShared('entry', e.target.value)} 
-            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-2 font-mono text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 text-sm text-slate-800 dark:text-white" 
+            onFocus={(e) => e.target.select()}
+            className="w-full bg-[#0a0a0a] border border-emerald-900/50 rounded-sm p-2 font-mono font-black text-emerald-400 focus:outline-none focus:border-emerald-500 text-sm shadow-inner" 
           />
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800/60">
-          <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1.5 uppercase font-bold">STOP LOSS ($)</label>
+        <div className="bg-[#111] p-3 rounded-sm border border-slate-800 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>
+          <label className="text-[10px] text-rose-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">CUSTOM SL (TF60)</label>
           <input 
             type="number" 
             value={stopLoss} 
             onChange={(e) => updateShared('stopLoss', e.target.value)} 
-            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-2 font-mono text-rose-600 dark:text-rose-450 font-bold focus:outline-none focus:border-rose-500 text-sm text-slate-800 dark:text-white" 
+            onFocus={(e) => e.target.select()}
+            className="w-full bg-[#0a0a0a] border border-rose-900/50 rounded-sm p-2 font-mono font-black text-rose-500 focus:outline-none focus:border-rose-500 text-sm shadow-inner" 
           />
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800/60 flex flex-col justify-center">
-          <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-2 uppercase font-bold">🔓 SIMULATE BUDGET LIMIT</label>
+        <div className="bg-[#111] p-3 rounded-sm border border-slate-800 flex flex-col justify-center">
+          <label className="text-[10px] text-slate-500 block mb-2 uppercase font-bold tracking-wider text-center">🔓 SIM LIMIT</label>
           <button 
             onClick={() => setIsUnlocked(!isUnlocked)} 
-            className={`w-full py-2 px-4 rounded font-bold text-xs transition-all cursor-pointer border border-solid ${
+            className={`w-full py-2 px-2 rounded-sm font-black text-[10px] transition-all cursor-pointer border ${
               isUnlocked 
-                ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-md shadow-amber-500/20' 
-                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 text-slate-550 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750'
+                ? 'bg-amber-500 text-black border-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.3)]' 
+                : 'bg-[#222] text-slate-400 border-slate-700 hover:bg-[#333]'
             }`}
           >
-            {isUnlocked ? '⚡ UNLOCKED (ACTIVE)' : '🔒 LOCKED (NORMAL)'}
+            {isUnlocked ? '⚡ UNLOCKED' : '🔒 NORMAL'}
           </button>
         </div>
       </div>
 
-      {/* โหมดการเลือกคำนวณ Sizing */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-slate-50 dark:bg-slate-950/40 p-5 rounded-lg border border-slate-200 dark:border-slate-800/60 lg:col-span-2">
-          <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-2.5 uppercase font-bold">SIZING INPUT MODE</label>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {['Budget', 'Risk($)', 'Risk(%)'].map((mode) => (
-              <button 
-                key={mode} 
-                onClick={() => setSizingMode(mode)} 
-                className={`py-2 rounded text-xs font-bold transition-all cursor-pointer border border-solid ${
-                  sizingMode === mode 
-                    ? 'bg-indigo-600 text-white border-indigo-700 shadow' 
-                    : 'bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-900'
-                }`}
-              >
-                {mode === 'Budget' ? '💰 BUDGET LIMIT' : mode === 'Risk($)' ? '💵 RISK AMOUNT ($)' : '📊 RISK PORTFOLIO (%)'}
-              </button>
-            ))}
+      {/* โหมดการเลือกคำนวณ Sizing & SL Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-10">
+        <div className="bg-[#111] p-4 rounded-sm border border-slate-800 lg:col-span-2 flex flex-col gap-4">
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-2 uppercase font-bold tracking-widest">SIZING INPUT MODE</label>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {['Budget', 'Risk($)', 'Risk(%)'].map((mode) => (
+                <button 
+                  key={mode} 
+                  onClick={() => setSizingMode(mode)} 
+                  className={`py-2 rounded-sm text-xs font-black transition-all cursor-pointer border ${
+                    sizingMode === mode 
+                      ? 'bg-amber-600 text-white border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]' 
+                      : 'bg-[#222] text-slate-400 border-slate-700 hover:bg-[#333]'
+                  }`}
+                >
+                  {mode === 'Budget' ? '💰 BUDGET' : mode === 'Risk($)' ? '💵 RISK ($)' : '📊 RISK (%)'}
+                </button>
+              ))}
+            </div>
+            <input 
+              type="number" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.target.value)} 
+              onFocus={(e) => e.target.select()}
+              className="w-full bg-[#0a0a0a] border border-slate-700 rounded-sm p-3 font-mono font-black text-xl text-center text-white focus:outline-none focus:border-amber-500 shadow-inner" 
+              placeholder="0.00" 
+            />
           </div>
-          <input 
-            type="number" 
-            value={inputValue} 
-            onChange={(e) => setInputValue(e.target.value)} 
-            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-3 font-mono font-bold text-xl text-center text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" 
-            placeholder="กรอกจำนวนเงินตามโหมดที่เลือก..." 
-          />
+          
+          <div className="border-t border-slate-800 pt-3">
+            <label className="text-[10px] text-slate-500 block mb-2 uppercase font-bold tracking-widest">QUICK SL ASSISTANT</label>
+            <div className="flex gap-2">
+              <button onClick={handleAutoSL} className="flex-1 bg-indigo-900/40 text-indigo-400 border border-indigo-500/50 hover:bg-indigo-900/60 rounded-sm py-1.5 text-[10px] font-black uppercase transition-colors cursor-pointer flex items-center justify-center gap-1">
+                🤖 AI Auto-SL
+              </button>
+              {[-1, -2, -3, -5].map(pct => (
+                <button key={pct} onClick={() => handleQuickSL(Math.abs(pct))} className="flex-1 bg-[#222] text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-sm py-1.5 text-[10px] font-black transition-colors cursor-pointer">
+                  {pct}%
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* แผงแสดงผลลัพธ์แบบเรียลไทม์ */}
-        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 p-5 rounded-lg grid grid-cols-2 gap-4 shadow-inner">
-          <div className="text-center border-r border-slate-200 dark:border-slate-800/60 flex flex-col justify-center">
-            <span className="text-[10px] text-slate-500 block uppercase font-bold">FRACTIONAL SHARES</span>
-            <span className="text-2xl font-mono font-bold text-slate-800 dark:text-white mt-1 select-all">{shares.toFixed(4)}</span>
+        <div className="bg-[#0a0a0a] border border-amber-900/40 p-4 rounded-sm grid grid-cols-2 gap-3 shadow-[inset_0_0_20px_rgba(245,158,11,0.05)]">
+          <div className="text-center border-r border-slate-800 flex flex-col justify-center">
+            <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">SHARES</span>
+            <span className="text-2xl font-mono font-black text-white mt-1 select-all">{shares.toFixed(4)}</span>
           </div>
           <div className="text-center flex flex-col justify-center">
-            <span className="text-[10px] text-slate-500 block uppercase font-bold">ACTUAL RISK $</span>
-            <span className="text-2xl font-mono font-bold text-rose-600 dark:text-rose-455 mt-1">${riskDollar.toFixed(2)}</span>
+            <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">ACTUAL RISK $</span>
+            <span className="text-2xl font-mono font-black text-rose-500 mt-1">${riskDollar.toFixed(2)}</span>
           </div>
-          <div className="col-span-2 text-center pt-3.5 border-t border-slate-200 dark:border-slate-800/60">
-            <span className="text-[10px] text-slate-500 block uppercase font-bold">Calculated Buying Power</span>
-            <span className="text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-1 block">
+          <div className="col-span-2 text-center pt-3 border-t border-slate-800">
+            <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Buying Power</span>
+            <span className="text-xl font-mono font-black text-amber-500 mt-1 block drop-shadow-[0_0_5px_rgba(245,158,11,0.4)]">
               ${calcBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>
       </div>
 
+      {/* TradingView Advanced Chart Widget */}
+      <div className="w-full h-[400px] rounded-sm overflow-hidden border border-slate-800 bg-[#0a0a0a] relative z-10">
+        {symbol ? (
+          <iframe 
+            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${symbol}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Asia%2FBangkok&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=${symbol}`}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title="TradingView Chart"
+          ></iframe>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold text-sm">
+            กรุณากรอก Symbol เพื่อโหลดกราฟ TF60
+          </div>
+        )}
+      </div>
+
       {/* แถบแจ้งเตือนสถานะการเงิน (Status Box) */}
-      <div className={`p-3 rounded border text-xs font-semibold tracking-wide text-center transition-all ${statusColor}`}>
+      <div className={`p-2 rounded-sm border text-[11px] font-bold tracking-wide text-center transition-all ${statusColor} relative z-10 uppercase`}>
         {statusMessage}
       </div>
 
       {/* ส่วนที่ 2: ระบบบริหารจัดการเป้าหมายราคาและการแบ่งขาย (Take Profit Plan) */}
-      <div className="border-t border-slate-200 dark:border-slate-800/60 pt-6">
+      <div className="border-t border-slate-800 pt-5 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <div>
-            <h3 className="text-base font-bold text-indigo-650 dark:text-indigo-400 flex items-center gap-1.5">
-              <span>🎯 TARGET PRICE MANAGEMENT (TAKE PROFIT)</span>
+            <h3 className="text-sm font-black tracking-widest text-amber-500 flex items-center gap-2">
+              <span>🎯 AUTO TP CALCULATOR (1:1 / 1:2 / 1:3)</span>
             </h3>
-            <p className="text-xs text-slate-550 dark:text-slate-400 mt-1">จำลองผลลัพธ์แผนการขายทำกำไร 3 รูปแบบตามระดับเป้าหมายราคา (Cash Out / Moonbag / Split)</p>
+            <p className="text-[11px] text-slate-400 mt-1">เป้าหมายกำไรจากการคำนวณ RR อัตโนมัติ (Custom Entry - Custom SL)</p>
           </div>
-          <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800/80 shadow-inner">
+          <div className="flex gap-1 bg-[#111] p-1 rounded-sm border border-slate-800 shadow-inner">
             {['Cash (All Out)', 'Moonbag (Free Share)', '50/50 Split'].map((mode) => (
               <button 
                 key={mode} 
                 onClick={() => setPortfolioMode(mode)} 
-                className={`px-3 py-1.5 rounded text-[11px] font-bold transition-all cursor-pointer border border-transparent ${
+                className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase transition-all cursor-pointer border ${
                   portfolioMode === mode 
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow border-slate-200 dark:border-slate-700' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-amber-600 text-black shadow border-amber-500' 
+                    : 'border-transparent text-slate-500 hover:text-slate-300'
                 }`}
               >
                 {mode}
@@ -279,25 +350,26 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
         </div>
 
         {/* ตารางแสดงผลลัพธ์รายเป้าหมายราคา */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { id: 'TP1', price: tp1, setPrice: (v) => updateShared('tp1', v), color: 'text-emerald-650 dark:text-emerald-400' },
-            { id: 'TP2', price: tp2, setPrice: (v) => updateShared('tp2', v), color: 'text-teal-600 dark:text-teal-400' },
-            { id: 'TP3', price: tp3, setPrice: (v) => updateShared('tp3', v), color: 'text-indigo-600 dark:text-indigo-400' },
+            { id: 'TP1 (1R)', price: tp1, setPrice: (v) => updateShared('tp1', v), color: 'text-emerald-500', glow: 'shadow-[0_0_10px_rgba(16,185,129,0.1)]' },
+            { id: 'TP2 (2R)', price: tp2, setPrice: (v) => updateShared('tp2', v), color: 'text-teal-400', glow: 'shadow-[0_0_10px_rgba(45,212,191,0.1)]' },
+            { id: 'TP3 (3R)', price: tp3, setPrice: (v) => updateShared('tp3', v), color: 'text-indigo-400', glow: 'shadow-[0_0_10px_rgba(129,140,248,0.1)]' },
           ].map((tp) => (
-            <div key={tp.id} className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800/60 flex flex-col justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-sm">
+            <div key={tp.id} className={`bg-[#111] p-4 rounded-sm border border-slate-800 flex flex-col justify-between gap-3 transition-all ${tp.glow} hover:border-slate-600`}>
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{tp.id} TARGET PRICE</span>
-                <input 
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{tp.id} TARGET</span>
+                  <input 
                   type="number" 
                   value={tp.price} 
                   onChange={(e) => tp.setPrice(e.target.value)} 
-                  className={`w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-1 text-center font-mono font-bold text-sm ${tp.color} focus:outline-none focus:border-indigo-500`} 
+                  onFocus={(e) => e.target.select()}
+                  className={`w-24 bg-[#0a0a0a] border border-slate-700 rounded-sm p-1 text-center font-mono font-black text-sm ${tp.color} focus:outline-none focus:border-amber-500`} 
                 />
               </div>
 
-              <div className="bg-white dark:bg-slate-950 p-4 rounded border border-slate-200 dark:border-slate-850 min-h-[76px] flex items-center justify-center text-center shadow-inner">
-                <span className="font-mono text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed">
+              <div className="bg-[#0a0a0a] p-3 rounded-sm border border-slate-800 min-h-[64px] flex items-center justify-center text-center shadow-inner">
+                <span className="font-mono text-xs font-bold text-slate-300 leading-relaxed">
                   {evaluate3WayResult(tp.price, portfolioMode)}
                 </span>
               </div>

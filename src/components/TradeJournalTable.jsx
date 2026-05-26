@@ -345,7 +345,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               <th className="py-3 px-4">Date/Time</th>
               <th className="py-3 px-3">Symbol</th>
               <th className="py-3 px-3">Dir</th>
-              <th className="py-3 px-3 text-right">Entry / Exit</th>
+              <th className="py-3 px-3 text-right">TI / Entry / Exit</th>
               <th className="py-3 px-3 text-right">SL / TP</th>
               <th className="py-3 px-3 text-right">Shares</th>
               <th className="py-3 px-3 text-right">PnL ($)</th>
@@ -390,9 +390,19 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     
                     {/* ราคาเข้า/ออก */}
                     <td className="py-4 px-3 text-right">
-                      <div className="text-slate-700 dark:text-slate-300 font-bold">${trade.entryPrice.toFixed(2)}</div>
+                      {trade.tiEntryAlert > 0 && (
+                        <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mb-0.5">TI: ${trade.tiEntryAlert.toFixed(2)}</div>
+                      )}
+                      <div className="text-slate-700 dark:text-slate-300 font-bold">
+                        En: ${trade.entryPrice.toFixed(2)}
+                        {trade.tiEntryAlert > 0 && (
+                          <span className={`ml-1 text-[9px] ${trade.entryPrice <= trade.tiEntryAlert ? (trade.direction === 'Long' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400') : (trade.direction === 'Long' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}`} title="Variance from Day Breakout">
+                            ({trade.entryPrice < trade.tiEntryAlert ? '-' : '+'}{Math.abs(((trade.entryPrice - trade.tiEntryAlert)/trade.tiEntryAlert)*100).toFixed(2)}%)
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-slate-405 dark:text-slate-500">
-                        {isClosed ? `Exit: $${trade.actualExitPrice.toFixed(2)}` : 'Active'}
+                        {isClosed ? `Ex: $${trade.actualExitPrice.toFixed(2)}` : 'Active'}
                       </div>
                     </td>
                     

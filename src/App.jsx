@@ -173,6 +173,7 @@ export default function App() {
   // Shared State ระหว่าง Fighter Engine และ Quick Order Widget
   const [sharedOrder, setSharedOrder] = useState({
     symbol: 'AAPL',
+    tiEntryAlert: 152, // จุด Breakout ของ Day
     entry: 150,
     stopLoss: 145,
     tp1: 165,
