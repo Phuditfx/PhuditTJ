@@ -319,15 +319,17 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       )}
     </div>
 
-    {/* 🔥 Floating Action Button (FAB) สำหรับกดบันทึกได้ทุกที่ */}
-    <button
-      onClick={handleSave}
-      className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-full p-4 shadow-[0_8px_30px_rgba(0,82,255,0.4)] flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 cursor-pointer border-2 border-white/20 dark:border-white/10 group"
-      title="Save Trade"
-    >
-      <span className="text-xl">💾</span>
-      <span className="font-extrabold text-sm uppercase tracking-wider hidden md:block group-hover:block px-2">Log to Journal</span>
-    </button>
+    {/* 🔥 Floating Action Button (FAB) สำหรับกดบันทึกได้ทุกที่ (แสดงเฉพาะหน้า Fighter) */}
+    {activeTab === 'fighter' && (
+      <button
+        onClick={handleSave}
+        className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-full p-4 shadow-[0_8px_30px_rgba(0,82,255,0.4)] flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 cursor-pointer border-2 border-white/20 dark:border-white/10 group"
+        title="Save Trade"
+      >
+        <span className="text-xl">💾</span>
+        <span className="font-extrabold text-sm uppercase tracking-wider hidden md:block group-hover:block px-2">Log to Journal</span>
+      </button>
+    )}
     </>
   );
 }
