@@ -233,7 +233,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg flex flex-col gap-6 transition-all duration-300">
+    <div className="crypto-card p-6 flex flex-col gap-6 transition-all duration-300">
       
       {/* ส่วนหัวของตาราง พร้อมตัวค้นหาและปุ่มเลือกฟิลเตอร์ */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-800/85 pb-4">
@@ -540,7 +540,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
           const t = trades.find(tr => tr.id === activeFeedbackTradeId);
           if (!t) return null;
           return (
-            <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 p-4 rounded-lg flex flex-col gap-2 relative animate-fade-in glow-card-indigo">
+            <div className="crypto-card p-4 flex flex-col gap-2 relative animate-fade-in">
               <div className="flex justify-between items-center border-b border-indigo-200 dark:border-indigo-900/40 pb-2">
                 <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1.5">
                   <span>⚡ AI Coach Feedback for {t.symbol}</span>
@@ -572,7 +572,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (
         <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 relative glow-card-emerald max-h-[90vh] overflow-y-auto">
+          <div className="crypto-card p-6 max-w-lg w-full flex flex-col gap-5 relative max-h-[90vh] overflow-y-auto">
             
             {/* Header Modal */}
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
@@ -768,7 +768,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </button>
 
               {aiResult && (
-                <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/60 p-4 rounded-lg flex flex-col gap-2 glow-card-indigo animate-fade-in mt-1">
+                <div className="crypto-card p-4 flex flex-col gap-2 animate-fade-in mt-1">
                   <div className="flex justify-between items-center border-b border-indigo-200 dark:border-indigo-900/40 pb-2">
                     <span className="font-bold text-indigo-650 dark:text-indigo-400 text-xs">🤖 AI Coach Evaluation</span>
                     <span className="bg-indigo-500 text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow">

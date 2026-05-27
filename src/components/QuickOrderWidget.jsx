@@ -103,14 +103,13 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-900/30 p-5 rounded-xl shadow-lg relative overflow-hidden flex flex-col gap-4 glow-card-indigo transition-all duration-350">
-      <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-indigo-500 to-indigo-800"></div>
+    <div className="crypto-card p-5 flex flex-col gap-4 transition-all duration-350 relative pb-24">
       
-      <div className="pl-2">
-        <h3 className="font-extrabold text-indigo-600 dark:text-indigo-400 border-b border-slate-200 dark:border-slate-800/80 pb-2 flex items-center gap-1.5 text-base">
+      <div className="pl-1">
+        <h3 className="font-extrabold text-brand-primary dark:text-brand-primary border-b border-brand-border dark:border-slate-800/80 pb-2 flex items-center gap-1.5 text-base">
           <span>⚡ Quick Order Widget</span>
         </h3>
-        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-bold">Sidebar Assistant</p>
+        <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-wider font-bold">Sidebar Assistant</p>
       </div>
 
       {/* Symbol & Direction Toggle */}
@@ -236,11 +235,11 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             <div className="flex gap-1 bg-slate-200 dark:bg-slate-800 p-0.5 rounded-md shadow-inner">
               <button 
                 onClick={() => setShareInputMode('calculated')}
-                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${shareInputMode === 'calculated' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${shareInputMode === 'calculated' ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >Auto</button>
               <button 
                 onClick={() => setShareInputMode('custom')}
-                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${shareInputMode === 'custom' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${shareInputMode === 'custom' ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >Custom</button>
             </div>
           </div>
@@ -281,13 +280,15 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         )}
       </div>
 
-      {/* Save Button */}
-      <button 
-        onClick={handleSave}
-        className="bg-indigo-600 hover:bg-indigo-500 hover:scale-[1.01] active:scale-[0.99] text-white font-extrabold py-3.5 rounded-lg transition-all shadow-md shadow-indigo-950/30 flex items-center justify-center gap-2 cursor-pointer mt-1 text-sm uppercase tracking-wide"
-      >
-        <span>📂 Log to Journal (Save Open)</span>
-      </button>
+      {/* Sticky Save Button Container */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-brand-surface dark:bg-slate-900 border-t border-brand-border z-10 shadow-[0_-4px_12px_rgba(5,15,26,0.05)] rounded-b-xl">
+        <button 
+          onClick={handleSave}
+          className="w-full bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white font-extrabold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-sm uppercase tracking-wide h-[44px]"
+        >
+          <span>📂 Log to Journal (Save Open)</span>
+        </button>
+      </div>
 
       {/* Confirm Modal Overlay */}
       {showConfirm && (

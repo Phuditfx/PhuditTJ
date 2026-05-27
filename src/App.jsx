@@ -338,14 +338,14 @@ export default function App() {
         {/* Logo and Theme toggle row for mobile */}
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-lg text-white font-black text-xl shadow-md shadow-indigo-950/40 select-none animate-pulse">
+            <div className="bg-brand-primary p-2 rounded-lg text-white font-black text-xl shadow-md shadow-brand-primary/40 select-none animate-pulse">
               💎
             </div>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white m-0 leading-none">
-                PHUDIT <span className="text-indigo-600 dark:text-indigo-400">TRADE JOURNAL</span>
+              <h1 className="text-xl font-extrabold tracking-tight text-brand-text-primary dark:text-white m-0 leading-none">
+                PHUDIT <span className="text-brand-primary">TRADE JOURNAL</span>
               </h1>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest font-bold hidden sm:block">Gamified Trader Station & AI Coach</p>
+              <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-widest font-bold hidden sm:block">Gamified Trader Station & AI Coach</p>
             </div>
           </div>
           
@@ -434,20 +434,20 @@ export default function App() {
       </header>
 
       {/* 💻 Main Layout container */}
-      <main className="max-w-[1400px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow items-start">
+      <main className="max-w-[1400px] w-full mx-auto p-4 md:p-6 pb-24 md:pb-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow items-start">
         
         {/* 📋 Left & Central Side (Dashboard & Sub-pages) - 9 Columns */}
         <div className="lg:col-span-9 flex flex-col gap-6 w-full">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
             {/* แถบ Tab เลือกสลับการแสดงผลหลัก */}
-            <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b border-slate-200 dark:border-slate-800/80 gap-2 p-1 bg-white dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-800/40 w-full sm:w-max snap-x">
+            <div className="hidden md:flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b border-brand-border dark:border-slate-800/80 gap-2 p-1 bg-brand-surface dark:bg-slate-900/60 backdrop-blur rounded-xl border w-max snap-x">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
                   activeTab === 'dashboard'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                    ? 'bg-brand-primary text-white shadow-md'
+                    : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
                 📊 DASHBOARD & LEVEL RANKS
@@ -554,6 +554,48 @@ export default function App() {
         </aside>
 
       </main>
+
+      {/* 📱 Mobile Bottom Navigation Bar (Visible only on small screens) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-brand-surface dark:bg-slate-900 border-t border-brand-border flex justify-around items-center p-2 z-40 pb-safe shadow-[0_-4px_12px_rgba(5,15,26,0.08)]">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+            activeTab === 'dashboard' ? 'text-brand-primary' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">📊</span>
+          <span className="text-[10px] font-bold mt-1">Dashboard</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('journal')}
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+            activeTab === 'journal' ? 'text-brand-primary' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">📓</span>
+          <span className="text-[10px] font-bold mt-1">Journal</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('fighter')}
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+            activeTab === 'fighter' ? 'text-brand-primary' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">⚡</span>
+          <span className="text-[10px] font-bold mt-1">Fighter</span>
+        </button>
+        {currentUser === 'phudit.mahawongsanan@gmail.com' && (
+          <button
+            onClick={() => setActiveTab('owner')}
+            className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+              activeTab === 'owner' ? 'text-amber-500' : 'text-brand-text-secondary'
+            }`}
+          >
+            <span className="text-xl">👑</span>
+            <span className="text-[10px] font-bold mt-1">Owner</span>
+          </button>
+        )}
+      </div>
 
       {/* User Manual Modal */}
       {showManual && (

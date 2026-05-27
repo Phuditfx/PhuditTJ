@@ -156,8 +156,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
   };
 
   return (
-    <div className="bg-slate-950 dark:bg-[#0a0a0a] border border-slate-800 dark:border-amber-900/50 rounded-sm p-6 shadow-2xl flex flex-col gap-6 relative overflow-hidden transition-colors duration-300">
-      <div className="absolute top-0 right-0 w-36 h-36 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="crypto-card p-6 flex flex-col gap-6 transition-colors duration-300">
 
       {/* Header */}
       <div className="flex justify-between items-center border-b border-slate-800 pb-4 relative z-10">

@@ -88,9 +88,8 @@ export default function Dashboard({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         
         {/* Balance Card */}
-        <div className="bg-white dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 p-5 rounded-xl glow-card-indigo relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl"></div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Account Balance</span>
+        <div className="crypto-card p-5 relative overflow-hidden">
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Account Balance</span>
           <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <div className="flex justify-between items-center mt-3 text-xs pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span className="text-slate-500">Initial Balance:</span>
@@ -127,9 +126,8 @@ export default function Dashboard({
         </div>
 
         {/* Win Rate Card */}
-        <div className="bg-white dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 p-5 rounded-xl glow-card-emerald relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Win Rate</span>
+        <div className="crypto-card p-5 relative overflow-hidden">
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Win Rate</span>
           <span className="text-3xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-2 block">{winRate.toFixed(1)}%</span>
           <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span>Closed Trades: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalClosed}</strong></span>
@@ -138,9 +136,8 @@ export default function Dashboard({
         </div>
 
         {/* Net Profit Card */}
-        <div className="bg-white dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 p-5 rounded-xl glow-card-amber relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl"></div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Net Performance</span>
+        <div className="crypto-card p-5 relative overflow-hidden">
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Net Performance</span>
           <span className={`text-3xl font-mono font-bold mt-2 block ${netPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'}`}>
             {netPnL >= 0 ? '+' : '-'}${Math.abs(netPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
@@ -153,8 +150,8 @@ export default function Dashboard({
         </div>
 
         {/* Current Rank Quick Stats */}
-        <div className="bg-white dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 p-5 rounded-xl relative overflow-hidden shadow-sm">
-          <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Active Level</span>
+        <div className="crypto-card p-5 relative overflow-hidden">
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Active Level</span>
           <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2 block">{currentRank.name}</span>
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-450 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span>Level {currentRank.level}</span>
@@ -168,8 +165,7 @@ export default function Dashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Level Rank Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl flex flex-col justify-between shadow-lg relative overflow-hidden lg:col-span-1">
-          <div className="absolute top-0 right-0 w-36 h-36 bg-amber-500/5 rounded-full blur-3xl pulse-glow-effect"></div>
+        <div className="crypto-card p-6 flex flex-col justify-between lg:col-span-1">
           <div>
             <div className="flex justify-between items-start">
               <div>
@@ -223,8 +219,7 @@ export default function Dashboard({
         </div>
 
         {/* Monthly Goal RR Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl flex flex-col justify-between shadow-lg lg:col-span-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="crypto-card p-6 flex flex-col justify-between lg:col-span-2 relative overflow-hidden">
           <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-6">
               <div>
@@ -321,7 +316,7 @@ export default function Dashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Weekly Chart */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg">
+        <div className="crypto-card p-6">
           <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">📅 Weekly Performance (This Month)</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">ผลกำไรสุทธิแยกตามสัปดาห์ (1-4) ประจำเดือนนี้</p>
           <div className="h-48 w-full text-xs font-mono">
@@ -347,7 +342,7 @@ export default function Dashboard({
         </div>
 
         {/* Monthly Chart */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg">
+        <div className="crypto-card p-6">
           <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">📊 Monthly Performance</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">สรุปผลกำไรสุทธิรายเดือน (สูงสุด 6 เดือนย้อนหลัง)</p>
           <div className="h-48 w-full text-xs font-mono">
@@ -374,7 +369,7 @@ export default function Dashboard({
       </div>
 
       {/* 🪜 Level Rank Ladder Section (Spacious Comparison Table) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg">
+      <div className="crypto-card p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
           <div>
             <h3 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
