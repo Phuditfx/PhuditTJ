@@ -103,7 +103,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   };
 
   return (
-    <div className="crypto-card p-5 flex flex-col gap-4 transition-all duration-350 relative pb-24">
+    <>
+      <div className="crypto-card p-5 flex flex-col gap-4 transition-all duration-350 relative">
       
       <div className="pl-1">
         <h3 className="font-extrabold text-brand-primary dark:text-brand-primary border-b border-brand-border dark:border-slate-800/80 pb-2 flex items-center gap-1.5 text-base">
@@ -280,11 +281,11 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         )}
       </div>
 
-      {/* Sticky Save Button Container */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-brand-surface dark:bg-slate-900 border-t border-brand-border z-10 shadow-[0_-4px_12px_rgba(5,15,26,0.05)] rounded-b-xl">
+      {/* Original Save Button (Inside normal flow) */}
+      <div className="mt-2">
         <button 
           onClick={handleSave}
-          className="w-full bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white font-extrabold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-sm uppercase tracking-wide h-[44px]"
+          className="w-full bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white font-extrabold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-sm uppercase tracking-wide"
         >
           <span>📂 Log to Journal (Save Open)</span>
         </button>
@@ -317,5 +318,16 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         </div>
       )}
     </div>
+
+    {/* 🔥 Floating Action Button (FAB) สำหรับกดบันทึกได้ทุกที่ */}
+    <button
+      onClick={handleSave}
+      className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-full p-4 shadow-[0_8px_30px_rgba(0,82,255,0.4)] flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 cursor-pointer border-2 border-white/20 dark:border-white/10 group"
+      title="Save Trade"
+    >
+      <span className="text-xl">💾</span>
+      <span className="font-extrabold text-sm uppercase tracking-wider hidden md:block group-hover:block px-2">Log to Journal</span>
+    </button>
+    </>
   );
 }
