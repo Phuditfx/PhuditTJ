@@ -519,7 +519,7 @@ export default function App() {
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
-                ⚡ FIGHTER SANDBOX
+                ⚡ {t('app.fighter')}
               </button>
               <button
                 onClick={() => setActiveTab('calendar')}
@@ -560,16 +560,16 @@ export default function App() {
                       : 'text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                   }`}
                 >
-                  👑 OWNER DASHBOARD
+                  👑 {t('app.owner')}
                 </button>
               )}
             </div>
             
             <button 
               onClick={() => setShowManual(true)}
-              className="bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow border border-slate-200 dark:border-slate-700 cursor-pointer"
+              className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35 transition-all cursor-pointer shadow border border-slate-200 dark:border-slate-700"
             >
-              📖 คู่มือการใช้งาน
+              📖 {t('app.manual')}
             </button>
           </div>
 

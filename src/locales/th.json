@@ -7,7 +7,9 @@
     "calendar": "📅 ปฏิทิน",
     "plans": "📝 แผนการเทรด",
     "dividends": "💰 ปันผล",
-    "owner": "⚙️ ตั้งค่า (Owner)",
+    "owner": "👑 ตั้งค่า (Owner)",
+    "fighter": "FIGHTER SANDBOX",
+    "manual": "คู่มือการใช้งาน",
     "footer": "© 2026 Phudit Trade Journal. All rights reserved."
   },
   "dashboard": {
@@ -136,6 +138,11 @@
     "confirmClose": "บันทึกการปิดออเดอร์",
     "confirmEdit": "บันทึกการแก้ไข",
     "aiCoach": "🤖 AI Coach Feedback",
-    "noTrades": "ไม่มีออเดอร์ในระบบ"
+    "noTrades": "ไม่มีออเดอร์ในระบบ",
+    "tiEntryExit": "TI / Entry / Exit",
+    "slTp": "SL / TP",
+    "actualRr": "Actual RR",
+    "qualitative": "Qualitative Analysis",
+    "noTradesFilter": "ไม่มีประวัติออเดอร์ตามเงื่อนไขตัวกรอง"
   }
 }

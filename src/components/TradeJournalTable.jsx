@@ -455,23 +455,23 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] font-bold">
-              <th className="py-3 px-4">Date/Time</th>
-              <th className="py-3 px-3">Symbol</th>
-              <th className="py-3 px-3">Dir</th>
-              <th className="py-3 px-3 text-right">TI / Entry / Exit</th>
-              <th className="py-3 px-3 text-right">SL / TP</th>
-              <th className="py-3 px-3 text-right">Shares</th>
-              <th className="py-3 px-3 text-right">PnL ($)</th>
-              <th className="py-3 px-3 text-center">Actual RR</th>
-              <th className="py-3 px-4 text-center">Qualitative Analysis</th>
-              <th className="py-3 px-4 text-right">Actions</th>
+              <th className="py-3 px-4">{t('journal.date')}</th>
+              <th className="py-3 px-3">{t('journal.symbol')}</th>
+              <th className="py-3 px-3">{t('journal.dir')}</th>
+              <th className="py-3 px-3 text-right">{t('journal.tiEntryExit')}</th>
+              <th className="py-3 px-3 text-right">{t('journal.slTp')}</th>
+              <th className="py-3 px-3 text-right">{t('journal.shares')}</th>
+              <th className="py-3 px-3 text-right">{t('journal.pnl')}</th>
+              <th className="py-3 px-3 text-center">{t('journal.actualRr')}</th>
+              <th className="py-3 px-4 text-center">{t('journal.qualitative')}</th>
+              <th className="py-3 px-4 text-right">{t('journal.action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
             {filteredTrades.length === 0 ? (
               <tr>
                 <td colSpan="10" className="py-8 text-center text-slate-400 dark:text-slate-500 font-semibold italic">
-                  ไม่มีประวัติออเดอร์ตามเงื่อนไขตัวกรอง
+                  {t('journal.noTradesFilter')}
                 </td>
               </tr>
             ) : (
