@@ -611,10 +611,10 @@ export default function App() {
             <div className="text-sm text-slate-750 dark:text-slate-300 space-y-4">
               <p><strong>1. ระบบ Login & ฐานข้อมูล:</strong> ข้อมูลทั้งหมดจะถูกผูกกับอีเมลและเซฟไว้ใน Browser ของคุณเอง.</p>
               <p><strong>2. DASHBOARD & RANKS:</strong> เริ่มต้นโดยการตั้งค่าเงินทุน (Initial Balance) ระบบจะอัปเดตยศ (Rank Level) อัตโนมัติจากยอดเงินปัจจุบัน.</p>
-              <p><strong>3. ALPHA TRADER (TI SWING PICK):</strong> ระบบใหม่! กรอก <code>TI Entry Alert</code> (จุดเบรคระดับ Day) และ Custom Entry. ระบบจะดึงกราฟ TradingView TF60 อัตโนมัติ เพื่อให้หาจุดย่อซื้อได้คมที่สุด.</p>
+              <p><strong>3. ALPHA TRADER (TI SWING PICK):</strong> ระบบใหม่! กรอก <code>TI Entry Alert</code> (จุดเบรคระดับ Day) และจุดเข้า (Entry). ระบบจะดึงข้อมูลราคามาวาดกราฟแท่งเทียนแบบเรียลไทม์ (Lightweight Chart) พร้อมตีเส้น Entry, SL, TP ให้อัตโนมัติ เพื่อให้หาจุดซื้อขายได้คมที่สุด.</p>
               <p><strong>4. STOP LOSS & AUTO-TP:</strong> มีปุ่ม Quick SL คำนวณ % ลัด และ <strong>🤖 AI Auto-SL</strong> เป็นไกด์ไลน์. เมื่อได้ SL แล้ว ระบบ Auto-TP จะคำนวณเป้าหมายกำไร 1R, 2R, 3R ให้ทันที.</p>
               <p><strong>5. QUICK ORDER WIDGET:</strong> ทุกการตั้งค่าจาก Alpha Trader จะ Sync มาที่ Widget นี้ให้กด Save เข้า Journal สะดวกๆ.</p>
-              <p><strong>6. TRADE JOURNAL & AI COACH:</strong> เมื่อปิดออเดอร์ ระบบ AI จะประเมินคะแนน (AI Score) และให้คำแนะนำ. พร้อมวิเคราะห์ Variance % เทียบจุดเข้าของคุณกับ Day Breakout.</p>
+              <p><strong>6. TRADE JOURNAL & AI COACH:</strong> สำหรับออเดอร์ที่ยังเปิดอยู่ ระบบจะดึงราคาปัจจุบันมาคำนวณ Live PnL ให้อัตโนมัติ และเมื่อปิดออเดอร์ ระบบ AI จะประเมินคะแนน (AI Score) พร้อมให้คำแนะนำอย่างละเอียด.</p>
               <p><strong>👑 Owner Dashboard:</strong> เฉพาะผู้ดูแลระบบ <code>phudit.mahawongsanan@gmail.com</code> ที่จะเข้าถึงหน้ารวมสถิติผู้ใช้งานได้.</p>
             </div>
             <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-850 mt-2">
