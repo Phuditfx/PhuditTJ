@@ -508,11 +508,20 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                       )}
                       <div className="text-slate-700 dark:text-slate-300 font-bold">
                         En: ${trade.entryPrice.toFixed(2)}
-                        {trade.tiEntryAlert > 0 && (
-                          <span className={`ml-1 text-[9px] ${trade.entryPrice <= trade.tiEntryAlert ? (trade.direction === 'Long' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400') : (trade.direction === 'Long' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}`} title="Variance from Day Breakout">
-                            ({trade.entryPrice < trade.tiEntryAlert ? '-' : '+'}{Math.abs(((trade.entryPrice - trade.tiEntryAlert)/trade.tiEntryAlert)*100).toFixed(2)}%)
-                          </span>
-                        )}
+                        {trade.tiEntryAlert > 0 && (() => {
+                          const isLong = trade.direction === 'Long';
+                          const diff = isLong 
+                            ? trade.tiEntryAlert - trade.entryPrice 
+                            : trade.entryPrice - trade.tiEntryAlert;
+                          const pct = (diff / trade.tiEntryAlert) * 100;
+                          const isPositive = pct >= 0;
+                          
+                          return (
+                            <span className={`ml-1 text-[9px] ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} title="Variance from Day Breakout">
+                              ({isPositive ? '+' : ''}{pct.toFixed(2)}%)
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="text-[10px] text-slate-405 dark:text-slate-500">
                         {isClosed ? `Ex: $${trade.actualExitPrice.toFixed(2)}` : 'Active'}
