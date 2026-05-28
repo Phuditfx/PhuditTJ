@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RANK_SYSTEM } from '../db/journalDB';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Dashboard({ 
   accountBalance, 
@@ -11,6 +12,7 @@ export default function Dashboard({
   trades,
   currentRank 
 }) {
+  const { t } = useLanguage();
   const [localBalance, setLocalBalance] = React.useState(initialBalance);
   const [localRR, setLocalRR] = React.useState(targetRR);
   const [isBalanceSaved, setIsBalanceSaved] = React.useState(false);
@@ -24,28 +26,19 @@ export default function Dashboard({
     setLocalRR(targetRR);
   }, [targetRR]);
 
-  // คำนวณสถิติของพอร์ตจากประวัติออเดอร์
   const closedTrades = trades.filter(t => t.status === 'Closed');
   const totalClosed = closedTrades.length;
   const wins = closedTrades.filter(t => t.pnl > 0);
   const winRate = totalClosed > 0 ? (wins.length / totalClosed) * 100 : 0;
-  
-  // สรุปยอดกำไรขาดทุนสุทธิ
   const netPnL = trades.reduce((acc, t) => acc + (t.status === 'Closed' ? t.pnl : 0), 0);
-  
-  // คำนวณ RR ที่ทำได้จริง
   const achievedRR = closedTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
-
-  // คำนวณเปอร์เซ็นต์ความคืบหน้าของ RR
   const rrProgress = targetRR > 0 ? Math.min((achievedRR / targetRR) * 100, 100) : 0;
 
-  // หาเป้าหมายเงินเพื่อขึ้นยศถัดไป
   const nextRank = RANK_SYSTEM.find(r => r.level === currentRank.level + 1);
   const progressToNext = nextRank 
     ? Math.min((accountBalance / nextRank.minPort) * 100, 100) 
     : 100;
 
-  // --- 🔬 Advanced Statistics Calculations ---
   let maxConsecutiveWins = 0;
   let maxConsecutiveLosses = 0;
   let currentConsecutiveWins = 0;
@@ -55,7 +48,6 @@ export default function Dashboard({
   let largestWin = 0;
   let largestLoss = 0;
 
-  // เรียงออเดอร์ตามเวลาเพื่อหาสถิติติดต่อกัน (Streak) อย่างแม่นยำ
   const sortedTrades = [...closedTrades].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
   let totalEfficiency = 0;
@@ -75,20 +67,18 @@ export default function Dashboard({
       if (currentConsecutiveLosses > maxConsecutiveLosses) maxConsecutiveLosses = currentConsecutiveLosses;
       grossLoss += Math.abs(pnl);
       if (pnl < largestLoss) largestLoss = pnl;
-      currentConsecutiveWins = 0;
-      currentConsecutiveLosses = 0;
     }
 
     if (t.mfePrice && t.entryPrice) {
       const entry = parseFloat(t.entryPrice);
       const mfe = parseFloat(t.mfePrice);
-      const shares = parseFloat(t.shares) || 1; // Fallback to 1 if not present for some reason
+      const shares = parseFloat(t.shares) || 1;
       const isLong = t.direction === 'Long';
       const mfePnL = isLong ? (mfe - entry) * shares : (entry - mfe) * shares;
       
       if (mfePnL > 0 && pnl > 0) {
         const eff = (pnl / mfePnL) * 100;
-        totalEfficiency += Math.min(eff, 100); // cap at 100% just in case of slight price discrepancies
+        totalEfficiency += Math.min(eff, 100);
         efficiencyCount++;
       } else if (mfePnL > 0 && pnl <= 0) {
         totalEfficiency += 0;
@@ -103,7 +93,6 @@ export default function Dashboard({
   const averageLoss = lossesCount > 0 ? grossLoss / lossesCount : 0;
   const avgExitEfficiency = efficiencyCount > 0 ? (totalEfficiency / efficiencyCount) : 0;
 
-  // --- Long vs Short Stats ---
   const longTrades = closedTrades.filter(t => t.direction === 'Long');
   const shortTrades = closedTrades.filter(t => t.direction === 'Short');
   const longWins = longTrades.filter(t => parseFloat(t.pnl) > 0).length;
@@ -111,42 +100,26 @@ export default function Dashboard({
   const longWinRate = longTrades.length > 0 ? (longWins / longTrades.length) * 100 : 0;
   const shortWinRate = shortTrades.length > 0 ? (shortWins / shortTrades.length) * 100 : 0;
 
-  // --- AI Insights Generator ---
   const generateAiInsight = () => {
-    if (closedTrades.length === 0) return "ยังไม่มีข้อมูลเพียงพอให้ประเมินครับ";
+    if (closedTrades.length === 0) return t('dashboard.noData');
     const recentTrades = sortedTrades.slice(-10);
     const fomoTrades = recentTrades.filter(t => t.entryMood && t.entryMood.includes('FOMO'));
-    if (fomoTrades.length >= 3) {
-      return "🚨 AI Warning: ช่วง 10 ออเดอร์ล่าสุดคุณเข้าออเดอร์ด้วยอาการ FOMO บ่อยมาก! แนะนำให้พักเบรกหรือยึดติดกับ Trading Plan ให้มากขึ้นครับ";
-    }
+    if (fomoTrades.length >= 3) return t('dashboard.aiFomo');
     const goodPlanTrades = recentTrades.filter(t => t.planAdherenceScore === 100);
-    if (goodPlanTrades.length >= Math.floor(recentTrades.length * 0.7)) {
-      return "🌟 AI Praise: เยี่ยมมาก! วินัยในการทำตามแผนของคุณในช่วงนี้ยอดเยี่ยมมาก รักษามาตรฐานนี้ไว้เพื่อการเติบโตของพอร์ตแบบก้าวกระโดด";
-    }
-    if (avgExitEfficiency < 40 && efficiencyCount >= 3) {
-      return "📉 AI Notice: คุณมักจะขายหมูบ่อยครั้ง (Exit Efficiency ต่ำกว่า 40%) ลองพิจารณาขยับเป้า TP หรือใช้ Trailing Stop ช่วยรันเทรนด์ดูครับ";
-    }
-    return "💡 AI Tip: การเทรดที่รอดพ้นตลาดคือการรักษาวินัย ยึดแผนการเทรดเป็นหลัก และไม่ใช้อารมณ์";
+    if (goodPlanTrades.length >= Math.floor(recentTrades.length * 0.7)) return t('dashboard.aiPraise');
+    if (avgExitEfficiency < 40 && efficiencyCount >= 3) return t('dashboard.aiExit');
+    return t('dashboard.aiTip');
   };
   const aiInsightText = generateAiInsight();
 
-  // --- คำนวณข้อมูลสำหรับกราฟ ---
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-  
-  const weeklyData = [
-    { name: 'W1', pnl: 0 },
-    { name: 'W2', pnl: 0 },
-    { name: 'W3', pnl: 0 },
-    { name: 'W4', pnl: 0 },
-  ];
-
+  const weeklyData = [{ name: 'W1', pnl: 0 }, { name: 'W2', pnl: 0 }, { name: 'W3', pnl: 0 }, { name: 'W4', pnl: 0 }];
   const monthlyMap = {};
 
   closedTrades.forEach(t => {
     if (!t.dateTime) return;
     const d = new Date(t.dateTime);
-    // Weekly (เฉพาะเดือนปัจจุบัน)
     if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
       const date = d.getDate();
       if (date <= 7) weeklyData[0].pnl += t.pnl;
@@ -154,30 +127,22 @@ export default function Dashboard({
       else if (date <= 21) weeklyData[2].pnl += t.pnl;
       else weeklyData[3].pnl += t.pnl;
     }
-    // Monthly
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const mStr = `${monthNames[d.getMonth()]} ${d.getFullYear().toString().slice(2)}`;
     if (!monthlyMap[mStr]) monthlyMap[mStr] = 0;
     monthlyMap[mStr] += t.pnl;
   });
 
-  const monthlyData = Object.keys(monthlyMap).map(k => ({
-    name: k,
-    pnl: monthlyMap[k]
-  })).slice(-6); // เอาแค่ 6 เดือนล่าสุด
+  const monthlyData = Object.keys(monthlyMap).map(k => ({ name: k, pnl: monthlyMap[k] })).slice(-6);
 
   return (
     <div className="flex flex-col gap-6">
-      
-      {/* 🚀 Top Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        
-        {/* Balance Card */}
         <div className="crypto-card p-5 relative overflow-hidden">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Account Balance</span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{t('dashboard.accountBalance')}</span>
           <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <div className="flex justify-between items-center mt-3 text-xs pt-3 border-t border-slate-200 dark:border-slate-800/60">
-            <span className="text-slate-500">Initial Balance:</span>
+            <span className="text-slate-500">{t('dashboard.initialBalance')}:</span>
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-mono">$</span>
               <input 
@@ -197,83 +162,71 @@ export default function Dashboard({
                   setIsBalanceSaved(true);
                   setTimeout(() => setIsBalanceSaved(false), 2000);
                 }}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                  isBalanceSaved 
-                    ? 'bg-emerald-650 text-white shadow-sm' 
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
-                }`}
-                title="คลิกเพื่อบันทึกเงินต้น"
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${isBalanceSaved ? 'bg-emerald-650 text-white shadow-sm' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'}`}
               >
-                {isBalanceSaved ? '✓' : 'Save'}
+                {isBalanceSaved ? '✓' : t('dashboard.save')}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Win Rate Card */}
         <div className="crypto-card p-5 relative overflow-hidden">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Win Rate</span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{t('dashboard.winRate')}</span>
           <span className="text-3xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-2 block">{winRate.toFixed(1)}%</span>
           <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
-            <span>Closed Trades: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalClosed}</strong></span>
-            <span>Wins: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{wins.length}</strong></span>
+            <span>{t('dashboard.closedTrades')}: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalClosed}</strong></span>
+            <span>{t('dashboard.wins')}: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{wins.length}</strong></span>
           </div>
         </div>
 
-        {/* Net Profit Card */}
         <div className="crypto-card p-5 relative overflow-hidden">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Net Performance</span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{t('dashboard.netPerformance')}</span>
           <span className={`text-3xl font-mono font-bold mt-2 block ${netPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'}`}>
             {netPnL >= 0 ? '+' : '-'}${Math.abs(netPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
-            <span>Active Trades: <strong className="text-indigo-650 dark:text-indigo-400 font-mono">{trades.filter(t => t.status === 'Open').length}</strong></span>
+            <span>{t('dashboard.activeTrades')}: <strong className="text-indigo-650 dark:text-indigo-400 font-mono">{trades.filter(t => t.status === 'Open').length}</strong></span>
             <span className={netPnL >= 0 ? 'text-emerald-600 dark:text-emerald-500/80' : 'text-rose-500/80'}>
-              {netPnL >= 0 ? '📈 Growth' : '📉 Drawdown'}
+              {netPnL >= 0 ? t('dashboard.growth') : t('dashboard.drawdown')}
             </span>
           </div>
         </div>
 
-        {/* Current Rank Quick Stats */}
         <div className="crypto-card p-5 relative overflow-hidden">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">Active Level</span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{t('dashboard.activeLevel')}</span>
           <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2 block">{currentRank.name}</span>
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-450 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
-            <span>Level {currentRank.level}</span>
-            <span className="text-slate-650 dark:text-slate-500 font-mono font-bold">Risk Limit: ${currentRank.risk1}</span>
+            <span>{t('dashboard.level')} {currentRank.level}</span>
+            <span className="text-slate-650 dark:text-slate-500 font-mono font-bold">{t('dashboard.riskLimit')}: ${currentRank.risk1}</span>
           </div>
         </div>
-
       </div>
 
-      {/* 📊 Gamified Rank Progress & Monthly Goals */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Level Rank Card */}
         <div className="crypto-card p-6 flex flex-col justify-between lg:col-span-1">
           <div>
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-xs text-slate-550 dark:text-slate-500 uppercase tracking-widest block">Level Gamification</span>
+                <span className="text-xs text-slate-550 dark:text-slate-500 uppercase tracking-widest block">{t('dashboard.levelGamification')}</span>
                 <h2 className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">{currentRank.name}</h2>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold text-amber-600 dark:text-amber-400 shadow-md">
-                Level {currentRank.level}
+                {t('dashboard.level')} {currentRank.level}
               </div>
             </div>
             
             <div className="mt-6 space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800/80">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400">Risk Limit (Risk 1):</span>
-                <span className="font-mono font-bold text-rose-500 dark:text-rose-450">${currentRank.risk1} per Trade</span>
+                <span className="text-slate-600 dark:text-slate-400">{t('dashboard.riskLimit1')}:</span>
+                <span className="font-mono font-bold text-rose-500 dark:text-rose-450">${currentRank.risk1}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400">Max Risk Limit:</span>
-                <span className="font-mono font-bold text-red-650 dark:text-red-500">${currentRank.maxRisk} per Trade</span>
+                <span className="text-slate-600 dark:text-slate-400">{t('dashboard.maxRisk')}:</span>
+                <span className="font-mono font-bold text-red-650 dark:text-red-500">${currentRank.maxRisk}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400">Budget Allocation:</span>
-                <span className="font-mono font-bold text-indigo-650 dark:text-indigo-400">{currentRank.maxAlloc}% Max Port</span>
+                <span className="text-slate-600 dark:text-slate-400">{t('dashboard.budgetAllocation')}:</span>
+                <span className="font-mono font-bold text-indigo-650 dark:text-indigo-400">{currentRank.maxAlloc}%</span>
               </div>
             </div>
           </div>
@@ -282,7 +235,7 @@ export default function Dashboard({
             {nextRank ? (
               <div>
                 <div className="flex justify-between text-xs text-slate-550 dark:text-slate-500 mb-2 font-semibold">
-                  <span>Progress to {nextRank.name}</span>
+                  <span>{t('dashboard.progressTo')} {nextRank.name}</span>
                   <span className="font-mono">{progressToNext.toFixed(0)}%</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
@@ -292,37 +245,36 @@ export default function Dashboard({
                   ></div>
                 </div>
                 <p className="text-[11px] text-slate-550 dark:text-slate-500 mt-2 text-center">
-                  ต้องมีเงินทุนอย่างน้อย <strong className="text-slate-700 dark:text-slate-400 font-mono">${nextRank.minPort.toLocaleString()}</strong> เพื่อปลดล็อกยศถัดไป
+                  {t('dashboard.minPortNeeded')} <strong className="text-slate-700 dark:text-slate-400 font-mono">${nextRank.minPort.toLocaleString()}</strong>
                 </p>
               </div>
             ) : (
               <div className="text-center text-xs text-emerald-655 dark:text-emerald-400 font-bold py-2 bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/20 dark:border-emerald-900/50 rounded-lg">
-                👑 คุณมาถึงจุดสูงสุดยศสิบห้าแล้ว! อมตะ (Immortal)
+                👑 {t('dashboard.immortal')}
               </div>
             )}
           </div>
         </div>
 
-        {/* Monthly Goal RR Card */}
         <div className="crypto-card p-6 flex flex-col justify-between lg:col-span-2 relative overflow-hidden">
           <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>🎯 Monthly RR Target Tracker</span>
+                  <span>🎯 {t('dashboard.monthlyRRTarget')}</span>
                 </h3>
-                <p className="text-sm text-slate-550 dark:text-slate-400 mt-1">ตั้งเป้าหมายและสะสม R-Multiple เพื่อสร้างวินัยและผลตอบแทนที่คงเส้นคงวา</p>
+                <p className="text-sm text-slate-550 dark:text-slate-400 mt-1">{t('dashboard.rrTrackerDesc')}</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">Achieved RR</div>
+                  <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">{t('dashboard.achievedRR')}</div>
                   <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
                     {achievedRR.toFixed(4)}
                   </div>
                 </div>
                 <div className="text-slate-400 dark:text-slate-600 text-2xl">/</div>
                 <div className="text-left">
-                  <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">Target RR</div>
+                  <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">{t('dashboard.targetRR')}</div>
                   <div className="flex items-center gap-1.5">
                     <input 
                       type="number" 
@@ -341,42 +293,36 @@ export default function Dashboard({
                         setIsRRSaved(true);
                         setTimeout(() => setIsRRSaved(false), 2000);
                       }}
-                      className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
-                        isRRSaved
-                          ? 'bg-emerald-650 text-white shadow-sm font-sans'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm font-sans'
-                      }`}
-                      title="บันทึกเป้าหมาย RR"
+                      className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${isRRSaved ? 'bg-emerald-650 text-white shadow-sm font-sans' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm font-sans'}`}
                     >
-                      {isRRSaved ? '✓' : 'Save'}
+                      {isRRSaved ? '✓' : t('dashboard.save')}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Progress Bar */}
             <div className="w-full bg-slate-100 dark:bg-slate-950 h-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner">
               <div
                 className="h-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 transition-all duration-1000"
                 style={{ width: `${rrProgress}%` }}
               ></div>
               <div className="absolute inset-0 flex items-center justify-between px-6 text-xs font-bold text-white drop-shadow-md">
-                <span>{rrProgress.toFixed(1)}% Completed</span>
-                <span className="font-mono">เหลืออีก {(Math.max(0, targetRR - achievedRR)).toFixed(4)} RR</span>
+                <span>{rrProgress.toFixed(1)}% {t('dashboard.completed')}</span>
+                <span className="font-mono">{t('dashboard.remaining')}: {(Math.max(0, targetRR - achievedRR)).toFixed(4)} RR</span>
               </div>
             </div>
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800/80 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800/60">
-              <span className="text-[11px] text-slate-500 block font-semibold">วินัย (Plan Adherence Avg)</span>
+              <span className="text-[11px] text-slate-500 block font-semibold">{t('dashboard.planAdherence')}</span>
               <span className="text-lg font-mono font-bold text-indigo-650 dark:text-indigo-400">
                 {(closedTrades.reduce((acc, t) => acc + (t.planAdherenceScore || 0), 0) / (totalClosed || 1)).toFixed(0)}%
               </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800/60">
-              <span className="text-[11px] text-slate-500 block font-semibold">เฉลี่ยต่อออเดอร์ (Avg RR)</span>
+              <span className="text-[11px] text-slate-500 block font-semibold">{t('dashboard.avgRR')}</span>
               <span className={`text-lg font-mono font-bold ${achievedRR / (totalClosed || 1) >= 0 ? 'text-emerald-650 dark:text-emerald-400' : 'text-rose-500'}`}>
                 {(achievedRR / (totalClosed || 1)).toFixed(4)} RR
               </span>
@@ -384,58 +330,56 @@ export default function Dashboard({
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800/60 flex items-center justify-center">
               <div className="text-xs font-bold">
                 {rrProgress >= 100 ? (
-                  <span className="text-emerald-650 dark:text-emerald-400 animate-pulse">🏆 ทะลุเป้าหมายเดือนนี้แล้ว!</span>
+                  <span className="text-emerald-650 dark:text-emerald-400 animate-pulse">🏆 {t('dashboard.targetReached')}</span>
                 ) : rrProgress >= 50 ? (
-                  <span className="text-indigo-650 dark:text-indigo-400">🔥 ผ่านครึ่งทางแล้ว ลุยต่อ!</span>
+                  <span className="text-indigo-650 dark:text-indigo-400">🔥 {t('dashboard.halfway')}</span>
                 ) : (
-                  <span className="text-slate-500 dark:text-slate-400">🎯 เริ่มสะสมวินัยและรักษาพอร์ต</span>
+                  <span className="text-slate-500 dark:text-slate-400">🎯 {t('dashboard.keepGoing')}</span>
                 )}
               </div>
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* 🔬 Advanced Analytics (TradesViz Style) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Profit Factor</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.profitFactor')}</span>
           <span className="text-xl font-mono font-bold text-sky-500 mt-2 block">{profitFactor === Infinity ? 'MAX' : profitFactor.toFixed(2)}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Win</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.avgWin')}</span>
           <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">${averageWin.toFixed(2)}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Loss</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.avgLoss')}</span>
           <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">-${averageLoss.toFixed(2)}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Largest Win</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.largestWin')}</span>
           <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">${largestWin.toFixed(2)}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Largest Loss</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.largestLoss')}</span>
           <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">-${Math.abs(largestLoss).toFixed(2)}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Streaks (W / L)</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.streaks')}</span>
           <span className="text-xl font-mono font-bold mt-2 block">
             <span className="text-emerald-500">{maxConsecutiveWins}W</span> <span className="text-slate-500">/</span> <span className="text-rose-500">{maxConsecutiveLosses}L</span>
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Exit Efficiency</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.exitEfficiency')}</span>
           <span className={`text-xl font-mono font-bold mt-2 block ${avgExitEfficiency >= 80 ? 'text-emerald-500' : (avgExitEfficiency >= 50 ? 'text-amber-500' : 'text-rose-500')}`}>
             {avgExitEfficiency > 0 ? `${avgExitEfficiency.toFixed(1)}%` : 'N/A'}
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Win Rate (L/S)</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.winRateLS')}</span>
           <div className="flex flex-col mt-2">
-            <span className="text-xs font-mono font-bold text-emerald-500">Long: {longWinRate.toFixed(0)}% ({longWins}/{longTrades.length})</span>
-            <span className="text-xs font-mono font-bold text-rose-500">Short: {shortWinRate.toFixed(0)}% ({shortWins}/{shortTrades.length})</span>
+            <span className="text-xs font-mono font-bold text-emerald-500">{t('dashboard.long')}: {longWinRate.toFixed(0)}% ({longWins}/{longTrades.length})</span>
+            <span className="text-xs font-mono font-bold text-rose-500">{t('dashboard.short')}: {shortWinRate.toFixed(0)}% ({shortWins}/{shortTrades.length})</span>
           </div>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between lg:col-span-3">

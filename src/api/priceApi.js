@@ -1,10 +1,10 @@
 export const fetchRealTimePrice = async (symbol) => {
   try {
-    // Attempt to use Yahoo Finance API via a free CORS proxy
-    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+    // Attempt to use Yahoo Finance API via corsproxy.io for faster speeds
+    const proxyUrl = 'https://corsproxy.io/?';
     const targetUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1m`);
     
-    const response = await fetch(proxyUrl + targetUrl);
+    const response = await fetch(proxyUrl + targetUrl, { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
       const price = data.chart?.result?.[0]?.meta?.regularMarketPrice;
@@ -19,10 +19,10 @@ export const fetchRealTimePrice = async (symbol) => {
 
 export const fetchHistoricalData = async (symbol) => {
   try {
-    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+    const proxyUrl = 'https://corsproxy.io/?';
     const targetUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1mo&interval=1d`);
     
-    const response = await fetch(proxyUrl + targetUrl);
+    const response = await fetch(proxyUrl + targetUrl, { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
       const result = data.chart?.result?.[0];

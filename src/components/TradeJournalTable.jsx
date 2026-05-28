@@ -3,8 +3,10 @@ import { simulateAIAssessment } from '../db/journalDB';
 import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm, plans = [] }) {
+  const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
@@ -350,9 +352,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-800/85 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <span>📓 Trade Journal Entries</span>
+            <span>📓 {t('journal.title')}</span>
             <span className="text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">
-              {filteredTrades.length} Trades
+              {filteredTrades.length} {t('journal.trades')}
             </span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">ประวัติการยิงออเดอร์ วิเคราะห์ระยะ RR และการถอดบทเรียนทางจิตวิทยา</p>

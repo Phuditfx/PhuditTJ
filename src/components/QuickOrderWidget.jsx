@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [] }) {
+  const { t } = useLanguage();
   const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
     symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: ''
   };
@@ -311,69 +313,66 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           <div className="bg-rose-500/20 text-rose-500 dark:text-rose-400 p-4 rounded-full mb-4 animate-pulse">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">วงเงินพอร์ตเกินกำหนด!</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">⚠️ วงเงินพอร์ตเกินกำหนด!</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            การเทรดนี้ใช้งบประมาณ <strong className="text-rose-600 dark:text-rose-400">${buyingPowerRequired}</strong> ซึ่งเกินข้อกำหนดของยศสูงสุดที่ <strong className="text-emerald-650 dark:text-emerald-400">${maxBudget.toFixed(2)}</strong> คุณยังยืนยันที่จะบันทึกลง Journal หรือไม่?
+            {t('quickOrder.confirmBudget')} (Limit: ${maxBudget.toFixed(2)})
           </p>
           <div className="flex gap-3 w-full">
             <button 
               onClick={() => setShowConfirm(false)}
               className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold py-2.5 rounded-lg transition-all text-xs cursor-pointer"
             >
-              ยกเลิก
+              {t('quickOrder.cancel')}
             </button>
             <button 
               onClick={performSave}
               className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-lg transition-all text-xs shadow-lg shadow-rose-900/20 dark:shadow-rose-900/50 cursor-pointer"
             >
-              ยืนยันการบันทึก
+              {t('quickOrder.confirm')}
             </button>
           </div>
 
           {/* AI Analytics Integration Fields */}
-          <div className="flex flex-col gap-3 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col gap-3 mt-4 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800 w-full text-left">
             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
-              🤖 AI Assessment Context <span className="text-amber-500">(Optional)</span>
+              {t('quickOrder.aiContext')} <span className="text-amber-500">{t('quickOrder.optional')}</span>
             </span>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Playbook */}
+            <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
+                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">{t('quickOrder.tradingPlan')}</label>
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
                   className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="">-- No Plan Selected --</option>
+                  <option value="">{t('quickOrder.noPlan')}</option>
                   {plans.map(p => (
                     <option key={p.id} value={p.name}>{p.name}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Setup */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Setup / Strategy</label>
+                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">{t('quickOrder.setup')}</label>
                 <select
                   value={selectedSetup}
                   onChange={(e) => setSelectedSetup(e.target.value)}
                   className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="">-- Select Setup --</option>
+                  <option value="">{t('quickOrder.selectSetup')}</option>
                   {SETUP_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
-              {/* Mood */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Mental State</label>
+                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">{t('quickOrder.mood')}</label>
                 <select
                   value={selectedMood}
                   onChange={(e) => setSelectedMood(e.target.value)}
                   className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="">-- Select Mood --</option>
+                  <option value="">{t('quickOrder.selectMood')}</option>
                   {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>

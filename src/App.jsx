@@ -18,6 +18,7 @@ import {
   getStoredDividends,
   saveDividends
 } from './db/journalDB';
+import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
 import QuickOrderWidget from './components/QuickOrderWidget';
 import FighterComponent from './components/FighterComponent';
@@ -29,6 +30,7 @@ import TradingPlans from './components/TradingPlans';
 import DividendTracker from './components/DividendTracker';
 
 export default function App() {
+  const { t, language, toggleLanguage } = useLanguage();
   const [currentUser, setCurrentUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
@@ -442,7 +444,7 @@ export default function App() {
                 onClick={handleLogout}
                 className="text-[9px] text-rose-500 dark:text-rose-450 hover:text-rose-600 dark:hover:text-rose-350 font-bold uppercase tracking-widest mt-0.5 text-right cursor-pointer"
               >
-                Logout
+                {t('app.logout')}
               </button>
             </div>
 
@@ -461,6 +463,14 @@ export default function App() {
             </div>
           </div>
 
+          <button
+            onClick={toggleLanguage}
+            className="hidden md:flex p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-indigo-500 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm items-center justify-center w-9 h-9 border-solid font-bold text-xs"
+            title="Toggle Language"
+          >
+            {language === 'th' ? 'EN' : 'TH'}
+          </button>
+          
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="hidden md:flex p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm items-center justify-center w-9 h-9 border-solid"
@@ -489,7 +499,7 @@ export default function App() {
                     : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
-                📊 DASHBOARD & LEVEL RANKS
+                {t('app.dashboard')}
               </button>
               <button
                 onClick={() => setActiveTab('journal')}
@@ -499,7 +509,7 @@ export default function App() {
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
-                📓 TRADE JOURNAL ({trades.length})
+                {t('app.journal')} ({trades.length})
               </button>
               <button
                 onClick={() => setActiveTab('fighter')}
@@ -519,7 +529,7 @@ export default function App() {
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
-                📅 CALENDAR
+                {t('app.calendar')}
               </button>
               <button
                 onClick={() => setActiveTab('plans')}
@@ -529,7 +539,7 @@ export default function App() {
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
-                📝 PLANS
+                {t('app.plans')}
               </button>
               <button
                 onClick={() => setActiveTab('dividends')}
@@ -539,7 +549,7 @@ export default function App() {
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
-                💰 DIVIDENDS
+                {t('app.dividends')}
               </button>
               {currentUser === 'phudit.mahawongsanan@gmail.com' && (
                 <button
