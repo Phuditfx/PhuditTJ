@@ -58,6 +58,8 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     return () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
+      chartInstance.current = null;
+      seriesInstance.current = null;
     };
   }, []);
 
@@ -67,7 +69,8 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
       setLoading(true);
       try {
         const data = await fetchHistoricalData(symbol);
-        if (seriesInstance.current && data && data.length > 0) {
+        // Only update if component is still mounted and instances are active
+        if (seriesInstance.current && chartInstance.current && data && data.length > 0) {
           // Deduplicate and sort data by time to prevent Lightweight Charts crash
           const uniqueDataMap = new Map();
           data.forEach(item => uniqueDataMap.set(item.time, item));

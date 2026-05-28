@@ -7,6 +7,39 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
+  const [livePrices, setLivePrices] = useState({});
+
+  // โหลดราคาปัจจุบันของออเดอร์ที่ยังเปิดอยู่
+  useEffect(() => {
+    let isMounted = true;
+    const loadLivePrices = async () => {
+      const openTrades = trades.filter(t => t.status === 'Open');
+      const symbols = [...new Set(openTrades.map(t => t.symbol))];
+      if (symbols.length === 0) return;
+
+      const prices = { ...livePrices };
+      for (const sym of symbols) {
+        try {
+          const price = await fetchRealTimePrice(sym);
+          if (price && isMounted) {
+            prices[sym] = price;
+          }
+        } catch (e) {
+          console.warn("Failed to fetch price for", sym);
+        }
+      }
+      if (isMounted) {
+        setLivePrices(prices);
+      }
+    };
+    loadLivePrices();
+    
+    const interval = setInterval(loadLivePrices, 60000); // อัปเดตทุก 1 นาที
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [trades]);
   
   // สถานะสำหรับ Modal ปิดออเดอร์
   const [selectedTrade, setSelectedTrade] = useState(null);
@@ -432,37 +465,64 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     
                     {/* PnL ($) */}
                     <td className={`py-4 px-3 text-right text-sm font-extrabold ${
-                      !isClosed 
+                      !isClosed && !livePrices[trade.symbol]
                         ? 'text-slate-400 dark:text-slate-500' 
-                        : trade.pnl >= 0 
-                          ? 'text-emerald-600 dark:text-emerald-400' 
-                          : 'text-rose-600 dark:text-rose-400'
+                        : (() => {
+                            const pnl = isClosed ? trade.pnl : (trade.direction === 'Long' ? (livePrices[trade.symbol] - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrices[trade.symbol]) * trade.shares);
+                            return pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+                          })()
                     }`}>
-                      {!isClosed ? '-' : `${trade.pnl >= 0 ? '+' : '-'}$${Math.abs(trade.pnl).toFixed(2)}`}
+                      {(() => {
+                        if (isClosed) {
+                          return `${trade.pnl >= 0 ? '+' : '-'}$${Math.abs(trade.pnl).toFixed(2)}`;
+                        } else if (livePrices[trade.symbol]) {
+                          const livePrice = livePrices[trade.symbol];
+                          const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+                          return <span className="animate-pulse">{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</span>;
+                        }
+                        return '-';
+                      })()}
                     </td>
                     
                     {/* Actual RR */}
                     <td className="py-4 px-3 text-center">
-                      {!isClosed ? (
-                        <span className="text-slate-500">-</span>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          <span className={`px-2 py-0.5 rounded font-black text-xs ${
-                            trade.actualRR >= 2 
-                              ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
-                              : trade.actualRR >= 0 
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
-                                : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                          }`}>
-                            {trade.actualRR.toFixed(4)} R
-                          </span>
-                          {trade.isSplit && (
-                            <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
-                              SPLIT
+                      {(() => {
+                        let rrToShow = null;
+                        if (isClosed) {
+                          rrToShow = trade.actualRR;
+                        } else if (livePrices[trade.symbol]) {
+                          const livePrice = livePrices[trade.symbol];
+                          const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+                          const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+                          const initialRisk = trade.plannedRisk || (gap * trade.shares);
+                          if (initialRisk > 0) {
+                            rrToShow = pnl / initialRisk;
+                          }
+                        }
+
+                        if (rrToShow === null) {
+                          return <span className="text-slate-500">-</span>;
+                        }
+
+                        return (
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className={`px-2 py-0.5 rounded font-black text-xs ${!isClosed ? 'opacity-80 animate-pulse' : ''} ${
+                              rrToShow >= 2 
+                                ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                                : rrToShow >= 0 
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
+                                  : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                            }`}>
+                              {rrToShow.toFixed(4)} R
                             </span>
-                          )}
-                        </div>
-                      )}
+                            {trade.isSplit && (
+                              <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
+                                SPLIT
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     
                     {/* Qualitative Analysis */}
