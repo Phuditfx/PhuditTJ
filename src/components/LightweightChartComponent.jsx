@@ -90,6 +90,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
 
   // Ref to hold current price lines
   const priceLinesRef = useRef({});
+  const lineStateRef = useRef({});
 
   useEffect(() => {
     if (!seriesInstance.current || loading) return;
@@ -104,12 +105,22 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
         if (lines[key]) {
           series.removePriceLine(lines[key]);
           delete lines[key];
+          delete lineStateRef.current[key];
         }
         return;
       }
       
+      const newState = { price: parsedPrice, color, title, style };
+      const oldState = lineStateRef.current[key];
+      
+      // Avoid calling applyOptions if nothing changed, prevents severe UI lag
+      if (oldState && oldState.price === newState.price && oldState.color === newState.color && oldState.title === newState.title && oldState.style === newState.style) {
+        return;
+      }
+      
+      lineStateRef.current[key] = newState;
+
       if (lines[key]) {
-        // PriceLine doesn't support updating price easily in this version sometimes, but applyOptions might work.
         lines[key].applyOptions({
           price: parsedPrice,
           color,
