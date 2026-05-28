@@ -47,6 +47,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [chartModalTrade, setChartModalTrade] = useState(null);
   const [editingOpenTrade, setEditingOpenTrade] = useState(null);
   const [exitPrice, setExitPrice] = useState('');
+  const [mfePrice, setMfePrice] = useState('');
+  const [maePrice, setMaePrice] = useState('');
   
   // State สำหรับ Edit Open Trade
   const [editEntry, setEditEntry] = useState('');
@@ -124,6 +126,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setExitPrice(trade.actualExitPrice ? trade.actualExitPrice.toString() : trade.entryPrice.toString());
       setCloseShares(trade.shares.toString());
       setNotes(trade.notes || '');
+      setMfePrice(trade.mfePrice ? trade.mfePrice.toString() : '');
+      setMaePrice(trade.maePrice ? trade.maePrice.toString() : '');
       setQMarketTrend(trade.qMarketTrend !== undefined ? trade.qMarketTrend : 1);
       setQRelativeStrength(trade.qRelativeStrength !== undefined ? trade.qRelativeStrength : 1);
       setQSetupQuality(trade.qSetupQuality !== undefined ? trade.qSetupQuality : 2);
@@ -133,6 +137,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
       setNotes(trade.notes || '');
+      setMfePrice('');
+      setMaePrice('');
       setQMarketTrend(1);
       setQRelativeStrength(1);
       setQSetupQuality(2);
@@ -250,6 +256,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       status: 'Closed',
       pnl,
       actualRR,
+      mfePrice: mfePrice ? parseFloat(mfePrice) : null,
+      maePrice: maePrice ? parseFloat(maePrice) : null,
       contextScore: currentContextScore,
       qMarketTrend,
       qRelativeStrength,
@@ -578,7 +586,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     
                     {/* จัดการปุ่ม Close / Edit / Delete */}
                     <td className="py-4 px-4 text-right font-sans">
-                      <div className="flex flex-wrap justify-end gap-1.5 min-w-[140px]">
+                      <div className="grid grid-cols-2 gap-1.5 w-max ml-auto">
                         <button
                           onClick={() => setChartModalTrade(trade)}
                           className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/20"
@@ -722,6 +730,34 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     placeholder="จำนวนหุ้น..."
                     max={selectedTrade.shares}
                     className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* MFE / MAE Section */}
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-1.5 flex-1 relative">
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold flex justify-between" title="Maximum Favorable Excursion (ราคาสูงสุดที่ทำกำไรได้ระหว่างถือออเดอร์)">
+                    <span>MFE Price ($)</span>
+                  </label>
+                  <input 
+                    type="number"
+                    value={mfePrice}
+                    onChange={(e) => setMfePrice(e.target.value)}
+                    placeholder="ราคาพีคฝั่งกำไร..."
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-emerald-600 dark:text-emerald-500 focus:outline-none focus:border-emerald-500 text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1 relative">
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold flex justify-between" title="Maximum Adverse Excursion (ราคาต่ำสุดที่ขาดทุนระหว่างถือออเดอร์)">
+                    <span>MAE Price ($)</span>
+                  </label>
+                  <input 
+                    type="number"
+                    value={maePrice}
+                    onChange={(e) => setMaePrice(e.target.value)}
+                    placeholder="ราคาพีคฝั่งขาดทุน..."
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-rose-600 dark:text-rose-500 focus:outline-none focus:border-rose-500 text-sm"
                   />
                 </div>
               </div>

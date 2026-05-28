@@ -12,7 +12,11 @@ import {
   getStoredProfile,
   saveProfile,
   logoutUser,
-  getUserStatus
+  getUserStatus,
+  getStoredPlans,
+  savePlans,
+  getStoredDividends,
+  saveDividends
 } from './db/journalDB';
 import Dashboard from './components/Dashboard';
 import QuickOrderWidget from './components/QuickOrderWidget';
@@ -20,6 +24,9 @@ import FighterComponent from './components/FighterComponent';
 import TradeJournalTable from './components/TradeJournalTable';
 import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';
+import CalendarView from './components/CalendarView';
+import TradingPlans from './components/TradingPlans';
+import DividendTracker from './components/DividendTracker';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -48,6 +55,8 @@ export default function App() {
   const [initialBalance, setInitialBalanceState] = useState(10000);
   const [targetRR, setTargetRRState] = useState(20);
   const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
+  const [plans, setPlans] = useState([]);
+  const [dividends, setDividends] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   useEffect(() => {
@@ -68,15 +77,21 @@ export default function App() {
         const b = await getStoredInitialBalance(currentUser);
         const rr = await getStoredTargetRR(currentUser);
         const p = await getStoredProfile(currentUser);
+        const pl = await getStoredPlans(currentUser);
+        const div = await getStoredDividends(currentUser);
         if (isMounted) {
           setTrades(t);
           setInitialBalanceState(b);
           setTargetRRState(rr);
           setProfile(p);
+          setPlans(pl);
+          setDividends(div);
           setDataLoading(false);
         }
       } else {
         setTrades([]);
+        setPlans([]);
+        setDividends([]);
       }
     };
     loadData();
@@ -240,6 +255,30 @@ export default function App() {
       saveTrades(currentUser, updatedTradesList);
       return updatedTradesList;
     });
+  };
+
+  // จัดการ Plans
+  const handleSavePlan = (newPlanData) => {
+    const updatedPlans = [...plans, newPlanData];
+    setPlans(updatedPlans);
+    savePlans(currentUser, updatedPlans);
+  };
+  const handleDeletePlan = (id) => {
+    const updatedPlans = plans.filter(p => p.id !== id);
+    setPlans(updatedPlans);
+    savePlans(currentUser, updatedPlans);
+  };
+
+  // จัดการ Dividends
+  const handleSaveDividend = (newDivData) => {
+    const updatedDivs = [...dividends, newDivData];
+    setDividends(updatedDivs);
+    saveDividends(currentUser, updatedDivs);
+  };
+  const handleDeleteDividend = (id) => {
+    const updatedDivs = dividends.filter(d => d.id !== id);
+    setDividends(updatedDivs);
+    saveDividends(currentUser, updatedDivs);
   };
 
   // ระบบ Global Confirm Modal
@@ -472,6 +511,36 @@ export default function App() {
               >
                 ⚡ FIGHTER SANDBOX
               </button>
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'calendar'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                }`}
+              >
+                📅 CALENDAR
+              </button>
+              <button
+                onClick={() => setActiveTab('plans')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'plans'
+                    ? 'bg-amber-600 text-white shadow-md shadow-amber-950/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                }`}
+              >
+                📝 PLANS
+              </button>
+              <button
+                onClick={() => setActiveTab('dividends')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'dividends'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                }`}
+              >
+                💰 DIVIDENDS
+              </button>
               {currentUser === 'phudit.mahawongsanan@gmail.com' && (
                 <button
                   onClick={() => setActiveTab('owner')}
@@ -525,6 +594,26 @@ export default function App() {
                 accountBalance={accountBalance}
                 sharedOrder={sharedOrder}
                 setSharedOrder={setSharedOrder}
+              />
+            )}
+
+            {activeTab === 'calendar' && (
+              <CalendarView trades={trades} />
+            )}
+
+            {activeTab === 'plans' && (
+              <TradingPlans 
+                plans={plans}
+                onSavePlan={handleSavePlan}
+                onDeletePlan={handleDeletePlan}
+              />
+            )}
+
+            {activeTab === 'dividends' && (
+              <DividendTracker 
+                dividends={dividends}
+                onSaveDividend={handleSaveDividend}
+                onDeleteDividend={handleDeleteDividend}
               />
             )}
 
@@ -583,6 +672,24 @@ export default function App() {
         >
           <span className="text-xl">⚡</span>
           <span className="text-[10px] font-bold mt-1">Fighter</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+            activeTab === 'calendar' ? 'text-brand-primary' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">📅</span>
+          <span className="text-[10px] font-bold mt-1">Cal</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('plans')}
+          className={`hidden sm:flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+            activeTab === 'plans' ? 'text-amber-500' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">📝</span>
+          <span className="text-[10px] font-bold mt-1">Plans</span>
         </button>
         {currentUser === 'phudit.mahawongsanan@gmail.com' && (
           <button

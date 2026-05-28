@@ -58,6 +58,9 @@ export default function Dashboard({
   // เรียงออเดอร์ตามเวลาเพื่อหาสถิติติดต่อกัน (Streak) อย่างแม่นยำ
   const sortedTrades = [...closedTrades].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
+  let totalEfficiency = 0;
+  let efficiencyCount = 0;
+
   sortedTrades.forEach(t => {
     const pnl = parseFloat(t.pnl) || 0;
     if (pnl > 0) {
@@ -72,9 +75,25 @@ export default function Dashboard({
       if (currentConsecutiveLosses > maxConsecutiveLosses) maxConsecutiveLosses = currentConsecutiveLosses;
       grossLoss += Math.abs(pnl);
       if (pnl < largestLoss) largestLoss = pnl;
-    } else {
       currentConsecutiveWins = 0;
       currentConsecutiveLosses = 0;
+    }
+
+    if (t.mfePrice && t.entryPrice) {
+      const entry = parseFloat(t.entryPrice);
+      const mfe = parseFloat(t.mfePrice);
+      const shares = parseFloat(t.shares) || 1; // Fallback to 1 if not present for some reason
+      const isLong = t.direction === 'Long';
+      const mfePnL = isLong ? (mfe - entry) * shares : (entry - mfe) * shares;
+      
+      if (mfePnL > 0 && pnl > 0) {
+        const eff = (pnl / mfePnL) * 100;
+        totalEfficiency += Math.min(eff, 100); // cap at 100% just in case of slight price discrepancies
+        efficiencyCount++;
+      } else if (mfePnL > 0 && pnl <= 0) {
+        totalEfficiency += 0;
+        efficiencyCount++;
+      }
     }
   });
 
@@ -82,6 +101,7 @@ export default function Dashboard({
   const averageWin = wins.length > 0 ? grossProfit / wins.length : 0;
   const lossesCount = sortedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
   const averageLoss = lossesCount > 0 ? grossLoss / lossesCount : 0;
+  const avgExitEfficiency = efficiencyCount > 0 ? (totalEfficiency / efficiencyCount) : 0;
 
   // --- คำนวณข้อมูลสำหรับกราฟ ---
   const currentMonth = new Date().getMonth();
@@ -376,6 +396,12 @@ export default function Dashboard({
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Streaks (W / L)</span>
           <span className="text-xl font-mono font-bold mt-2 block">
             <span className="text-emerald-500">{maxConsecutiveWins}W</span> <span className="text-slate-500">/</span> <span className="text-rose-500">{maxConsecutiveLosses}L</span>
+          </span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Exit Efficiency</span>
+          <span className={`text-xl font-mono font-bold mt-2 block ${avgExitEfficiency >= 80 ? 'text-emerald-500' : (avgExitEfficiency >= 50 ? 'text-amber-500' : 'text-rose-500')}`}>
+            {avgExitEfficiency > 0 ? `${avgExitEfficiency.toFixed(1)}%` : 'N/A'}
           </span>
         </div>
       </div>

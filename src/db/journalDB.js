@@ -67,6 +67,82 @@ export const saveTrades = async (email, trades) => {
     }
 };
 
+// --- Plans Storage ---
+export const getStoredPlans = async (email) => {
+    if (!email) return [];
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().plans) {
+            fbData = docSnap.data().plans;
+        }
+    } catch (e) {
+        console.error("Error fetching plans from Firebase:", e);
+    }
+    
+    if (fbData) return fbData;
+    
+    try {
+        const local = localStorage.getItem(`phudit_plans_${cleanEmail}`);
+        if (local) return JSON.parse(local);
+    } catch (e) {}
+    return [];
+};
+
+export const savePlans = async (email, plans) => {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
+    try {
+        localStorage.setItem(`phudit_plans_${cleanEmail}`, JSON.stringify(plans));
+    } catch (e) {}
+    
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { plans }, { merge: true });
+    } catch (e) {}
+};
+
+// --- Dividends Storage ---
+export const getStoredDividends = async (email) => {
+    if (!email) return [];
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().dividends) {
+            fbData = docSnap.data().dividends;
+        }
+    } catch (e) {
+        console.error("Error fetching dividends from Firebase:", e);
+    }
+    
+    if (fbData) return fbData;
+    
+    try {
+        const local = localStorage.getItem(`phudit_dividends_${cleanEmail}`);
+        if (local) return JSON.parse(local);
+    } catch (e) {}
+    return [];
+};
+
+export const saveDividends = async (email, dividends) => {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
+    try {
+        localStorage.setItem(`phudit_dividends_${cleanEmail}`, JSON.stringify(dividends));
+    } catch (e) {}
+    
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { dividends }, { merge: true });
+    } catch (e) {}
+};
+
 export const getStoredInitialBalance = async (email) => {
     if (!email) return 10000;
     const cleanEmail = email.trim().toLowerCase();
