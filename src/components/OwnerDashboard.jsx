@@ -66,6 +66,33 @@ export default function OwnerDashboard({ currentUser }) {
         </div>
       </div>
 
+      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-lg mb-2">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">📝 System Diagnostics & Logs</span>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => import('../utils/logger').then(m => m.downloadLogs())}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded text-[10px] transition-colors cursor-pointer"
+            >
+              📥 Download Logs
+            </button>
+            <button 
+              onClick={() => {
+                if (window.confirm('ยืนยันการล้างประวัติ Logs ทั้งหมดในระบบ?')) {
+                  import('../utils/logger').then(m => {
+                    m.clearLogs();
+                    alert('Logs cleared successfully');
+                  });
+                }
+              }}
+              className="bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded text-[10px] font-bold transition-colors cursor-pointer"
+            >
+              🗑️ Clear Logs
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>

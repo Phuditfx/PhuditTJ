@@ -42,6 +42,10 @@ const updateSW = registerSW({
 })
 
 import { LanguageProvider } from './contexts/LanguageContext'
+import { initLogger } from './utils/logger'
+
+// Initialize the logger to capture console outputs
+initLogger();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

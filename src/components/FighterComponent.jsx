@@ -15,7 +15,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
 
   // Local parameter states
   const [sizingMode, setSizingMode] = useState('Risk($)'); // Budget, Risk($), Risk(%)
-  const [inputValue, setInputValue] = useState(200); // ค่าตามโหมดที่เลือก
+  const [inputValue, setInputValue] = useState(''); // ค่าตามโหมดที่เลือก
   const [isUnlocked, setIsUnlocked] = useState(false); // โหมด Sim Open/Close
   const [portfolioMode, setPortfolioMode] = useState('Moonbag (Free Share)');
 

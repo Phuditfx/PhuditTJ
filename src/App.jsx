@@ -600,13 +600,13 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'fighter' && (
+            <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
               <FighterComponent 
                 accountBalance={accountBalance}
                 sharedOrder={sharedOrder}
                 setSharedOrder={setSharedOrder}
               />
-            )}
+            </div>
 
             {activeTab === 'calendar' && (
               <CalendarView trades={trades} />
