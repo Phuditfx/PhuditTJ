@@ -45,7 +45,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   // สถานะสำหรับ Modal ปิดออเดอร์และดูกราฟ
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [chartModalTrade, setChartModalTrade] = useState(null);
+  const [editingOpenTrade, setEditingOpenTrade] = useState(null);
   const [exitPrice, setExitPrice] = useState('');
+  
+  // State สำหรับ Edit Open Trade
+  const [editEntry, setEditEntry] = useState('');
+  const [editSL, setEditSL] = useState('');
+  const [editTP, setEditTP] = useState('');
+  const [editShares, setEditShares] = useState('');
   const [closeShares, setCloseShares] = useState('');
   const [notes, setNotes] = useState('');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
@@ -571,24 +578,32 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     
                     {/* จัดการปุ่ม Close / Edit / Delete */}
                     <td className="py-4 px-4 text-right font-sans">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-1.5 min-w-[140px]">
                         <button
                           onClick={() => setChartModalTrade(trade)}
-                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/20"
+                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/20"
                         >
                           Chart
                         </button>
+                        {!isClosed && (
+                          <button
+                            onClick={() => handleOpenEditModal(trade)}
+                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-amber-900/20"
+                          >
+                            Edit
+                          </button>
+                        )}
                         {!isClosed ? (
                           <button
                             onClick={() => handleOpenCloseModal(trade)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded text-xs transition-colors cursor-pointer"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer"
                           >
                             Close
                           </button>
                         ) : (
                           <button
                             onClick={() => handleOpenCloseModal(trade)}
-                            className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-800/80 font-bold px-3 py-1 rounded text-xs transition-colors cursor-pointer"
+                            className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-800/80 font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer"
                           >
                             Edit
                           </button>
@@ -603,7 +618,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                           }}
                           className="bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-slate-405 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/40 px-2 py-1 rounded text-xs transition-colors cursor-pointer font-semibold"
                         >
-                          Delete
+                          Del
                         </button>
                       </div>
                     </td>
@@ -928,6 +943,85 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                    return '';
                 })()}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✏️ Edit Open Trade Modal */}
+      {editingOpenTrade && (
+        <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="crypto-card p-6 max-w-sm w-full flex flex-col gap-5 relative max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                  ✏️ Edit Entry Setup
+                </h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
+                  {editingOpenTrade.symbol} • {editingOpenTrade.direction}
+                </p>
+              </div>
+              <button 
+                onClick={() => setEditingOpenTrade(null)} 
+                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 font-black cursor-pointer text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry Price ($)</label>
+                <input 
+                  type="number"
+                  value={editEntry}
+                  onChange={(e) => setEditEntry(e.target.value)}
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Stop Loss ($)</label>
+                <input 
+                  type="number"
+                  value={editSL}
+                  onChange={(e) => setEditSL(e.target.value)}
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Take Profit 1 ($) (Optional)</label>
+                <input 
+                  type="number"
+                  value={editTP}
+                  onChange={(e) => setEditTP(e.target.value)}
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares (Position Size)</label>
+                <input 
+                  type="number"
+                  value={editShares}
+                  onChange={(e) => setEditShares(e.target.value)}
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 pt-4 mt-2">
+              <button
+                onClick={() => setEditingOpenTrade(null)}
+                className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmEditOpen}
+                className="bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+              >
+                Save Updates 💾
+              </button>
             </div>
           </div>
         </div>

@@ -45,6 +45,44 @@ export default function Dashboard({
     ? Math.min((accountBalance / nextRank.minPort) * 100, 100) 
     : 100;
 
+  // --- 🔬 Advanced Statistics Calculations ---
+  let maxConsecutiveWins = 0;
+  let maxConsecutiveLosses = 0;
+  let currentConsecutiveWins = 0;
+  let currentConsecutiveLosses = 0;
+  let grossProfit = 0;
+  let grossLoss = 0;
+  let largestWin = 0;
+  let largestLoss = 0;
+
+  // เรียงออเดอร์ตามเวลาเพื่อหาสถิติติดต่อกัน (Streak) อย่างแม่นยำ
+  const sortedTrades = [...closedTrades].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+  sortedTrades.forEach(t => {
+    const pnl = parseFloat(t.pnl) || 0;
+    if (pnl > 0) {
+      currentConsecutiveWins++;
+      currentConsecutiveLosses = 0;
+      if (currentConsecutiveWins > maxConsecutiveWins) maxConsecutiveWins = currentConsecutiveWins;
+      grossProfit += pnl;
+      if (pnl > largestWin) largestWin = pnl;
+    } else if (pnl < 0) {
+      currentConsecutiveLosses++;
+      currentConsecutiveWins = 0;
+      if (currentConsecutiveLosses > maxConsecutiveLosses) maxConsecutiveLosses = currentConsecutiveLosses;
+      grossLoss += Math.abs(pnl);
+      if (pnl < largestLoss) largestLoss = pnl;
+    } else {
+      currentConsecutiveWins = 0;
+      currentConsecutiveLosses = 0;
+    }
+  });
+
+  const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? Infinity : 0);
+  const averageWin = wins.length > 0 ? grossProfit / wins.length : 0;
+  const lossesCount = sortedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
+  const averageLoss = lossesCount > 0 ? grossLoss / lossesCount : 0;
+
   // --- คำนวณข้อมูลสำหรับกราฟ ---
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -310,6 +348,36 @@ export default function Dashboard({
           </div>
         </div>
 
+      </div>
+
+      {/* 🔬 Advanced Analytics (TradesViz Style) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Profit Factor</span>
+          <span className="text-xl font-mono font-bold text-sky-500 mt-2 block">{profitFactor === Infinity ? 'MAX' : profitFactor.toFixed(2)}</span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Win</span>
+          <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">${averageWin.toFixed(2)}</span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Loss</span>
+          <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">-${averageLoss.toFixed(2)}</span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Largest Win</span>
+          <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">${largestWin.toFixed(2)}</span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Largest Loss</span>
+          <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">-${Math.abs(largestLoss).toFixed(2)}</span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Streaks (W / L)</span>
+          <span className="text-xl font-mono font-bold mt-2 block">
+            <span className="text-emerald-500">{maxConsecutiveWins}W</span> <span className="text-slate-500">/</span> <span className="text-rose-500">{maxConsecutiveLosses}L</span>
+          </span>
+        </div>
       </div>
 
       {/* 📈 Analytics Charts Section */}
