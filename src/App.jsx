@@ -586,6 +586,7 @@ export default function App() {
                 onClearAllTrades={handleClearAllTrades}
                 onDeleteTradesByMonth={handleDeleteTradesByMonth}
                 requestConfirm={requestConfirm}
+                plans={plans}
               />
             )}
 
@@ -633,6 +634,7 @@ export default function App() {
             sharedOrder={sharedOrder}
             setSharedOrder={setSharedOrder}
             activeTab={activeTab}
+            plans={plans}
           />
           
           {/* ข้อมูลคำเตือนเล็กๆ ท้ายบอร์ด */}

@@ -4,7 +4,7 @@ import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm, plans = [] }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
@@ -58,6 +58,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [closeShares, setCloseShares] = useState('');
   const [notes, setNotes] = useState('');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  
+  // AI/Analytics Editing Fields
+  const [editPlan, setEditPlan] = useState('');
+  const [editSetup, setEditSetup] = useState('');
+  const [editMood, setEditMood] = useState('');
+
+  const SETUP_OPTIONS = ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
+  const MOOD_OPTIONS = ['🧘‍♂️ Calm/Focused', '😬 FOMO/Chasing', '😡 Revenge Trading', '🥱 Bored/Overtrading', '🤩 Overconfident'];
   
   // Context Score Survey States
   const [qMarketTrend, setQMarketTrend] = useState(1); // 0, 1, 3
@@ -119,6 +127,37 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     XLSX.writeFile(wb, "TradeJournal_Export.xlsx");
   };
 
+  // โหลดราคาปัจจุบันของออเดอร์ที่ยังเปิดอยู่
+  const handleOpenEditModal = (trade) => {
+    setEditingOpenTrade(trade);
+    setEditEntry(trade.entryPrice ? trade.entryPrice.toString() : '');
+    setEditSL(trade.stopLoss ? trade.stopLoss.toString() : '');
+    setEditTP(trade.takeProfit ? trade.takeProfit.toString() : '');
+    setEditShares(trade.shares ? trade.shares.toString() : '');
+    setEditPlan(trade.planId || '');
+    setEditSetup(trade.setupName || '');
+    setEditMood(trade.entryMood || '');
+  };
+
+  const handleConfirmEditOpen = () => {
+    if (!editEntry || !editSL || !editTP || !editShares) {
+      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+    const updated = {
+      ...editingOpenTrade,
+      entryPrice: parseFloat(editEntry),
+      stopLoss: parseFloat(editSL),
+      takeProfit: parseFloat(editTP),
+      shares: parseFloat(editShares),
+      planId: editPlan,
+      setupName: editSetup,
+      entryMood: editMood
+    };
+    onUpdateTrade(updated);
+    setEditingOpenTrade(null);
+  };
+
   // เปิด Modal ปิดออเดอร์ (หรือแก้ไขออเดอร์ที่ปิดแล้ว)
   const handleOpenCloseModal = async (trade) => {
     setSelectedTrade(trade);
@@ -133,6 +172,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setQSetupQuality(trade.qSetupQuality !== undefined ? trade.qSetupQuality : 2);
       setPlanAdherence(trade.planAdherence || "ตามแผนส่วนตัว (+100%)");
       setAiResult(trade.aiScore ? { aiScore: trade.aiScore, aiFeedback: trade.aiFeedback } : null);
+      setEditPlan(trade.planId || '');
+      setEditSetup(trade.setupName || '');
+      setEditMood(trade.entryMood || '');
     } else {
       setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
@@ -144,6 +186,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setQSetupQuality(2);
       setPlanAdherence("ตามแผนส่วนตัว (+100%)");
       setAiResult(null);
+      setEditPlan(trade.planId || '');
+      setEditSetup(trade.setupName || '');
+      setEditMood(trade.entryMood || '');
       
       // ดึงราคา Real-time
       setIsFetchingPrice(true);
@@ -266,7 +311,10 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       planAdherenceScore: score,
       aiScore: finalAI.aiScore,
       aiFeedback: finalAI.aiFeedback,
-      notes
+      notes,
+      planId: editPlan,
+      setupName: editSetup,
+      entryMood: editMood
     };
 
     onUpdateTrade(updatedTrade);
@@ -485,13 +533,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                       !isClosed && !livePrices[trade.symbol]
                         ? 'text-slate-400 dark:text-slate-500' 
                         : (() => {
-                            const pnl = isClosed ? trade.pnl : (trade.direction === 'Long' ? (livePrices[trade.symbol] - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrices[trade.symbol]) * trade.shares);
+                            const pnl = isClosed ? parseFloat(trade.pnl || 0) : (trade.direction === 'Long' ? (livePrices[trade.symbol] - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrices[trade.symbol]) * trade.shares);
                             return pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
                           })()
                     }`}>
                       {(() => {
                         if (isClosed) {
-                          return `${trade.pnl >= 0 ? '+' : '-'}$${Math.abs(trade.pnl).toFixed(2)}`;
+                          const parsedPnl = parseFloat(trade.pnl || 0);
+                          return `${parsedPnl >= 0 ? '+' : '-'}$${Math.abs(parsedPnl).toFixed(2)}`;
                         } else if (livePrices[trade.symbol]) {
                           const livePrice = livePrices[trade.symbol];
                           const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
@@ -759,6 +808,51 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     placeholder="ราคาพีคฝั่งขาดทุน..."
                     className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-rose-600 dark:text-rose-500 focus:outline-none focus:border-rose-500 text-sm"
                   />
+                </div>
+              </div>
+
+              {/* Context (Plan, Setup, Mood) */}
+              <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                  🤖 Context (Plan, Setup, Mood)
+                </span>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
+                    <select
+                      value={editPlan}
+                      onChange={(e) => setEditPlan(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- No Plan Selected --</option>
+                      {plans.map(p => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Setup / Strategy</label>
+                    <select
+                      value={editSetup}
+                      onChange={(e) => setEditSetup(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- Select Setup --</option>
+                      {SETUP_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Mental State</label>
+                    <select
+                      value={editMood}
+                      onChange={(e) => setEditMood(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- Select Mood --</option>
+                      {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -1042,6 +1136,51 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   onChange={(e) => setEditShares(e.target.value)}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
                 />
+              </div>
+              
+              {/* AI Analytics Integration Fields */}
+              <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800 mt-2">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                  🤖 Context (Plan, Setup, Mood)
+                </span>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
+                    <select
+                      value={editPlan}
+                      onChange={(e) => setEditPlan(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- No Plan Selected --</option>
+                      {plans.map(p => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Setup / Strategy</label>
+                    <select
+                      value={editSetup}
+                      onChange={(e) => setEditSetup(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- Select Setup --</option>
+                      {SETUP_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Mental State</label>
+                    <select
+                      value={editMood}
+                      onChange={(e) => setEditMood(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- Select Mood --</option>
+                      {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 

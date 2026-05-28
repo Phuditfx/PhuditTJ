@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab }) {
+export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [] }) {
   const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
     symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: ''
   };
@@ -14,6 +14,14 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const [showConfirm, setShowConfirm] = useState(false);
   const [shareInputMode, setShareInputMode] = useState('calculated'); // 'calculated' | 'custom'
   const [customShares, setCustomShares] = useState('');
+  
+  // AI/Analytics Fields
+  const [selectedPlan, setSelectedPlan] = useState('');
+  const [selectedSetup, setSelectedSetup] = useState('');
+  const [selectedMood, setSelectedMood] = useState('');
+
+  const SETUP_OPTIONS = ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
+  const MOOD_OPTIONS = ['🧘‍♂️ Calm/Focused', '😬 FOMO/Chasing', '😡 Revenge Trading', '🥱 Bored/Overtrading', '🤩 Overconfident'];
 
   // เมื่อเปลี่ยนยศ ให้ดึงค่าความเสี่ยงขั้นต่ำเริ่มต้นของยศนั้นมาใช้
   useEffect(() => {
@@ -87,6 +95,9 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       status: 'Open',
       contextScore: 5, // Default ค่อยแก้ตอนปิดดีล
       planAdherenceScore: 100, // Default ค่อยแก้ตอนปิดดีล
+      planId: selectedPlan,
+      setupName: selectedSetup,
+      entryMood: selectedMood
     };
 
     onSaveTrade(tradeData);
@@ -98,6 +109,9 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     updateShared('stopLoss', '');
     updateShared('tp1', '');
     setCustomShares('');
+    setSelectedPlan('');
+    setSelectedSetup('');
+    setSelectedMood('');
     setShareInputMode('calculated');
     setShowConfirm(false);
   };
@@ -315,6 +329,60 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
               ยืนยันการบันทึก
             </button>
           </div>
+
+          {/* AI Analytics Integration Fields */}
+          <div className="flex flex-col gap-3 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
+              🤖 AI Assessment Context <span className="text-amber-500">(Optional)</span>
+            </span>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Playbook */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
+                <select
+                  value={selectedPlan}
+                  onChange={(e) => setSelectedPlan(e.target.value)}
+                  className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- No Plan Selected --</option>
+                  {plans.map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Setup */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Setup / Strategy</label>
+                <select
+                  value={selectedSetup}
+                  onChange={(e) => setSelectedSetup(e.target.value)}
+                  className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Select Setup --</option>
+                  {SETUP_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {/* Mood */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Mental State</label>
+                <select
+                  value={selectedMood}
+                  onChange={(e) => setSelectedMood(e.target.value)}
+                  className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Select Mood --</option>
+                  {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={handleSave} className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-white p-3 rounded-lg font-black text-sm shadow-md shadow-emerald-950/20 active:scale-95 transition-all">
+            🎯 บันทึกไม้เทรดเข้าพอร์ต (Save Trade)
+          </button>
         </div>
       )}
     </div>

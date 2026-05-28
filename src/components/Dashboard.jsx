@@ -103,6 +103,33 @@ export default function Dashboard({
   const averageLoss = lossesCount > 0 ? grossLoss / lossesCount : 0;
   const avgExitEfficiency = efficiencyCount > 0 ? (totalEfficiency / efficiencyCount) : 0;
 
+  // --- Long vs Short Stats ---
+  const longTrades = closedTrades.filter(t => t.direction === 'Long');
+  const shortTrades = closedTrades.filter(t => t.direction === 'Short');
+  const longWins = longTrades.filter(t => parseFloat(t.pnl) > 0).length;
+  const shortWins = shortTrades.filter(t => parseFloat(t.pnl) > 0).length;
+  const longWinRate = longTrades.length > 0 ? (longWins / longTrades.length) * 100 : 0;
+  const shortWinRate = shortTrades.length > 0 ? (shortWins / shortTrades.length) * 100 : 0;
+
+  // --- AI Insights Generator ---
+  const generateAiInsight = () => {
+    if (closedTrades.length === 0) return "ยังไม่มีข้อมูลเพียงพอให้ประเมินครับ";
+    const recentTrades = sortedTrades.slice(-10);
+    const fomoTrades = recentTrades.filter(t => t.entryMood && t.entryMood.includes('FOMO'));
+    if (fomoTrades.length >= 3) {
+      return "🚨 AI Warning: ช่วง 10 ออเดอร์ล่าสุดคุณเข้าออเดอร์ด้วยอาการ FOMO บ่อยมาก! แนะนำให้พักเบรกหรือยึดติดกับ Trading Plan ให้มากขึ้นครับ";
+    }
+    const goodPlanTrades = recentTrades.filter(t => t.planAdherenceScore === 100);
+    if (goodPlanTrades.length >= Math.floor(recentTrades.length * 0.7)) {
+      return "🌟 AI Praise: เยี่ยมมาก! วินัยในการทำตามแผนของคุณในช่วงนี้ยอดเยี่ยมมาก รักษามาตรฐานนี้ไว้เพื่อการเติบโตของพอร์ตแบบก้าวกระโดด";
+    }
+    if (avgExitEfficiency < 40 && efficiencyCount >= 3) {
+      return "📉 AI Notice: คุณมักจะขายหมูบ่อยครั้ง (Exit Efficiency ต่ำกว่า 40%) ลองพิจารณาขยับเป้า TP หรือใช้ Trailing Stop ช่วยรันเทรนด์ดูครับ";
+    }
+    return "💡 AI Tip: การเทรดที่รอดพ้นตลาดคือการรักษาวินัย ยึดแผนการเทรดเป็นหลัก และไม่ใช้อารมณ์";
+  };
+  const aiInsightText = generateAiInsight();
+
   // --- คำนวณข้อมูลสำหรับกราฟ ---
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -403,6 +430,22 @@ export default function Dashboard({
           <span className={`text-xl font-mono font-bold mt-2 block ${avgExitEfficiency >= 80 ? 'text-emerald-500' : (avgExitEfficiency >= 50 ? 'text-amber-500' : 'text-rose-500')}`}>
             {avgExitEfficiency > 0 ? `${avgExitEfficiency.toFixed(1)}%` : 'N/A'}
           </span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Win Rate (L/S)</span>
+          <div className="flex flex-col mt-2">
+            <span className="text-xs font-mono font-bold text-emerald-500">Long: {longWinRate.toFixed(0)}% ({longWins}/{longTrades.length})</span>
+            <span className="text-xs font-mono font-bold text-rose-500">Short: {shortWinRate.toFixed(0)}% ({shortWins}/{shortTrades.length})</span>
+          </div>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between lg:col-span-3">
+          <span className="text-[10px] text-indigo-500 uppercase font-black tracking-wider block flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            AI Behavioral Insights
+          </span>
+          <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 font-medium leading-relaxed bg-indigo-50 dark:bg-indigo-950/30 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+            {aiInsightText}
+          </p>
         </div>
       </div>
 

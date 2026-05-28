@@ -432,6 +432,9 @@ export const simulateAIAssessment = (trade) => {
     const dir = trade.direction;
     const scorePlan = trade.planAdherenceScore;
     const scoreContext = parseInt(trade.contextScore) || 5;
+    const planName = trade.planId || 'ไม่ได้ระบุแผน';
+    const setup = trade.setupName || 'ไม่ได้ระบุท่าเทรด';
+    const mood = trade.entryMood || 'ไม่ได้ระบุอารมณ์';
 
     // คำนวณความเบี่ยงเบนและประสิทธิภาพ
     let isWin = false;
@@ -451,57 +454,49 @@ export const simulateAIAssessment = (trade) => {
     let aiScore = 5;
     let feedback = "";
 
-    if (scorePlan === 100) {
-        aiScore += 2;
-    } else if (scorePlan === 50) {
-        aiScore += 0;
-    } else {
-        aiScore -= 2;
-    }
+    if (scorePlan === 100) aiScore += 2;
+    else if (scorePlan === 0) aiScore -= 2;
 
-    if (scoreContext >= 8) {
+    if (scoreContext >= 8) aiScore += 1;
+    else if (scoreContext <= 4) aiScore -= 1;
+
+    if (mood.includes('FOMO') || mood.includes('Revenge') || mood.includes('Overconfident')) {
+        aiScore -= 2;
+    } else if (mood.includes('Calm')) {
         aiScore += 1;
-    } else if (scoreContext <= 4) {
-        aiScore -= 1;
     }
 
     if (isWin) {
         aiScore += 1;
-        if (calculatedRR >= 2) {
-            aiScore += 1;
-        }
+        if (calculatedRR >= 2) aiScore += 1;
     } else {
-        if (Math.abs(calculatedRR) > 1.2) {
-            aiScore -= 1; // ขาดทุนเกินจุด SL
-        }
+        if (Math.abs(calculatedRR) > 1.2) aiScore -= 1; // ขาดทุนเกินจุด SL
     }
 
     // จำกัดขอบเขตคะแนน 1-10
     aiScore = Math.max(1, Math.min(10, aiScore));
+    // สร้าง Feedback ภาษาไทยตามเงื่อนไขใหม่ที่ผูกกับ Mood และ Setup
+    let contextStr = `\n[ ท่าเทรด: ${setup} | อารมณ์: ${mood} ]\n`;
 
-    // สร้าง Feedback ภาษาไทยตามเงื่อนไข
     if (scorePlan === 100) {
         if (isWin) {
-            feedback = `🌟 ยอดเยี่ยมมาก! การเทรดครั้งนี้ทำตามแผนอย่างเคร่งครัด 100% ควบคู่กับสภาวะตลาดที่เอื้ออำนวย (Context: ${scoreContext}/10) ได้รับกำไร $${trade.pnl.toFixed(2)} (${calculatedRR.toFixed(2)} RR) วินัยชั้นยอดแบบนี้ทำให้พอร์ตเติบโตอย่างมั่นคงแน่นอน!`;
+            feedback = `🌟 ยอดเยี่ยมมาก! การเทรดด้วยแผน "${planName}" ครั้งนี้ทำตามระบบ 100% ควบคู่กับสภาพตลาดที่เอื้ออำนวย ได้กำไร ${calculatedRR.toFixed(2)} RR วินัยระดับนี้จะสร้างความมั่งคั่งได้แน่นอนครับ${contextStr}`;
         } else {
-            feedback = `👍 แม้ออเดอร์นี้จะจบด้วยการขาดทุน (-$${Math.abs(trade.pnl).toFixed(2)}) แต่การรักษาแผนการเทรด 100% ถือว่าสมบูรณ์แบบ วินัยที่ดีย่อมสำคัญกว่าผลลัพธ์ระยะสั้น การตัดขาดทุนตรงเวลาเป็นเกราะคุ้มครองพอร์ตที่ดีที่สุดครับ`;
+            feedback = `👍 ขาดทุนแต่สมบูรณ์แบบ! แม้ไม้นี้จะแพ้ไป แต่วินัย 100% ในแผน "${planName}" คือเกราะคุ้มกันที่ทรงพลังที่สุด การตัดขาดทุนตรงเวลาคือหัวใจของการอยู่รอด${contextStr}`;
         }
     } else if (scorePlan === 50) {
         if (isWin) {
-            feedback = `⚠️ ออเดอร์นี้ได้กำไรแต่ต้องระวัง เพราะทำตามแผนได้เพียงบางส่วน (50%) มีความเสี่ยงที่คุณจะใช้อารมณ์ร่วมหรือละเลยเช็คลิสต์บางอย่าง ควรทบทวนระบบเทรดและรักษาวินัยให้สม่ำเสมอ`;
+            feedback = `⚠️ กำไรแต่อันตราย! คุณทำตามแผน "${planName}" ได้เพียงครึ่งเดียว อาจมีอาการลังเลหรือข้ามเช็คลิสต์บางอย่างไป ควรกลับไปทบทวนเพื่อลดความเสี่ยงในครั้งหน้า${contextStr}`;
         } else {
-            feedback = `❌ เสียหายจากการขาดวินัยบางส่วน! ออเดอร์นี้หลุดจากแผนที่ตั้งไว้ ส่งผลให้ขาดทุน $${Math.abs(trade.pnl).toFixed(2)} คราวหน้าควรยึดมั่นตามเช็คลิสต์หรือรอเข้าเทรดพร้อมคำแนะนำจาก Ajarn Live เพื่อความชัวร์`;
+            feedback = `❌ ความล้มเหลวจากการไร้วินัย! ออเดอร์นี้หลุดเช็คลิสต์ของแผน "${planName}" ไปเยอะ ทำให้เกิดความเสียหายขึ้น ควรควบคุมตัวเองให้ดีขึ้นกว่านี้${contextStr}`;
         }
     } else {
         if (isWin) {
-            feedback = `🚨 โชคดีที่ได้กำไร! ออเดอร์นี้เป็นการเทรดด้วยอารมณ์หรือ FOMO 100% (วินัย 0%) แม้จะได้เงินแต่การเข้าออเดอร์นอกแผนแบบนี้จะทำลายพอร์ตในระยะยาวได้ง่ายมาก ควรระงับอารมณ์และห้ามเทรดไล่ราคาโดยไม่มีแผนเด็ดขาด`;
+            feedback = `🚨 ดวงดีเท่านั้น! การที่คุณเข้ามาเทรดโดยไร้แผนและแหกกฎ 100% แล้วได้กำไร ถือเป็นโชคร้ายระยะยาว เพราะมันจะหล่อหลอมนิสัยเสีย ระวังการเข้าด้วยท่า "${setup}" แบบไร้แผนจะทำให้พอร์ตพังในที่สุด${contextStr}`;
         } else {
-            feedback = `🚨 ความพ่ายแพ้จากการใช้อารมณ์ (FOMO)! ออเดอร์นี้แหกกฎ 100% และขาดทุน $${Math.abs(trade.pnl).toFixed(2)} นี่คือเครื่องเตือนใจว่าการเทรดด้วยอารมณ์จะพาไปสู่ความเสียหาย ควรปิดหน้าจอไปพักผ่อนเพื่อปรับอารมณ์ก่อนเริ่มเทรดไม้ถัดไป`;
+            feedback = `🚨 พังพินาศจากการใช้อารมณ์! นี่คือผลลัพธ์ของการเทรดนอกแผน 100% ความพ่ายแพ้ครั้งนี้ควรเป็นบทเรียนให้คุณเลิกใช้อารมณ์นำทางเด็ดขาด${contextStr}`;
         }
     }
 
-    return {
-        aiScore,
-        aiFeedback: feedback
-    };
+    return { aiScore, aiFeedback: feedback };
 };
