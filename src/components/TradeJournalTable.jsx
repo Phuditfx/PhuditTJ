@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
+import LightweightChartComponent from './LightweightChartComponent';
 
 export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm }) {
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
@@ -41,8 +42,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     };
   }, [trades]);
   
-  // สถานะสำหรับ Modal ปิดออเดอร์
+  // สถานะสำหรับ Modal ปิดออเดอร์และดูกราฟ
   const [selectedTrade, setSelectedTrade] = useState(null);
+  const [chartModalTrade, setChartModalTrade] = useState(null);
   const [exitPrice, setExitPrice] = useState('');
   const [closeShares, setCloseShares] = useState('');
   const [notes, setNotes] = useState('');
@@ -570,6 +572,12 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     {/* จัดการปุ่ม Close / Edit / Delete */}
                     <td className="py-4 px-4 text-right font-sans">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setChartModalTrade(trade)}
+                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/20"
+                        >
+                          Chart
+                        </button>
                         {!isClosed ? (
                           <button
                             onClick={() => handleOpenCloseModal(trade)}
@@ -874,6 +882,53 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* 📈 Chart View Modal */}
+      {chartModalTrade && (
+        <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="crypto-card p-6 max-w-4xl w-full flex flex-col gap-4 relative h-[80vh]">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2">
+                  <span>📈 Live Chart View: {chartModalTrade.symbol}</span>
+                </h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
+                  Dir: {chartModalTrade.direction} | Entry: ${chartModalTrade.entryPrice} | SL: ${chartModalTrade.stopLoss} | TP: ${chartModalTrade.takeProfit}
+                </p>
+              </div>
+              <button 
+                onClick={() => setChartModalTrade(null)} 
+                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 font-black cursor-pointer text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 w-full rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0a0a] relative">
+              <LightweightChartComponent 
+                symbol={chartModalTrade.symbol}
+                entry={chartModalTrade.entryPrice}
+                stopLoss={chartModalTrade.stopLoss}
+                tp1={chartModalTrade.takeProfit}
+                tp2={ (() => {
+                   const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
+                   if (gap > 0) {
+                     return chartModalTrade.direction === 'Long' ? chartModalTrade.entryPrice + gap * 2 : chartModalTrade.entryPrice - gap * 2;
+                   }
+                   return '';
+                })()}
+                tp3={ (() => {
+                   const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
+                   if (gap > 0) {
+                     return chartModalTrade.direction === 'Long' ? chartModalTrade.entryPrice + gap * 3 : chartModalTrade.entryPrice - gap * 3;
+                   }
+                   return '';
+                })()}
+              />
+            </div>
           </div>
         </div>
       )}
