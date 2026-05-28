@@ -565,12 +565,20 @@ export default function App() {
               )}
             </div>
             
-            <button 
-              onClick={() => setShowManual(true)}
-              className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35 transition-all cursor-pointer shadow border border-slate-200 dark:border-slate-700"
-            >
-              📖 {t('app.manual')}
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => import('./utils/logger').then(m => m.downloadLogs())}
+                className="hidden md:flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-black tracking-wide text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all cursor-pointer shadow border border-indigo-200 dark:border-indigo-800"
+              >
+                📥 โหลด Logs
+              </button>
+              <button 
+                onClick={() => setShowManual(true)}
+                className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35 transition-all cursor-pointer shadow border border-slate-200 dark:border-slate-700"
+              >
+                📖 {t('app.manual')}
+              </button>
+            </div>
           </div>
 
           {/* เรนเดอร์แท็บเนื้อหาที่เลือก */}
