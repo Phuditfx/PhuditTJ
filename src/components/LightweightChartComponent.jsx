@@ -65,10 +65,19 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     const loadData = async () => {
       if (!symbol) return;
       setLoading(true);
-      const data = await fetchHistoricalData(symbol);
-      if (seriesInstance.current && data.length > 0) {
-        seriesInstance.current.setData(data);
-        chartInstance.current.timeScale().fitContent();
+      try {
+        const data = await fetchHistoricalData(symbol);
+        if (seriesInstance.current && data && data.length > 0) {
+          // Deduplicate and sort data by time to prevent Lightweight Charts crash
+          const uniqueDataMap = new Map();
+          data.forEach(item => uniqueDataMap.set(item.time, item));
+          const sortedData = Array.from(uniqueDataMap.values()).sort((a, b) => a.time - b.time);
+          
+          seriesInstance.current.setData(sortedData);
+          chartInstance.current.timeScale().fitContent();
+        }
+      } catch (e) {
+        console.error("Error setting chart data:", e);
       }
       setLoading(false);
     };
@@ -76,15 +85,6 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     loadData();
   }, [symbol]);
 
-  // Update Price Lines when entry, sl, or tp changes
-  useEffect(() => {
-    if (!seriesInstance.current || loading) return;
-
-    // Remove existing price lines (Lightweight charts doesn't have an easy removeAll, so we recreate or keep refs if needed. 
-    // Wait, let's keep refs to the price lines to update them instead of creating new ones).
-    // Actually, setting them dynamically is best. Since we don't have refs stored here, we can store them in a custom ref.
-  }, [entry, stopLoss, tp1, tp2, tp3, loading]);
-  
   // Ref to hold current price lines
   const priceLinesRef = useRef({});
 
