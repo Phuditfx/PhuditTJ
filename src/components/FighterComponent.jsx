@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LightweightChartComponent from './LightweightChartComponent';
 
 export default function FighterComponent({ accountBalance, sharedOrder, setSharedOrder }) {
   // Use sharedOrder state from parent (App.jsx)
@@ -302,17 +303,20 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
         </div>
       </div>
 
-      {/* TradingView Advanced Chart Widget */}
+      {/* Lightweight Interactive Chart */}
       <div className="w-full h-[400px] rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0a0a] relative z-10">
         {symbol ? (
-          <iframe 
-            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${symbol}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Asia%2FBangkok&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=${symbol}`}
-            style={{ width: '100%', height: '100%', border: 'none' }}
-            title="TradingView Chart"
-          ></iframe>
+          <LightweightChartComponent 
+            symbol={symbol}
+            entry={entry}
+            stopLoss={stopLoss}
+            tp1={tp1}
+            tp2={tp2}
+            tp3={tp3}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold text-sm">
-            กรุณากรอก Symbol เพื่อโหลดกราฟ TF60
+            กรุณากรอก Symbol เพื่อโหลดกราฟ
           </div>
         )}
       </div>
@@ -377,6 +381,43 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 🛠️ Trader Tools & Resources for Small Capital Traders */}
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-5 mt-4 relative z-10">
+        <h3 className="text-sm font-black tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-2 mb-3">
+          <span>🛠️ TRADER TOOLS & RESOURCES (Free Tiers)</span>
+        </h3>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-4">
+          เครื่องมือแนะนำสำหรับเทรดเดอร์ทุนน้อยที่ต้องการข้อมูลระดับโปรแบบฟรีๆ (ใช้ควบคู่กับ Dime ได้)
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a href="https://finviz.com/" target="_blank" rel="noreferrer" className="block bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-colors group">
+            <h4 className="font-black text-slate-800 dark:text-white text-xs mb-1 group-hover:text-indigo-500">FINVIZ</h4>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              สแกนหุ้นเทคนิคัลและพื้นฐานฟรี (Screener) และดู Heatmap ตลาดได้อย่างรวดเร็ว
+            </p>
+          </a>
+          <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer" className="block bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-colors group">
+            <h4 className="font-black text-slate-800 dark:text-white text-xs mb-1 group-hover:text-indigo-500">TradingView</h4>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              สุดยอดแพลตฟอร์มวาดกราฟและตีเส้นที่ดีที่สุด สมัครฟรีสามารถดู TF Day/1H และสร้าง Watchlist ได้
+            </p>
+          </a>
+          <a href="https://www.webull.com/" target="_blank" rel="noreferrer" className="block bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-colors group">
+            <h4 className="font-black text-slate-800 dark:text-white text-xs mb-1 group-hover:text-indigo-500">Webull Desktop</h4>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              มี Level 2 Data (ถ้าได้โปรฟรี) และ Order Flow ที่ดูง่าย เหมาะมากสำหรับการหาจุดเข้าแบบลึกๆ 
+            </p>
+          </a>
+          <a href="https://finance.yahoo.com/" target="_blank" rel="noreferrer" className="block bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-colors group">
+            <h4 className="font-black text-slate-800 dark:text-white text-xs mb-1 group-hover:text-indigo-500">Yahoo Finance</h4>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              ติดตามข่าวสาร งบการเงิน และ Price Action เบื้องต้นแบบ Real-time ที่เร็วมากบนมือถือ
+            </p>
+          </a>
         </div>
       </div>
     </div>

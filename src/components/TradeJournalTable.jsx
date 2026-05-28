@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
+import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
 
 export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm }) {
@@ -12,6 +13,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [exitPrice, setExitPrice] = useState('');
   const [closeShares, setCloseShares] = useState('');
   const [notes, setNotes] = useState('');
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   
   // Context Score Survey States
   const [qMarketTrend, setQMarketTrend] = useState(1); // 0, 1, 3
@@ -74,7 +76,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   };
 
   // เปิด Modal ปิดออเดอร์ (หรือแก้ไขออเดอร์ที่ปิดแล้ว)
-  const handleOpenCloseModal = (trade) => {
+  const handleOpenCloseModal = async (trade) => {
     setSelectedTrade(trade);
     if (trade.status === 'Closed') {
       setExitPrice(trade.actualExitPrice ? trade.actualExitPrice.toString() : trade.entryPrice.toString());
@@ -86,7 +88,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setPlanAdherence(trade.planAdherence || "ตามแผนส่วนตัว (+100%)");
       setAiResult(trade.aiScore ? { aiScore: trade.aiScore, aiFeedback: trade.aiFeedback } : null);
     } else {
-      setExitPrice(trade.entryPrice.toString()); // ตั้งค่าเริ่มต้นเป็นราคาเข้าซื้อ
+      setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
       setNotes(trade.notes || '');
       setQMarketTrend(1);
@@ -94,6 +96,17 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setQSetupQuality(2);
       setPlanAdherence("ตามแผนส่วนตัว (+100%)");
       setAiResult(null);
+      
+      // ดึงราคา Real-time
+      setIsFetchingPrice(true);
+      const livePrice = await fetchRealTimePrice(trade.symbol);
+      setIsFetchingPrice(false);
+      
+      if (livePrice) {
+        setExitPrice(livePrice.toString());
+      } else {
+        setExitPrice(trade.entryPrice.toString());
+      }
     }
   };
 
@@ -596,8 +609,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             <div className="flex flex-col gap-4">
               <div className="flex gap-4">
                 {/* Actual Exit Price */}
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Actual Exit Price ($)</label>
+                <div className="flex flex-col gap-1.5 flex-1 relative">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold flex justify-between">
+                    <span>Actual Exit Price ($)</span>
+                    {isFetchingPrice && <span className="text-[9px] text-amber-500 animate-pulse">Fetching Live Price...</span>}
+                  </label>
                   <input 
                     type="number"
                     value={exitPrice}
