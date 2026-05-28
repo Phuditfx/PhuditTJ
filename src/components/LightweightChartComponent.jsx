@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createChart } from 'lightweight-charts';
+import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
 
 export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long' }) {
@@ -37,7 +37,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     
     chartInstance.current = chart;
     
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#10b981', // emerald-500
       downColor: '#ef4444', // red-500
       borderVisible: false,
