@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
