@@ -150,8 +150,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
               position: 'belowBar',
               color: '#8b5cf6', // purple-500
               shape: 'circle',
-              text: '▲ ENTRY / ▼ EXIT',
-              size: 2
+              text: '▲ ENTRY / ▼ EXIT'
             });
           } else {
             // กรณีคนละแท่งเทียน แสดงลูกศรแยกกันสวยงาม
@@ -161,8 +160,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
                 position: 'belowBar', // Entry always below the candle
                 color: '#3b82f6', // blue-500 (สีน้ำเงิน)
                 shape: 'arrowUp',
-                text: 'ENTRY',
-                size: 2
+                text: 'ENTRY'
               });
             }
 
@@ -172,8 +170,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
                 position: 'aboveBar', // Exit always above the candle
                 color: '#f59e0b', // amber-500 (สีส้มเหลือง)
                 shape: 'arrowDown',
-                text: 'EXIT',
-                size: 2
+                text: 'EXIT'
               });
             }
           }
@@ -181,9 +178,12 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           // เรียงเวลาจากน้อยไปมากตามข้อกำหนดของ Lightweight Charts
           markers.sort((a, b) => a.time - b.time);
           
-          if (seriesInstance.current) {
-            seriesInstance.current.setMarkers(markers);
-          }
+          // ใช้ setTimeout เพื่อหน่วงเวลาให้ DOM และชาร์ตทำการเรนเดอร์แท่งเทียนจนเสร็จสมบูรณ์ ป้องกันปัญหารอยต่อเวลา/การเคลียร์ภาพในช่วงอนิเมชั่น
+          setTimeout(() => {
+            if (seriesInstance.current) {
+              seriesInstance.current.setMarkers(markers);
+            }
+          }, 150);
         }
       } catch (e) {
         console.error("Error setting chart data:", e);
