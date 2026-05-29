@@ -289,6 +289,208 @@ const TradeRow = React.memo(({
   );
 });
 
+// 📱 Mobile Card View Component
+const TradeCard = React.memo(({
+  trade,
+  livePrice,
+  isVip,
+  isFeedbackActive,
+  setActiveFeedbackTradeId,
+  setChartModalTrade,
+  handleOpenEditModal,
+  handleOpenCloseModal,
+  requestConfirm,
+  onDeleteTrade
+}) => {
+  const isClosed = trade.status === 'Closed';
+
+  // Calculate PnL
+  const pnl = isClosed 
+    ? parseFloat(trade.pnl || 0) 
+    : (livePrice 
+      ? (trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares)
+      : null);
+
+  // Calculate RR
+  let rrToShow = null;
+  if (isClosed) {
+    rrToShow = trade.actualRR;
+  } else if (livePrice) {
+    const livePnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+    const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+    const initialRisk = trade.plannedRisk || (gap * trade.shares);
+    if (initialRisk > 0) rrToShow = livePnl / initialRisk;
+  }
+
+  return (
+    <div className={`bg-white dark:bg-slate-900/80 border rounded-xl p-4 flex flex-col gap-3 transition-all shadow-sm hover:shadow-md ${
+      isFeedbackActive 
+        ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-950/20' 
+        : 'border-slate-200 dark:border-slate-800'
+    }`}>
+      {/* Top Row: Symbol + Direction + Date */}
+      <div className="flex justify-between items-start">
+        <div className="flex items-center gap-2">
+          <span className="font-black text-base text-slate-900 dark:text-white uppercase tracking-tight">{trade.symbol}</span>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+            trade.direction === 'Long' 
+              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
+              : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+          }`}>
+            {trade.direction}
+          </span>
+          {!isClosed && (
+            <span className="text-[9px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-1.5 py-0.5 rounded font-bold animate-pulse">
+              OPEN
+            </span>
+          )}
+          {trade.isSplit && (
+            <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold">SPLIT</span>
+          )}
+        </div>
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+          {trade.dateTime ? new Date(trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
+        </span>
+      </div>
+
+      {/* Middle: Key Metrics Grid */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <div className="flex justify-between">
+          <span className="text-slate-400 font-semibold">Entry:</span>
+          <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">${Number(trade.entryPrice).toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400 font-semibold">Exit:</span>
+          <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">
+            {isClosed ? `$${trade.actualExitPrice.toFixed(2)}` : <span className="text-amber-500 italic">Active</span>}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-rose-400 font-semibold">SL:</span>
+          <span className="text-slate-600 dark:text-slate-400 font-mono">${trade.stopLoss.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-indigo-400 font-semibold">TP:</span>
+          <span className="text-slate-600 dark:text-slate-400 font-mono">${trade.takeProfit.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400 font-semibold">Shares:</span>
+          <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">{trade.shares.toFixed(4)}</span>
+        </div>
+        <div className="flex justify-between relative">
+          <span className="text-slate-400 font-semibold">RR:</span>
+          <div className={!isVip ? 'blur-sm select-none' : ''}>
+            {rrToShow !== null ? (
+              <span className={`font-black font-mono ${
+                rrToShow >= 2 ? 'text-emerald-600 dark:text-emerald-400' : rrToShow >= 0 ? 'text-slate-700 dark:text-slate-300' : 'text-rose-600 dark:text-rose-400'
+              }`}>{rrToShow.toFixed(2)} R</span>
+            ) : (
+              <span className="text-slate-400">-</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* P/L Display */}
+      <div className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+        pnl !== null && pnl >= 0 
+          ? 'bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20' 
+          : pnl !== null 
+            ? 'bg-rose-50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20'
+            : 'bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800'
+      }`}>
+        <span className="text-[10px] text-slate-400 font-bold uppercase">P/L</span>
+        <div className={!isVip ? 'blur-sm select-none' : ''}>
+          {pnl !== null ? (
+            <span className={`font-mono font-black text-sm ${
+              pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+            } ${!isClosed ? 'animate-pulse' : ''}`}>
+              {pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}
+            </span>
+          ) : (
+            <span className="text-slate-400 text-sm">-</span>
+          )}
+        </div>
+        {!isVip && <span className="text-xs">🔒</span>}
+      </div>
+
+      {/* AI Score + Context (if closed) */}
+      {isClosed && isVip && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {trade.contextScore !== undefined && (
+            <span className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-[10px] text-slate-500">
+              🌌 {trade.contextScore}/10
+            </span>
+          )}
+          {trade.aiScore && (
+            <button
+              onClick={() => setActiveFeedbackTradeId(isFeedbackActive ? null : trade.id)}
+              className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-900/50 px-2 py-0.5 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 cursor-pointer"
+            >
+              ⚡ AI: {trade.aiScore}/10 ▼
+            </button>
+          )}
+          {trade.planAdherence && (
+            <div className={`w-2 h-2 rounded-full ${trade.planAdherenceScore === 100 ? 'bg-emerald-400' : trade.planAdherenceScore === 50 ? 'bg-amber-400' : 'bg-rose-400'}`} title={trade.planAdherence}></div>
+          )}
+          {trade.notes && <span className="text-[11px] cursor-help" title={trade.notes}>📝</span>}
+        </div>
+      )}
+
+      {/* AI Feedback Expanded */}
+      {isFeedbackActive && (
+        <div className="p-3 border-l-4 border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-r-lg animate-fade-in">
+          <div className="flex justify-between items-center pb-1">
+            <span className="font-bold text-indigo-600 dark:text-indigo-400 text-[10px]">⚡ AI Coach Feedback</span>
+            <button onClick={() => setActiveFeedbackTradeId(null)} className="text-slate-400 text-[10px] font-bold cursor-pointer">✕</button>
+          </div>
+          <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap mt-1">{trade.aiFeedback}</p>
+        </div>
+      )}
+
+      {/* Bottom: Action Buttons */}
+      <div className="flex gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+        <button
+          onClick={() => setChartModalTrade(trade)}
+          className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1"
+        >
+          📈 Chart
+        </button>
+        {!isClosed && (
+          <button
+            onClick={() => handleOpenEditModal(trade)}
+            className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1"
+          >
+            ✏️ Edit
+          </button>
+        )}
+        <button
+          onClick={() => handleOpenCloseModal(trade)}
+          className={`flex-1 font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1 ${
+            !isClosed 
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
+              : 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-800/80'
+          }`}
+        >
+          {!isClosed ? '🚪 Close' : '✏️ Edit'}
+        </button>
+        <button
+          onClick={() => {
+            requestConfirm(
+              "ลบออเดอร์",
+              "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
+              () => onDeleteTrade(trade.id)
+            );
+          }}
+          className="bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/40 py-2 px-3 rounded-lg text-[11px] transition-colors cursor-pointer font-semibold"
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+  );
+});
+
 export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, plans = [], isVip }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
@@ -809,8 +1011,36 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
         </div>
       </div>
 
-      {/* ตารางแสดงออเดอร์ */}
-      <div className="overflow-x-auto">
+      {/* 📱 Mobile Card View (visible < md) */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filteredTrades.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 dark:text-slate-500 font-semibold italic">
+            {t('journal.noTradesFilter')}
+          </div>
+        ) : (
+          filteredTrades.map((trade) => {
+            const isFeedbackActive = activeFeedbackTradeId === trade.id;
+            return (
+              <TradeCard
+                key={trade.id}
+                trade={trade}
+                livePrice={livePrices[trade.symbol]}
+                isVip={isVip}
+                isFeedbackActive={isFeedbackActive}
+                setActiveFeedbackTradeId={setActiveFeedbackTradeId}
+                setChartModalTrade={setChartModalTrade}
+                handleOpenEditModal={handleOpenEditModal}
+                handleOpenCloseModal={handleOpenCloseModal}
+                requestConfirm={requestConfirm}
+                onDeleteTrade={onDeleteTrade}
+              />
+            );
+          })
+        )}
+      </div>
+
+      {/* 🖥️ Desktop Table View (visible >= md) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] font-bold">

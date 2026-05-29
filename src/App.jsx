@@ -74,6 +74,10 @@ export default function App() {
   const [globalDateRange, setGlobalDateRange] = useState('1M');
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [editingAccountId, setEditingAccountId] = useState(null);
+  const [editingAccountName, setEditingAccountName] = useState('');
+  const [editingBalanceId, setEditingBalanceId] = useState(null);
+  const [editingBalanceValue, setEditingBalanceValue] = useState('');
   const [showManual, setShowManual] = useState(false);
   
   useEffect(() => {
@@ -477,6 +481,25 @@ export default function App() {
     }
   };
 
+  const handleRenameAccount = (accId, newName) => {
+    if (!newName.trim()) return;
+    const updatedAccounts = accounts.map(a => a.id === accId ? { ...a, name: newName.trim() } : a);
+    setAccounts(updatedAccounts);
+    saveAccounts(currentUser, updatedAccounts);
+    setEditingAccountId(null);
+    setEditingAccountName('');
+  };
+
+  const handleUpdateInitialBalance = (accId, newBalance) => {
+    const val = parseFloat(newBalance);
+    if (isNaN(val) || val < 0) return;
+    const updatedBalances = { ...initialBalances, [accId]: val };
+    setInitialBalances(updatedBalances);
+    saveInitialBalance(currentUser, updatedBalances);
+    setEditingBalanceId(null);
+    setEditingBalanceValue('');
+  };
+
   if (!authReady) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center">
@@ -853,6 +876,168 @@ export default function App() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ⚙️ Account Management Modal */}
+      {showAccountModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3 relative z-10">
+              <div>
+                <h3 className="text-lg font-black text-indigo-600 dark:text-indigo-400">⚙️ Manage Trading Accounts</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">Add, rename, or remove trading accounts</p>
+              </div>
+              <button 
+                onClick={() => { setShowAccountModal(false); setEditingAccountId(null); setEditingBalanceId(null); }} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-black cursor-pointer text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Add New Account */}
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddAccount()}
+                placeholder="New account name..." 
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+              <button 
+                onClick={handleAddAccount}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-indigo-900/20 flex items-center gap-1 whitespace-nowrap"
+              >
+                ➕ Add
+              </button>
+            </div>
+
+            {/* Account List */}
+            <div className="flex flex-col gap-2">
+              {accounts.map(acc => {
+                const accTrades = trades.filter(t => (t.accountId || 'default') === acc.id && t.status === 'Closed');
+                const accPnL = accTrades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
+                const accBalance = (initialBalances[acc.id] || 10000);
+                const isEditing = editingAccountId === acc.id;
+                const isEditingBal = editingBalanceId === acc.id;
+                const isActive = accountId === acc.id;
+
+                return (
+                  <div key={acc.id} className={`border rounded-xl p-3 sm:p-4 flex flex-col gap-3 transition-all ${
+                    isActive 
+                      ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-800/60 shadow-sm' 
+                      : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800'
+                  }`}>
+                    {/* Account Name Row */}
+                    <div className="flex justify-between items-center gap-2">
+                      {isEditing ? (
+                        <div className="flex gap-2 flex-1">
+                          <input 
+                            type="text" 
+                            value={editingAccountName}
+                            onChange={(e) => setEditingAccountName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleRenameAccount(acc.id, editingAccountName)}
+                            className="flex-1 bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-700 rounded-lg px-2 py-1 text-sm font-bold text-slate-900 dark:text-white focus:outline-none"
+                            autoFocus
+                          />
+                          <button 
+                            onClick={() => handleRenameAccount(acc.id, editingAccountName)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer"
+                          >✓</button>
+                          <button 
+                            onClick={() => { setEditingAccountId(null); setEditingAccountName(''); }}
+                            className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer"
+                          >✕</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {isActive && <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 animate-pulse"></span>}
+                          <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{acc.name}</span>
+                          <button 
+                            onClick={() => { setEditingAccountId(acc.id); setEditingAccountName(acc.name); }}
+                            className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer flex-shrink-0"
+                            title="Rename"
+                          >✏️</button>
+                        </div>
+                      )}
+                      
+                      {!isEditing && (
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          {!isActive && (
+                            <button 
+                              onClick={() => setAccountId(acc.id)}
+                              className="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                            >Select</button>
+                          )}
+                          <button 
+                            onClick={() => handleDeleteAccount(acc.id)}
+                            className="bg-slate-50 dark:bg-slate-950 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-900 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                            title="Delete Account"
+                          >🗑️</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Balance & P/L Stats */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Initial Bal.</span>
+                        {isEditingBal ? (
+                          <div className="flex gap-1 mt-0.5">
+                            <input 
+                              type="number" 
+                              value={editingBalanceValue}
+                              onChange={(e) => setEditingBalanceValue(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleUpdateInitialBalance(acc.id, editingBalanceValue)}
+                              className="w-full bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-700 rounded px-1 py-0.5 text-[10px] font-mono text-slate-900 dark:text-white focus:outline-none text-center"
+                              autoFocus
+                            />
+                            <button 
+                              onClick={() => handleUpdateInitialBalance(acc.id, editingBalanceValue)}
+                              className="text-emerald-500 text-[10px] font-bold cursor-pointer"
+                            >✓</button>
+                          </div>
+                        ) : (
+                          <span 
+                            className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            onClick={() => { setEditingBalanceId(acc.id); setEditingBalanceValue(accBalance.toString()); }}
+                            title="Click to edit"
+                          >
+                            ${accBalance.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Net P/L</span>
+                        <span className={`text-xs font-black ${accPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {accPnL >= 0 ? '+' : ''}${accPnL.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Trades</span>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{accTrades.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-end border-t border-slate-200 dark:border-slate-800 pt-4">
+              <button 
+                onClick={() => { setShowAccountModal(false); setEditingAccountId(null); setEditingBalanceId(null); }}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md"
+              >
+                Done ✓
+              </button>
+            </div>
           </div>
         </div>
       )}

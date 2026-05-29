@@ -102,27 +102,27 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           };
 
           const exactEntryTime = findClosestTime(entryTime);
+          const exactExitTime = findClosestTime(exitTime);
+          const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
+
           if (exactEntryTime) {
             markers.push({
               time: exactEntryTime,
-              position: direction === 'Long' ? 'belowBar' : 'aboveBar',
-              color: '#3b82f6', // blue-500
-              shape: direction === 'Long' ? 'arrowUp' : 'arrowDown',
-              text: 'ENTRY',
+              position: 'belowBar', // Entry always below the candle
+              color: '#3b82f6', // blue-500 (สีน้ำเงิน)
+              shape: 'arrowUp',
+              text: isSameCandle ? '▲ ENTRY' : 'ENTRY',
               size: 2
             });
           }
 
-          const exactExitTime = findClosestTime(exitTime);
           if (exactExitTime) {
-            // Determine if exit was profitable (very naive check based on entry price)
-            const isWin = direction === 'Long' ? (tp1 && entry < tp1) : (tp1 && entry > tp1);
             markers.push({
               time: exactExitTime,
-              position: direction === 'Long' ? 'aboveBar' : 'belowBar',
-              color: '#f59e0b', // amber-500
-              shape: direction === 'Long' ? 'arrowDown' : 'arrowUp',
-              text: 'EXIT',
+              position: 'aboveBar', // Exit always above the candle
+              color: '#f59e0b', // amber-500 (สีส้มเหลือง)
+              shape: 'arrowDown',
+              text: isSameCandle ? '▼ EXIT' : 'EXIT',
               size: 2
             });
           }
@@ -141,7 +141,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     };
     
     loadData();
-  }, [symbol]);
+  }, [symbol, entryTime, exitTime, direction]);
 
   // Ref to hold current price lines
   const priceLinesRef = useRef({});
