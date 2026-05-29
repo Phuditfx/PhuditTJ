@@ -386,7 +386,7 @@ export default function App() {
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-3">
             <img 
-              src="/logo.svg" 
+              src="/logo.png" 
               alt="PDTJ Logo" 
               className="w-10 h-10 object-contain drop-shadow-md rounded-lg"
               onError={(e) => {
