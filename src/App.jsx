@@ -396,14 +396,30 @@ export default function App() {
             </div>
           </div>
           
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="md:hidden p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
-            title={theme === 'dark' ? 'เปิดโหมดสว่าง (Soft Slate)' : 'เปิดโหมดมืด (Dark Mode)'}
-            aria-label="Toggle Theme"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+          <div className="md:hidden flex items-center gap-2">
+            <button
+              onClick={() => setShowManual(true)}
+              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-500 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
+              title="Manual"
+            >
+              📖
+            </button>
+            <button
+              onClick={toggleLanguage}
+              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-indigo-500 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid font-bold text-[10px]"
+              title="Toggle Language"
+            >
+              {language === 'th' ? 'EN' : 'TH'}
+            </button>
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
+              title={theme === 'dark' ? 'เปิดโหมดสว่าง (Soft Slate)' : 'เปิดโหมดมืด (Dark Mode)'}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          </div>
         </div>
 
         {/* ยศของพอร์ตรวมปัจจุบัน & สลับธีม */}
@@ -676,19 +692,19 @@ export default function App() {
       </main>
 
       {/* 📱 Mobile Bottom Navigation Bar (Visible only on small screens) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-brand-surface dark:bg-slate-900 border-t border-brand-border flex justify-around items-center p-2 z-40 pb-safe shadow-[0_-4px_12px_rgba(5,15,26,0.08)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-brand-surface dark:bg-slate-900 border-t border-brand-border flex justify-around items-center p-2 z-40 pb-safe shadow-[0_-4px_12px_rgba(5,15,26,0.08)] overflow-x-auto gap-2">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
             activeTab === 'dashboard' ? 'text-brand-primary' : 'text-brand-text-secondary'
           }`}
         >
           <span className="text-xl">📊</span>
-          <span className="text-[10px] font-bold mt-1">Dashboard</span>
+          <span className="text-[10px] font-bold mt-1">Dash</span>
         </button>
         <button
           onClick={() => setActiveTab('journal')}
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
             activeTab === 'journal' ? 'text-brand-primary' : 'text-brand-text-secondary'
           }`}
         >
@@ -697,7 +713,7 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('fighter')}
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
             activeTab === 'fighter' ? 'text-brand-primary' : 'text-brand-text-secondary'
           }`}
         >
@@ -706,7 +722,7 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('calendar')}
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
             activeTab === 'calendar' ? 'text-brand-primary' : 'text-brand-text-secondary'
           }`}
         >
@@ -715,7 +731,7 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('plans')}
-          className={`hidden sm:flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
             activeTab === 'plans' ? 'text-amber-500' : 'text-brand-text-secondary'
           }`}
         >
@@ -725,7 +741,7 @@ export default function App() {
         {currentUser === 'phudit.mahawongsanan@gmail.com' && (
           <button
             onClick={() => setActiveTab('owner')}
-            className={`flex flex-col items-center p-2 rounded-lg transition-colors flex-1 ${
+            className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
               activeTab === 'owner' ? 'text-amber-500' : 'text-brand-text-secondary'
             }`}
           >
@@ -749,10 +765,11 @@ export default function App() {
             <div className="text-sm text-slate-750 dark:text-slate-300 space-y-4">
               <p><strong>1. ระบบ Login & ฐานข้อมูล:</strong> ข้อมูลทั้งหมดจะถูกผูกกับอีเมลและเซฟไว้ใน Browser ของคุณเอง.</p>
               <p><strong>2. DASHBOARD & RANKS:</strong> เริ่มต้นโดยการตั้งค่าเงินทุน (Initial Balance) ระบบจะอัปเดตยศ (Rank Level) อัตโนมัติจากยอดเงินปัจจุบัน.</p>
-              <p><strong>3. ALPHA TRADER (TI SWING PICK):</strong> ระบบใหม่! กรอก <code>TI Entry Alert</code> (จุดเบรคระดับ Day) และจุดเข้า (Entry). ระบบจะดึงข้อมูลราคามาวาดกราฟแท่งเทียนแบบเรียลไทม์ (Lightweight Chart) พร้อมตีเส้น Entry, SL, TP ให้อัตโนมัติ เพื่อให้หาจุดซื้อขายได้คมที่สุด.</p>
-              <p><strong>4. STOP LOSS & AUTO-TP:</strong> มีปุ่ม Quick SL คำนวณ % ลัด และ <strong>🤖 AI Auto-SL</strong> เป็นไกด์ไลน์. เมื่อได้ SL แล้ว ระบบ Auto-TP จะคำนวณเป้าหมายกำไร 1R, 2R, 3R ให้ทันที.</p>
-              <p><strong>5. QUICK ORDER WIDGET:</strong> ทุกการตั้งค่าจาก Alpha Trader จะ Sync มาที่ Widget นี้ให้กด Save เข้า Journal สะดวกๆ.</p>
-              <p><strong>6. TRADE JOURNAL & AI COACH:</strong> สำหรับออเดอร์ที่ยังเปิดอยู่ ระบบจะดึงราคาปัจจุบันมาคำนวณ Live PnL ให้อัตโนมัติ และเมื่อปิดออเดอร์ ระบบ AI จะประเมินคะแนน (AI Score) พร้อมให้คำแนะนำอย่างละเอียด.</p>
+              <p><strong>3. PORTFOLIO GROWTH & PROJECTION (New!):</strong> กราฟใหม่ในหน้า Dashboard ช่วยให้คุณเห็นการเติบโตแบบบันทึกประวัติ ฝาก/ถอน และรัน AI (Monte Carlo & Statistical) คาดการณ์ความสำเร็จของระบบคุณในอนาคตได้ 1-36 เดือน!</p>
+              <p><strong>4. ALPHA TRADER (TI SWING PICK):</strong> กรอก <code>TI Entry Alert</code> (จุดเบรคระดับ Day) และจุดเข้า (Entry). ระบบจะดึงข้อมูลราคามาวาดกราฟแท่งเทียนแบบเรียลไทม์ (Lightweight Chart) พร้อมตีเส้น Entry, SL, TP ให้อัตโนมัติ เพื่อให้หาจุดซื้อขายได้คมที่สุด.</p>
+              <p><strong>5. STOP LOSS & AUTO-TP:</strong> มีปุ่ม Quick SL คำนวณ % ลัด และ <strong>🤖 AI Auto-SL</strong> เป็นไกด์ไลน์. เมื่อได้ SL แล้ว ระบบ Auto-TP จะคำนวณเป้าหมายกำไร 1R, 2R, 3R ให้ทันที.</p>
+              <p><strong>6. QUICK ORDER WIDGET & TRADING PLANS:</strong> ทุกการตั้งค่าจาก Alpha Trader จะ Sync มาที่ Widget นี้ให้กด Save เข้า Journal สะดวกๆ และคุณสามารถสร้างแผนการเทรด (Trading Plans) เพื่อเช็คลิสต์ก่อนเข้าเทรดได้.</p>
+              <p><strong>7. TRADE JOURNAL & AI COACH:</strong> สำหรับออเดอร์ที่ยังเปิดอยู่ ระบบจะดึงราคาปัจจุบันมาคำนวณ Live PnL ให้อัตโนมัติ และเมื่อปิดออเดอร์ ระบบ AI จะประเมินคะแนน (AI Score) พร้อมให้คำแนะนำอย่างละเอียด.</p>
               <p><strong>👑 Owner Dashboard:</strong> เฉพาะผู้ดูแลระบบ <code>phudit.mahawongsanan@gmail.com</code> ที่จะเข้าถึงหน้ารวมสถิติผู้ใช้งานได้.</p>
             </div>
             <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-850 mt-2">
