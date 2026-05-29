@@ -431,6 +431,10 @@ export default function App() {
       const daysAgo = Math.floor(Math.random() * 60);
       const d = new Date();
       d.setDate(d.getDate() - daysAgo);
+      
+      // exit time is 4 hours after entry time
+      const exitD = new Date(d);
+      exitD.setHours(d.getHours() + 4);
 
       sampleTrades.push({
         id: `sample-${Date.now()}-${i}`,
@@ -442,6 +446,7 @@ export default function App() {
         shares,
         pnl: parseFloat(pnl.toFixed(2)),
         dateTime: d.toISOString(),
+        exitDateTime: exitD.toISOString(),
         accountId: accountId,
         planAdherenceScore: Math.floor(Math.random() * 50) + 50,
         actualRR: (pnl / (Math.abs(pnl) + 50)).toFixed(2),

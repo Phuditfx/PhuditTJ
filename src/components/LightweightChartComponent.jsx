@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { createChart, CandlestickSeries, LineSeries } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
 
 export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime }) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
+  const secondarySeriesInstance = useRef(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,6 +48,15 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     
     seriesInstance.current = candlestickSeries;
 
+    // Create a secondary transparent series for exit markers to avoid single-marker-per-bar constraint
+    const secondarySeries = chart.addSeries(LineSeries, {
+      color: 'transparent',
+      lastValueVisible: false,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    secondarySeriesInstance.current = secondarySeries;
+
     const handleResize = () => {
       if (chartContainerRef.current) {
         chart.applyOptions({ width: chartContainerRef.current.clientWidth });
@@ -60,6 +70,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
       chart.remove();
       chartInstance.current = null;
       seriesInstance.current = null;
+      secondarySeriesInstance.current = null;
     };
   }, []);
 
@@ -77,10 +88,14 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           const sortedData = Array.from(uniqueDataMap.values()).sort((a, b) => a.time - b.time);
           
           seriesInstance.current.setData(sortedData);
+          if (secondarySeriesInstance.current) {
+            secondarySeriesInstance.current.setData(sortedData);
+          }
           chartInstance.current.timeScale().fitContent();
 
           // Add Markers for Entry and Exit
-          const markers = [];
+          const entryMarkers = [];
+          const exitMarkers = [];
           
           // Helper to find closest data point in the series
           const findClosestTime = (targetTimeStr) => {
@@ -106,7 +121,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
 
           if (exactEntryTime) {
-            markers.push({
+            entryMarkers.push({
               time: exactEntryTime,
               position: 'belowBar', // Entry always below the candle
               color: '#3b82f6', // blue-500 (สีน้ำเงิน)
@@ -117,7 +132,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           }
 
           if (exactExitTime) {
-            markers.push({
+            exitMarkers.push({
               time: exactExitTime,
               position: 'aboveBar', // Exit always above the candle
               color: '#f59e0b', // amber-500 (สีส้มเหลือง)
@@ -127,11 +142,11 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
             });
           }
 
-          // Sort markers by time (required by lightweight-charts)
-          markers.sort((a, b) => a.time - b.time);
-          
-          if (markers.length > 0) {
-            seriesInstance.current.setMarkers(markers);
+          if (seriesInstance.current) {
+            seriesInstance.current.setMarkers(entryMarkers);
+          }
+          if (secondarySeriesInstance.current) {
+            secondarySeriesInstance.current.setMarkers(exitMarkers);
           }
         }
       } catch (e) {

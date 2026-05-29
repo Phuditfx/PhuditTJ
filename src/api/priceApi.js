@@ -17,7 +17,7 @@ export const fetchRealTimePrice = async (symbol) => {
 
 export const fetchHistoricalData = async (symbol) => {
   try {
-    const url = `/api/yahoo?symbol=${encodeURIComponent(symbol)}&range=1mo&interval=1d`;
+    const url = `/api/yahoo?symbol=${encodeURIComponent(symbol)}&range=3mo&interval=1d`;
     
     const response = await fetch(url, { cache: 'no-store' });
     if (response.ok) {
