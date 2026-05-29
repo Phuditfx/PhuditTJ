@@ -69,37 +69,46 @@ export default function App() {
     const loadData = async () => {
       if (currentUser) {
         setDataLoading(true);
-        
-        const status = await getUserStatus(currentUser);
-        if (status === 'pending') {
-          alert("⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
-          await logoutUser();
-          if (isMounted) setDataLoading(false);
-          return;
-        }
+        try {
+          const status = await getUserStatus(currentUser);
+          if (status === 'pending') {
+            alert("⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
+            await logoutUser();
+            return;
+          }
 
-        const t = await getStoredTrades(currentUser);
-        const b = await getStoredInitialBalance(currentUser);
-        const rr = await getStoredTargetRR(currentUser);
-        const p = await getStoredProfile(currentUser);
-        const pl = await getStoredPlans(currentUser);
-        const div = await getStoredDividends(currentUser);
-        const funding = await getStoredFundingHistory(currentUser);
-        if (isMounted) {
-          setTrades(t);
-          setInitialBalanceState(b);
-          setTargetRRState(rr);
-          setProfile(p);
-          setPlans(pl);
-          setDividends(div);
-          setFundingHistory(funding);
-          setDataLoading(false);
+          const t = await getStoredTrades(currentUser);
+          const b = await getStoredInitialBalance(currentUser);
+          const rr = await getStoredTargetRR(currentUser);
+          const p = await getStoredProfile(currentUser);
+          const pl = await getStoredPlans(currentUser);
+          const div = await getStoredDividends(currentUser);
+          const funding = await getStoredFundingHistory(currentUser);
+          
+          if (isMounted) {
+            setTrades(t);
+            setInitialBalanceState(b);
+            setTargetRRState(rr);
+            setProfile(p);
+            setPlans(pl);
+            setDividends(div);
+            setFundingHistory(funding);
+          }
+        } catch (error) {
+          console.error("Error loading data:", error);
+        } finally {
+          if (isMounted) {
+            setDataLoading(false);
+          }
         }
       } else {
         setTrades([]);
         setPlans([]);
         setDividends([]);
         setFundingHistory([]);
+        if (isMounted) {
+          setDataLoading(false);
+        }
       }
     };
     loadData();
