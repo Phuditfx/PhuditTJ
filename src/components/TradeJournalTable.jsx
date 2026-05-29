@@ -536,87 +536,41 @@ const DesktopTradeCard = React.memo(({
         ? 'border-indigo-500 dark:border-indigo-700 ring-2 ring-indigo-500/10' 
         : 'border-slate-200 dark:border-slate-800/80'
     }`}>
-      {/* 🚀 Header: Symbol, Direction, Status and Action Buttons */}
-      <div className="flex justify-between items-start gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-lg text-slate-900 dark:text-white uppercase tracking-tight font-sans">
-              {trade.symbol}
+      {/* 🚀 Header: Symbol, Direction, Status */}
+      <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/40">
+        <div className="flex items-center gap-2">
+          <span className="font-extrabold text-lg text-slate-900 dark:text-white uppercase tracking-tight font-sans">
+            {trade.symbol}
+          </span>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-black font-sans ${
+            trade.direction === 'Long' 
+              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
+              : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+          }`}>
+            {trade.direction}
+          </span>
+          {!isClosed ? (
+            <span className="text-[9px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-1.5 py-0.5 rounded font-bold animate-pulse font-sans">
+              OPEN
             </span>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-black font-sans ${
-              trade.direction === 'Long' 
-                ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
-                : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
-            }`}>
-              {trade.direction}
+          ) : (
+            <span className="text-[9px] bg-slate-50 dark:bg-slate-800/30 text-slate-500 border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 rounded font-bold font-sans">
+              CLOSED
             </span>
-            {!isClosed ? (
-              <span className="text-[9px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-1.5 py-0.5 rounded font-bold animate-pulse font-sans">
-                OPEN
-              </span>
-            ) : (
-              <span className="text-[9px] bg-slate-50 dark:bg-slate-800/30 text-slate-500 border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 rounded font-bold font-sans">
-                CLOSED
-              </span>
-            )}
-            {trade.isSplit && (
-              <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold font-sans">
-                SPLIT
-              </span>
-            )}
-          </div>
-          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-1 tracking-wider">
-            {formattedDate}
-          </div>
-        </div>
-
-        {/* 🛠️ Action Buttons in a nice row */}
-        <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/40 p-1 rounded-lg border border-slate-100 dark:border-slate-800/40">
-          <button
-            onClick={() => setChartModalTrade(trade)}
-            className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/10 flex items-center gap-1"
-            title="ดูชาร์ตกราฟ"
-          >
-            Chart
-          </button>
-          {!isClosed && (
-            <button
-              onClick={() => handleOpenEditModal(trade)}
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-amber-900/10 flex items-center gap-1"
-              title="แก้ไขการตั้งค่า"
-            >
-              Edit
-            </button>
           )}
-          <button
-            onClick={() => handleOpenCloseModal(trade)}
-            className={`font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm flex items-center gap-1 ${
-              !isClosed 
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/10' 
-                : 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-850 hover:bg-indigo-100 dark:hover:bg-indigo-850/80'
-            }`}
-            title={!isClosed ? 'ปิดออเดอร์' : 'แก้ไขเวลาปิด/ราคาปิด'}
-          >
-            {!isClosed ? 'Close' : 'Edit'}
-          </button>
-          <button
-            onClick={() => {
-              requestConfirm(
-                "ลบออเดอร์",
-                "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
-                () => onDeleteTrade(trade.id)
-              );
-            }}
-            className="bg-slate-100 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-955/35 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800/80 hover:border-rose-250 px-2 py-1 rounded text-xs transition-colors cursor-pointer font-bold"
-            title="ลบออเดอร์"
-          >
-            Del
-          </button>
+          {trade.isSplit && (
+            <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold font-sans">
+              SPLIT
+            </span>
+          )}
+        </div>
+        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-wider">
+          {formattedDate}
         </div>
       </div>
 
       {/* 📊 Content Grid (3 Columns) */}
-      <div className="grid grid-cols-3 gap-4 py-1 border-t border-slate-100 dark:border-slate-800/40 mt-1">
+      <div className="grid grid-cols-3 gap-4 py-1 mt-1">
         {/* Col 1: Position Info */}
         <div className="flex flex-col gap-2 border-r border-slate-100 dark:border-slate-800/40 pr-2">
           <div className="flex flex-col">
@@ -719,6 +673,50 @@ const DesktopTradeCard = React.memo(({
             )}
           </div>
         </div>
+      </div>
+
+      {/* 🛠️ Bottom Action Buttons Bar */}
+      <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/40 mt-1">
+        <button
+          onClick={() => setChartModalTrade(trade)}
+          className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm shadow-sky-955/20 flex items-center justify-center gap-1"
+          title="ดูชาร์ตกราฟ"
+        >
+          📈 Chart
+        </button>
+        {!isClosed && (
+          <button
+            onClick={() => handleOpenEditModal(trade)}
+            className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm shadow-amber-955/20 flex items-center justify-center gap-1"
+            title="แก้ไขการตั้งค่า"
+          >
+            ✏️ Edit
+          </button>
+        )}
+        <button
+          onClick={() => handleOpenCloseModal(trade)}
+          className={`flex-1 font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1 ${
+            !isClosed 
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-955/20' 
+              : 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-850 hover:bg-indigo-100 dark:hover:bg-indigo-850/80'
+          }`}
+          title={!isClosed ? 'ปิดออเดอร์' : 'แก้ไขเวลาปิด/ราคาปิด'}
+        >
+          {!isClosed ? 'Close' : 'Edit'}
+        </button>
+        <button
+          onClick={() => {
+            requestConfirm(
+              "ลบออเดอร์",
+              "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
+              () => onDeleteTrade(trade.id)
+            );
+          }}
+          className="bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-250 py-2 px-3 rounded-lg text-xs transition-colors cursor-pointer font-bold"
+          title="ลบออเดอร์"
+        >
+          Del
+        </button>
       </div>
 
       {/* 🌌 Footer Row: Market Context & Notes & AI Coach Button */}
