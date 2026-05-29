@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="tjGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  
+  <g filter="url(#shadow)">
+    <!-- T part -->
+    <path d="M 80,180 L 160,180 L 160,200 L 120,200 L 120,280 L 100,280 L 100,200 L 80,200 Z" fill="url(#tjGrad)" />
+    <!-- J + Arrow part -->
+    <path d="M 140,160 L 160,160 L 160,280 Q 160,320 200,320 Q 240,320 240,280 L 240,140 L 220,140 L 250,90 L 280,140 L 260,140 L 260,280 Q 260,340 200,340 Q 140,340 140,280 Z" fill="url(#tjGrad)" />
+    
+    <!-- Decorative arrow line -->
+    <path d="M 160,140 L 180,120 L 200,140 L 230,110" fill="none" stroke="#0ea5e9" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
