@@ -166,6 +166,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           };
 
           const exactEntryTime = findClosestTime(entryTime, 'entryTime');
+          const exactExitTime = findClosestTime(exitTime, 'exitTime');
           const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
 
           if (isSameCandle) {
