@@ -68,16 +68,35 @@ export default function Login({ onLogin }) {
 
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 selection:bg-indigo-500/30 transition-colors duration-300">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full glow-card-indigo animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 selection:bg-indigo-500/30 transition-colors duration-300 relative overflow-hidden">
+      
+      {/* Background Watermark */}
+      <div 
+        className="absolute inset-0 z-0 opacity-5 dark:opacity-10 pointer-events-none bg-no-repeat bg-center bg-contain"
+        style={{ backgroundImage: "url('/logo.png')", backgroundSize: '50%' }}
+      />
+
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 p-8 rounded-2xl shadow-2xl max-w-sm w-full glow-card-indigo animate-fade-in relative z-10 overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="text-center mb-8 relative z-10">
-          <div className="bg-indigo-600 w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-lg shadow-indigo-900/50 mb-4 animate-bounce text-white">
-            💎
+          <div className="mx-auto flex items-center justify-center mb-4">
+            <img 
+              src="/logo.png" 
+              alt="PDTJ Logo" 
+              className="w-16 h-16 object-contain drop-shadow-xl animate-bounce"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            {/* Fallback diamond */}
+            <div className="hidden bg-indigo-600 w-16 h-16 rounded-2xl items-center justify-center text-3xl shadow-lg shadow-indigo-900/50 animate-bounce text-white">
+              💎
+            </div>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">PHUDIT <span className="text-indigo-600 dark:text-indigo-400">TJ</span></h1>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-1">Gamified Trader Station</p>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">PDTJ</h1>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-1">Phudit Trade Journal</p>
         </div>
 
         <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl mb-6 relative z-10">
