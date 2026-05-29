@@ -383,18 +383,27 @@ export const verifyUser = async (email, password) => {
 
 
 export const getUserStatus = async (email) => {
-    if (!email) return null;
     try {
         const cleanEmail = email.trim().toLowerCase();
         const userRef = doc(db, 'users', cleanEmail);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
-            return docSnap.data().status;
+            return docSnap.data().status || 'approved';
         }
-    } catch (e) {
-        console.error("Error fetching user status:", e);
-    }
-    return null;
+    } catch (e) {}
+    return 'approved';
+};
+
+export const getUserVipStatus = async (email) => {
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            return docSnap.data().isVip || false;
+        }
+    } catch (e) {}
+    return false;
 };
 
 export const resetPassword = async (email) => {

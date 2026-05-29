@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, plans = [] }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, plans = [], isVip }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -614,7 +614,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     </td>
                     
                     {/* PnL ($) */}
-                    <td className={`py-4 px-3 text-right text-sm font-extrabold ${
+                    <td className={`py-4 px-3 text-right text-sm font-extrabold relative ${
                       !isClosed && !livePrices[trade.symbol]
                         ? 'text-slate-400 dark:text-slate-500' 
                         : (() => {
@@ -622,98 +622,119 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                             return pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
                           })()
                     }`}>
-                      {(() => {
-                        if (isClosed) {
-                          const parsedPnl = parseFloat(trade.pnl || 0);
-                          return `${parsedPnl >= 0 ? '+' : '-'}$${Math.abs(parsedPnl).toFixed(2)}`;
-                        } else if (livePrices[trade.symbol]) {
-                          const livePrice = livePrices[trade.symbol];
-                          const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
-                          return <span className="animate-pulse">{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</span>;
-                        }
-                        return '-';
-                      })()}
+                      <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
+                        {(() => {
+                          if (isClosed) {
+                            const parsedPnl = parseFloat(trade.pnl || 0);
+                            return `${parsedPnl >= 0 ? '+' : '-'}$${Math.abs(parsedPnl).toFixed(2)}`;
+                          } else if (livePrices[trade.symbol]) {
+                            const livePrice = livePrices[trade.symbol];
+                            const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+                            return <span className="animate-pulse">{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</span>;
+                          }
+                          return '-';
+                        })()}
+                      </div>
+                      {!isVip && (
+                        <div className="absolute inset-0 flex items-center justify-end z-10 opacity-70">
+                          <span className="text-xs">🔒</span>
+                        </div>
+                      )}
                     </td>
                     
                     {/* Actual RR */}
-                    <td className="py-4 px-3 text-center">
-                      {(() => {
-                        let rrToShow = null;
-                        if (isClosed) {
-                          rrToShow = trade.actualRR;
-                        } else if (livePrices[trade.symbol]) {
-                          const livePrice = livePrices[trade.symbol];
-                          const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
-                          const gap = Math.abs(trade.entryPrice - trade.stopLoss);
-                          const initialRisk = trade.plannedRisk || (gap * trade.shares);
-                          if (initialRisk > 0) {
-                            rrToShow = pnl / initialRisk;
+                    <td className="py-4 px-3 text-center relative">
+                      <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
+                        {(() => {
+                          let rrToShow = null;
+                          if (isClosed) {
+                            rrToShow = trade.actualRR;
+                          } else if (livePrices[trade.symbol]) {
+                            const livePrice = livePrices[trade.symbol];
+                            const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+                            const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+                            const initialRisk = trade.plannedRisk || (gap * trade.shares);
+                            if (initialRisk > 0) {
+                              rrToShow = pnl / initialRisk;
+                            }
                           }
-                        }
 
-                        if (rrToShow === null) {
-                          return <span className="text-slate-500">-</span>;
-                        }
+                          if (rrToShow === null) {
+                            return <span className="text-slate-500">-</span>;
+                          }
 
-                        return (
-                          <div className="flex flex-col items-center justify-center gap-1">
-                            <span className={`px-2 py-0.5 rounded font-black text-xs ${!isClosed ? 'opacity-80 animate-pulse' : ''} ${
-                              rrToShow >= 2 
-                                ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
-                                : rrToShow >= 0 
-                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
-                                  : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                            }`}>
-                              {rrToShow.toFixed(4)} R
-                            </span>
-                            {trade.isSplit && (
-                              <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
-                                SPLIT
+                          return (
+                            <div className="flex flex-col items-center justify-center gap-1">
+                              <span className={`px-2 py-0.5 rounded font-black text-xs ${!isClosed ? 'opacity-80 animate-pulse' : ''} ${
+                                rrToShow >= 2 
+                                  ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                                  : rrToShow >= 0 
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
+                                    : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                              }`}>
+                                {rrToShow.toFixed(4)} R
                               </span>
-                            )}
-                          </div>
-                        );
-                      })()}
+                              {trade.isSplit && (
+                                <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
+                                  SPLIT
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      {!isVip && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
+                          <span className="text-xs">🔒</span>
+                        </div>
+                      )}
                     </td>
                     
                     {/* Qualitative Analysis */}
-                    <td className="py-4 px-4 font-sans text-center">
-                      {!isClosed ? (
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">รอประเมินผลปิดไม้</span>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          {/* Context Score */}
-                          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 px-2 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400">
-                            🌌 {trade.contextScore}/10
+                    <td className="py-4 px-4 font-sans text-center relative">
+                      <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
+                        {!isClosed ? (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">รอประเมินผลปิดไม้</span>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Context Score */}
+                            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 px-2 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400">
+                              🌌 {trade.contextScore}/10
+                            </div>
+
+                            {/* AI Score */}
+                            {trade.aiScore && (
+                              <button
+                                onClick={() => setActiveFeedbackTradeId(activeFeedbackTradeId === trade.id ? null : trade.id)}
+                                className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-900/50 px-2 py-0.5 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                                title="คลิกเพื่อเปิดดู AI รีวิว"
+                              >
+                                <span>⚡ AI: {trade.aiScore}/10</span>
+                                <span className="text-[9px] text-slate-500">▼</span>
+                              </button>
+                            )}
+
+                            {/* Plan Adherence Indicator */}
+                            <div className={`w-2 h-2 rounded-full ${
+                              trade.planAdherenceScore === 100 
+                                ? 'bg-emerald-400' 
+                                : trade.planAdherenceScore === 50 
+                                  ? 'bg-amber-400' 
+                                  : 'bg-rose-400'
+                            }`} title={trade.planAdherence}></div>
+
+                            {/* Notes Icon */}
+                            {trade.notes && (
+                              <span className="text-[12px] cursor-help ml-1" title={trade.notes}>
+                                📝
+                              </span>
+                            )}
                           </div>
-
-                          {/* AI Score */}
-                          {trade.aiScore && (
-                            <button
-                              onClick={() => setActiveFeedbackTradeId(activeFeedbackTradeId === trade.id ? null : trade.id)}
-                              className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-900/50 px-2 py-0.5 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
-                              title="คลิกเพื่อเปิดดู AI รีวิว"
-                            >
-                              <span>⚡ AI: {trade.aiScore}/10</span>
-                              <span className="text-[9px] text-slate-500">▼</span>
-                            </button>
-                          )}
-
-                          {/* Plan Adherence Indicator */}
-                          <div className={`w-2 h-2 rounded-full ${
-                            trade.planAdherenceScore === 100 
-                              ? 'bg-emerald-400' 
-                              : trade.planAdherenceScore === 50 
-                                ? 'bg-amber-400' 
-                                : 'bg-rose-400'
-                          }`} title={trade.planAdherence}></div>
-
-                          {/* Notes Icon */}
-                          {trade.notes && (
-                            <span className="text-[12px] cursor-help ml-1" title={trade.notes}>
-                              📝
-                            </span>
-                          )}
+                        )}
+                      </div>
+                      {!isVip && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
+                          <span className="text-xs">🔒 VIP</span>
                         </div>
                       )}
                     </td>

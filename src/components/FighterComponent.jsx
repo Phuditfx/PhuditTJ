@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LightweightChartComponent from './LightweightChartComponent';
 
-export default function FighterComponent({ accountBalance, sharedOrder, setSharedOrder }) {
+export default function FighterComponent({ accountBalance, sharedOrder, setSharedOrder, isVip }) {
   // Use sharedOrder state from parent (App.jsx)
   const { symbol, tiEntryAlert, entry, stopLoss, tp1, tp2, tp3 } = sharedOrder || {
     symbol: 'AAPL', tiEntryAlert: '', entry: 150, stopLoss: 145, tp1: 165, tp2: 180, tp3: 195
@@ -157,9 +157,10 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
   };
 
   return (
-    <div className="crypto-card p-6 flex flex-col gap-6 transition-colors duration-300">
+    <div className="relative">
+      <div className={`crypto-card p-6 flex flex-col gap-6 transition-colors duration-300 ${!isVip ? 'blur-md pointer-events-none select-none opacity-60' : ''}`}>
 
-      {/* Header */}
+        {/* Header */}
       <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4 relative z-10">
         <div>
           <h2 className="text-xl font-black tracking-widest text-amber-600 dark:text-amber-500 flex items-center gap-2">
@@ -420,6 +421,19 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
           </a>
         </div>
       </div>
+      
+      {!isVip && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 flex-col gap-3 pointer-events-auto">
+          <div className="bg-slate-900/90 text-white px-8 py-6 rounded-2xl text-lg font-black shadow-2xl border border-slate-700 text-center backdrop-blur-sm">
+            <div className="text-5xl mb-3">🔒</div>
+            VIP Exclusive Feature
+            <p className="text-sm font-medium text-slate-400 mt-2">
+              The ALPHA TRADER Engine & Auto TP Calculator<br/>
+              are reserved for VIP members.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

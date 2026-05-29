@@ -18,7 +18,8 @@ import {
   getStoredDividends,
   saveDividends,
   getStoredFundingHistory,
-  saveFundingHistory
+  saveFundingHistory,
+  getUserVipStatus
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -62,6 +63,7 @@ export default function App() {
   const [dividends, setDividends] = useState([]);
   const [fundingHistory, setFundingHistory] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isVip, setIsVip] = useState(false);
   
   useEffect(() => {
     let isMounted = true;
@@ -84,14 +86,15 @@ export default function App() {
             return;
           }
 
-          const [t, b, rr, p, pl, div, funding] = await Promise.all([
+          const [t, b, rr, p, pl, div, funding, vip] = await Promise.all([
             getStoredTrades(currentUser),
             getStoredInitialBalance(currentUser),
             getStoredTargetRR(currentUser),
             getStoredProfile(currentUser),
             getStoredPlans(currentUser),
             getStoredDividends(currentUser),
-            getStoredFundingHistory(currentUser)
+            getStoredFundingHistory(currentUser),
+            getUserVipStatus(currentUser)
           ]);
           
           if (isMounted) {
@@ -102,6 +105,7 @@ export default function App() {
             setPlans(pl);
             setDividends(div);
             setFundingHistory(funding);
+            setIsVip(vip);
           }
         } catch (error) {
           console.error("Error loading data:", error);
@@ -116,6 +120,7 @@ export default function App() {
         setPlans([]);
         setDividends([]);
         setFundingHistory([]);
+        setIsVip(false);
         if (isMounted) {
           setDataLoading(false);
         }
@@ -575,36 +580,40 @@ export default function App() {
               >
                 ⚡ {t('app.fighter')}
               </button>
-              <button
-                onClick={() => setActiveTab('calendar')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'calendar'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                }`}
-              >
-                {t('app.calendar')}
-              </button>
-              <button
-                onClick={() => setActiveTab('plans')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'plans'
-                    ? 'bg-amber-600 text-white shadow-md shadow-amber-950/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                }`}
-              >
-                {t('app.plans')}
-              </button>
-              <button
-                onClick={() => setActiveTab('dividends')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'dividends'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                }`}
-              >
-                {t('app.dividends')}
-              </button>
+              {isVip && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('calendar')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
+                      activeTab === 'calendar'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                    }`}
+                  >
+                    {t('app.calendar')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('plans')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
+                      activeTab === 'plans'
+                        ? 'bg-amber-600 text-white shadow-md shadow-amber-950/20'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                    }`}
+                  >
+                    {t('app.plans')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('dividends')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
+                      activeTab === 'dividends'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/20'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                    }`}
+                  >
+                    {t('app.dividends')}
+                  </button>
+                </>
+              )}
               {currentUser === 'phudit.mahawongsanan@gmail.com' && (
                 <button
                   onClick={() => setActiveTab('owner')}
@@ -647,6 +656,7 @@ export default function App() {
                 trades={trades}
                 currentRank={currentRank}
                 fundingHistory={fundingHistory}
+                isVip={isVip}
                 setFundingHistory={(newHistory) => {
                   setFundingHistory(newHistory);
                   saveFundingHistory(currentUser, newHistory);
@@ -662,8 +672,10 @@ export default function App() {
                 onDeleteTrade={handleDeleteTrade}
                 onClearAllTrades={handleClearAllTrades}
                 onDeleteTradesByMonth={handleDeleteTradesByMonth}
+                onImportTrades={handleImportTrades}
                 requestConfirm={requestConfirm}
                 plans={plans}
+                isVip={isVip}
               />
             )}
 
@@ -672,6 +684,7 @@ export default function App() {
                 accountBalance={accountBalance}
                 sharedOrder={sharedOrder}
                 setSharedOrder={setSharedOrder}
+                isVip={isVip}
               />
             </div>
 
