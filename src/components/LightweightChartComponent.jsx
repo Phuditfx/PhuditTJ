@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { createChart, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
 
 // 📅 ตัวแปลงวันที่ระดับสูงสุดเพื่อดักจับทุกประเภทฟอร์แมต (ISO String, Local String, Timestamp Object, หรือ Unix Number)
@@ -65,6 +65,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
+  const markersPluginRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,6 +120,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
       chart.remove();
       chartInstance.current = null;
       seriesInstance.current = null;
+      markersPluginRef.current = null;
     };
   }, []);
 
@@ -208,34 +210,37 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           
           // โทรเรียกเซ็ตมาร์กเกอร์ทันที และดักรอบเวลาหลายระดับเพื่อแก้ปัญหา canvas ทับซ้อน/animation paint
           if (seriesInstance.current) {
-            seriesInstance.current.setMarkers(markers);
+            if (!markersPluginRef.current) {
+              markersPluginRef.current = createSeriesMarkers(seriesInstance.current, []);
+            }
+            markersPluginRef.current.setMarkers(markers);
           }
           
           // ลำดับการรันที่ 1: 50ms
           setTimeout(() => {
-            if (seriesInstance.current) {
-              seriesInstance.current.setMarkers(markers);
+            if (markersPluginRef.current) {
+              markersPluginRef.current.setMarkers(markers);
             }
           }, 50);
           
           // ลำดับการรันที่ 2: 150ms
           setTimeout(() => {
-            if (seriesInstance.current) {
-              seriesInstance.current.setMarkers(markers);
+            if (markersPluginRef.current) {
+              markersPluginRef.current.setMarkers(markers);
             }
           }, 150);
 
           // ลำดับการรันที่ 3: 400ms
           setTimeout(() => {
-            if (seriesInstance.current) {
-              seriesInstance.current.setMarkers(markers);
+            if (markersPluginRef.current) {
+              markersPluginRef.current.setMarkers(markers);
             }
           }, 400);
 
           // ลำดับการรันที่ 4: 800ms
           setTimeout(() => {
-            if (seriesInstance.current) {
-              seriesInstance.current.setMarkers(markers);
+            if (markersPluginRef.current) {
+              markersPluginRef.current.setMarkers(markers);
             }
           }, 800);
         } else {
