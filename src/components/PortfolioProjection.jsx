@@ -302,7 +302,7 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
                   stroke="#ef4444" 
                   strokeWidth={1} 
                   strokeDasharray="3 3"
-                  fill="#0f172a" 
+                  fill="var(--color-bg-mask)" 
                   fillOpacity={1} 
                   activeDot={false}
                 />

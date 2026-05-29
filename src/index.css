@@ -60,6 +60,14 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+:root {
+  --color-bg-mask: #ffffff;
+}
+
+.dark {
+  --color-bg-mask: #0f172a;
+}
+
 .dark body {
   background-color: #020617;
   color: #f1f5f9;
