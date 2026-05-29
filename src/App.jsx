@@ -101,7 +101,19 @@ export default function App() {
           return;
         }
 
-        setTrades(data.trades);
+        let userTrades = data.trades || [];
+        if (currentUser === 'phudit.mahawongsanan@gmail.com') {
+          const sampleTradesCount = userTrades.filter(t => t.id && t.id.startsWith('sample-')).length;
+          if (sampleTradesCount > 0) {
+            console.log(`Auditing: Found ${sampleTradesCount} sample trades in Owner account. Filtering them...`);
+            const realTrades = userTrades.filter(t => !t.id || !t.id.startsWith('sample-'));
+            userTrades = realTrades;
+            // Save cleaned trades list back to Firestore and LocalStorage
+            saveTrades(currentUser, realTrades);
+          }
+        }
+
+        setTrades(userTrades);
         setInitialBalances(data.initialBalances || { 'default': 10000 });
         setTargetRRState(data.targetRR || 20);
         setProfile(data.profile);
