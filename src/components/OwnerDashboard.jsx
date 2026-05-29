@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllUsersData, approveUser, deleteUser } from '../db/journalDB';
+import { getAllUsersData, approveUser, deleteUser, toggleUserVip } from '../db/journalDB';
 
 export default function OwnerDashboard({ currentUser }) {
   const [users, setUsers] = useState([]);
@@ -27,6 +27,11 @@ export default function OwnerDashboard({ currentUser }) {
       await deleteUser(email);
       await fetchUsers();
     }
+  };
+
+  const handleToggleVip = async (email, currentVip) => {
+    await toggleUserVip(email, !currentVip);
+    await fetchUsers();
   };
 
   if (isLoading) {
@@ -94,13 +99,20 @@ export default function OwnerDashboard({ currentUser }) {
                     {u.email === currentUser && <span className="text-[9px] bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded ml-1">You</span>}
                   </td>
                   <td className="py-4 px-3 text-center font-sans">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase ${
-                      u.status === 'approved' 
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse'
-                    }`}>
-                      {u.status}
-                    </span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase ${
+                        u.status === 'approved' 
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse'
+                      }`}>
+                        {u.status}
+                      </span>
+                      {u.isVip && (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                          ⭐ VIP
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-4 px-3 text-center text-slate-600 dark:text-slate-400 font-bold">{u.tradesCount}</td>
                   <td className={`py-4 px-3 text-right font-extrabold ${u.netPnL >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
@@ -110,7 +122,17 @@ export default function OwnerDashboard({ currentUser }) {
                     ${u.currentBal.toFixed(2)}
                   </td>
                   <td className="py-4 px-4 text-right font-sans">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleToggleVip(u.email, u.isVip)}
+                        className={`font-bold px-2 py-1 rounded text-[10px] transition-colors cursor-pointer border ${
+                          u.isVip 
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
+                            : 'bg-transparent hover:bg-purple-50 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                        }`}
+                      >
+                        {u.isVip ? 'ถอด VIP' : 'ให้ VIP'}
+                      </button>
                       {u.status === 'pending' && (
                         <button
                           onClick={() => handleApprove(u.email)}

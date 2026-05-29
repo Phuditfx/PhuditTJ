@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, requestConfirm, plans = [] }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, plans = [] }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -104,8 +104,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     return matchesStatus && matchesSearch && matchesMonth;
   });
 
-  // Export to Excel
-  const handleExportExcel = () => {
+  // Export to CSV (replaces old handleExportExcel which just created an unstyled xlsx file)
+  const handleExportCSV = () => {
     const exportData = filteredTrades.map(t => ({
       'Date/Time': t.dateTime ? new Date(t.dateTime).toLocaleString() : '',
       'Symbol': t.symbol,
@@ -124,9 +124,59 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Trades");
-    XLSX.writeFile(wb, "TradeJournal_Export.xlsx");
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    const exportFileDefaultName = 'TradeJournal_Export.csv';
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // Export to JSON
+  const handleExportJSON = () => {
+    const dataStr = JSON.stringify(filteredTrades, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'TradeJournal_Backup.json';
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // Import JSON File
+  const fileInputRef = React.useRef(null);
+  
+  const handleImportFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (window.confirm("⚠️ ยืนยันการอัปโหลด? ข้อมูลการเทรดปัจจุบันจะถูก 'เขียนทับ' ด้วยข้อมูลจากไฟล์ทั้งหมด!")) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const content = evt.target.result;
+        try {
+          if (file.name.endsWith('.json')) {
+            const importedTrades = JSON.parse(content);
+            if (Array.isArray(importedTrades)) {
+               if (onImportTrades) {
+                 onImportTrades(importedTrades);
+               }
+            } else {
+               alert("รูปแบบไฟล์ JSON ไม่ถูกต้อง");
+            }
+          } else {
+            alert("กรุณาเลือกไฟล์ Backup ที่เป็นนามสกุล .json เท่านั้นครับ");
+          }
+        } catch (err) {
+          alert("เกิดข้อผิดพลาดในการอ่านไฟล์: " + err.message);
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+    }
+    // reset input
+    e.target.value = null;
   };
 
   // โหลดราคาปัจจุบันของออเดอร์ที่ยังเปิดอยู่
@@ -422,13 +472,37 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             ))}
           </div>
 
-          {/* ปุ่ม Export Excel */}
-          <button
-            onClick={handleExportExcel}
-            className="bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
-          >
-            📊 Export Excel
-          </button>
+          {/* ปุ่ม Export/Import */}
+          <div className="flex gap-1.5">
+            <button
+              onClick={handleExportJSON}
+              className="bg-sky-50 dark:bg-sky-600/20 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 hover:bg-sky-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+              title="ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ JSON เพื่อสำรองข้อมูล"
+            >
+              📥 JSON
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+              title="ดาวน์โหลดข้อมูลเป็นไฟล์ CSV เพื่อดูใน Excel"
+            >
+              📊 CSV
+            </button>
+            <input 
+              type="file" 
+              accept=".json" 
+              ref={fileInputRef} 
+              onChange={handleImportFileChange} 
+              className="hidden" 
+            />
+            <button
+              onClick={() => fileInputRef.current.click()}
+              className="bg-amber-50 dark:bg-amber-600/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+              title="อัปโหลดไฟล์ JSON กลับเข้ามาในระบบ"
+            >
+              📤 Import
+            </button>
+          </div>
 
           {/* ปุ่ม Clear Log */}
           <button

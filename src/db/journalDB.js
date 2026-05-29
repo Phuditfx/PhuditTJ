@@ -35,16 +35,25 @@ export const getStoredTrades = async (email) => {
         console.error("Error fetching trades from Firebase:", e);
     }
     
-    if (fbData) return fbData;
-    
-    // Fallback to local storage
+    let localData = [];
     try {
         const local = localStorage.getItem(`phudit_trades_${cleanEmail}`);
-        if (local) return JSON.parse(local);
+        if (local) localData = JSON.parse(local);
     } catch (e) {
         console.error("Error reading trades from LocalStorage:", e);
     }
-    return [];
+
+    if (fbData) {
+        // Recovery mechanism: If LocalStorage has more trades than Firebase, use LocalStorage and sync up.
+        if (localData && localData.length > fbData.length) {
+            console.log("Recovering trades from LocalStorage:", localData.length, "vs", fbData.length);
+            saveTrades(cleanEmail, localData);
+            return localData;
+        }
+        return fbData;
+    }
+    
+    return localData;
 };
 
 export const saveTrades = async (email, trades) => {
@@ -433,6 +442,17 @@ export const approveUser = async (email) => {
     }
 };
 
+export const toggleUserVip = async (email, isVip) => {
+    if (!email) return;
+    try {
+        const cleanEmail = email.trim().toLowerCase();
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { isVip }, { merge: true });
+    } catch (e) {
+        console.error("Error toggling VIP:", e);
+    }
+};
+
 export const getAllUsersData = async () => {
     try {
         const usersCol = collection(db, 'users');
@@ -449,6 +469,7 @@ export const getAllUsersData = async () => {
             users.push({
                 email: data.email || doc.id,
                 status: data.status || 'approved',
+                isVip: data.isVip || false,
                 createdAt: data.createdAt || new Date().toISOString(),
                 tradesCount: trades.length,
                 currentBal,
