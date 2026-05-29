@@ -385,14 +385,24 @@ export default function App() {
         {/* Logo and Theme toggle row for mobile */}
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-3">
-            <div className="bg-brand-primary p-2 rounded-lg text-white font-black text-xl shadow-md shadow-brand-primary/40 select-none animate-pulse">
+            <img 
+              src="/logo.png" 
+              alt="PDTJ Logo" 
+              className="w-10 h-10 object-contain drop-shadow-md rounded-lg"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            {/* Fallback in case logo.png is not found */}
+            <div className="bg-brand-primary p-2 rounded-lg text-white font-black text-xl shadow-md shadow-brand-primary/40 select-none animate-pulse hidden">
               💎
             </div>
             <div>
               <h1 className="text-xl font-extrabold tracking-tight text-brand-text-primary dark:text-white m-0 leading-none">
-                PHUDIT <span className="text-brand-primary">TRADE JOURNAL</span>
+                PDTJ
               </h1>
-              <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-widest font-bold hidden sm:block">Gamified Trader Station & AI Coach</p>
+              <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-widest font-bold hidden sm:block">Phudit Trade Journal</p>
             </div>
           </div>
           

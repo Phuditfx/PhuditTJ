@@ -285,28 +285,30 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
                   labelStyle={{color: '#94a3b8', marginBottom: '4px'}}
                 />
                 
-                {/* Monte Carlo Range Shading - Best to Worst */}
+                {/* Monte Carlo Range Shading & Lines - Best to Worst */}
                 <Area 
                   type="monotone" 
                   dataKey="mcBest" 
-                  stroke="none" 
+                  stroke="#10b981" 
+                  strokeWidth={1} 
+                  strokeDasharray="3 3"
                   fill="#10b981" 
                   fillOpacity={0.1} 
+                  activeDot={false}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="mcWorst" 
-                  stroke="none" 
+                  stroke="#ef4444" 
+                  strokeWidth={1} 
+                  strokeDasharray="3 3"
                   fill="#0f172a" 
-                  fillOpacity={1} // Mask the bottom part if needed, or simply use stacked areas.
-                  // Recharts doesn't natively support easy range areas without stacking, 
-                  // but overlapping areas work. Here we draw mcBest area, then mask with mcWorst.
+                  fillOpacity={1} 
+                  activeDot={false}
                 />
                 
-                {/* The actual lines */}
-                <Line type="monotone" dataKey="mcBest" stroke="#10b981" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+                {/* The expected average line */}
                 <Line type="monotone" dataKey="statProjection" stroke="#3b82f6" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="mcWorst" stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" dot={false} />
                 
                 <ReferenceLine x={projectionData[0]?.dateLabel} stroke="#64748b" strokeDasharray="3 3" label={{ position: 'top', value: 'Today', fill: '#64748b', fontSize: 10 }} />
               </ComposedChart>
