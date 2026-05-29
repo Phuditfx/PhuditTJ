@@ -10,8 +10,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       manifest: {
-        name: 'Phudit Trade Journal',
-        short_name: 'Phudit TJ',
+        name: 'PDTJ - Phudit Trade Journal',
+        short_name: 'PDTJ',
         description: 'Gamified Trader Station & AI Coach',
         theme_color: '#0f172a',
         background_color: '#0f172a',
