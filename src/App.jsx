@@ -573,6 +573,7 @@ export default function App() {
             globalDateRange={globalDateRange}
             setGlobalDateRange={setGlobalDateRange}
             isVip={isVip} 
+            isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
             accounts={accounts}
             setShowAccountModal={setShowAccountModal}
             setShowManual={setShowManual}
