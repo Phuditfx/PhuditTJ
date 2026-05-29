@@ -169,39 +169,27 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
 
           const exactEntryTime = findClosestTime(entryTime, 'entryTime');
           const exactExitTime = findClosestTime(exitTime, 'exitTime');
-          const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
 
-          if (isSameCandle) {
-            console.log(`[Chart Debug] Entry and Exit are on the same daily candle: ${exactEntryTime}`);
+          if (exactEntryTime) {
+            console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);
             markers.push({
               time: exactEntryTime,
-              position: 'belowBar',
-              color: '#8b5cf6', // purple-500
-              shape: 'circle',
-              text: '▲ ENTRY / ▼ EXIT'
+              position: direction === 'Short' ? 'aboveBar' : 'belowBar',
+              color: direction === 'Short' ? '#ef4444' : '#3b82f6',
+              shape: direction === 'Short' ? 'arrowDown' : 'arrowUp',
+              text: 'ENTRY'
             });
-          } else {
-            if (exactEntryTime) {
-              console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);
-              markers.push({
-                time: exactEntryTime,
-                position: 'belowBar',
-                color: '#3b82f6',
-                shape: 'arrowUp',
-                text: 'ENTRY'
-              });
-            }
+          }
 
-            if (exactExitTime) {
-              console.log(`[Chart Debug] Adding Exit marker at candle: ${exactExitTime}`);
-              markers.push({
-                time: exactExitTime,
-                position: 'aboveBar',
-                color: '#f59e0b',
-                shape: 'arrowDown',
-                text: 'EXIT'
-              });
-            }
+          if (exactExitTime) {
+            console.log(`[Chart Debug] Adding Exit marker at candle: ${exactExitTime}`);
+            markers.push({
+              time: exactExitTime,
+              position: direction === 'Short' ? 'belowBar' : 'aboveBar',
+              color: direction === 'Short' ? '#10b981' : '#f59e0b',
+              shape: direction === 'Short' ? 'arrowUp' : 'arrowDown',
+              text: 'EXIT'
+            });
           }
 
           // เรียงเวลาจากน้อยไปมากตามข้อกำหนดของ Lightweight Charts
