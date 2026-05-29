@@ -70,11 +70,13 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 selection:bg-indigo-500/30 transition-colors duration-300 relative overflow-hidden">
       
-      {/* Background Watermark */}
+      {/* Full-screen Background Image with Overlay */}
       <div 
-        className="absolute inset-0 z-0 opacity-5 dark:opacity-10 pointer-events-none bg-no-repeat bg-center bg-contain"
-        style={{ backgroundImage: "url('/logo.png')", backgroundSize: '50%' }}
+        className="absolute inset-0 z-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/PDTJ.jpg')" }}
       />
+      {/* Dark/Light Overlay to ensure text readability */}
+      <div className="absolute inset-0 z-0 bg-white/70 dark:bg-slate-950/80 backdrop-blur-[2px]" />
 
       <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 p-8 rounded-2xl shadow-2xl max-w-sm w-full glow-card-indigo animate-fade-in relative z-10 overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
