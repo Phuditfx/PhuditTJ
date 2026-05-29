@@ -61,7 +61,7 @@ export default function App() {
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
   const [trades, setTrades] = useState([]);
   const [initialBalances, setInitialBalances] = useState({ 'default': 10000 });
-  const [targetRR, setTargetRR] = useState(20);
+  const [targetRR, setTargetRRState] = useState(20);
   const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
   const [plans, setPlans] = useState([]);
   const [dividends, setDividends] = useState([]);
@@ -99,7 +99,7 @@ export default function App() {
 
         setTrades(data.trades);
         setInitialBalances(data.initialBalances || { 'default': 10000 });
-        setTargetRR(data.targetRR || 20);
+        setTargetRRState(data.targetRR || 20);
         setProfile(data.profile);
         setPlans(data.plans || []);
         setDividends(data.dividends || []);
@@ -230,7 +230,7 @@ export default function App() {
 
   // บันทึกและซิงค์เป้าหมาย RR ลง LocalStorage
   const setTargetRR = (value) => {
-    setTargetRR(value);
+    setTargetRRState(value);
     saveTargetRR(currentUser, value);
   };
 
