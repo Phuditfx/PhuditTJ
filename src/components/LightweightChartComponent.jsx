@@ -1,12 +1,50 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createChart, CandlestickSeries, LineSeries } from 'lightweight-charts';
+import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
+
+// 📅 ตัวแปลงวันที่ระดับสูงสุดเพื่อดักจับทุกประเภทฟอร์แมต (ISO String, Local String, หรือ Timestamp)
+const parseToTimestamp = (dateStr) => {
+  if (!dateStr) return null;
+  
+  // หากเป็นตัวเลข Unix Timestamp อยู่แล้ว
+  if (typeof dateStr === 'number') {
+    return dateStr > 1000000000000 ? Math.floor(dateStr / 1000) : dateStr;
+  }
+  
+  // หากเป็น String ตัวเลข Unix
+  if (typeof dateStr === 'string' && /^\d+$/.test(dateStr)) {
+    const parsedNum = parseInt(dateStr, 10);
+    return parsedNum > 1000000000000 ? Math.floor(parsedNum / 1000) : parsedNum;
+  }
+  
+  // จัดรูปข้อความ String Date (เช่น แทนที่ space ด้วย T สำหรับ iOS/Safari)
+  let normalizedStr = dateStr;
+  if (typeof dateStr === 'string') {
+    normalizedStr = dateStr.trim().replace(' ', 'T');
+  }
+  
+  const parsed = new Date(normalizedStr);
+  const timeMs = parsed.getTime();
+  
+  if (isNaN(timeMs)) {
+    // ระบบดักจับ Fallback กรณี YYYY-MM-DD แบบธรรมดา
+    const match = normalizedStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const y = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10) - 1;
+      const d = parseInt(match[3], 10);
+      return Math.floor(new Date(y, m, d).getTime() / 1000);
+    }
+    return null;
+  }
+  
+  return Math.floor(timeMs / 1000);
+};
 
 export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime }) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
-  const secondarySeriesInstance = useRef(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,15 +86,6 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     
     seriesInstance.current = candlestickSeries;
 
-    // Create a secondary transparent series for exit markers to avoid single-marker-per-bar constraint
-    const secondarySeries = chart.addSeries(LineSeries, {
-      color: 'transparent',
-      lastValueVisible: false,
-      priceLineVisible: false,
-      crosshairMarkerVisible: false,
-    });
-    secondarySeriesInstance.current = secondarySeries;
-
     const handleResize = () => {
       if (chartContainerRef.current) {
         chart.applyOptions({ width: chartContainerRef.current.clientWidth });
@@ -70,7 +99,6 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
       chart.remove();
       chartInstance.current = null;
       seriesInstance.current = null;
-      secondarySeriesInstance.current = null;
     };
   }, []);
 
@@ -88,24 +116,15 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           const sortedData = Array.from(uniqueDataMap.values()).sort((a, b) => a.time - b.time);
           
           seriesInstance.current.setData(sortedData);
-          if (secondarySeriesInstance.current) {
-            const lineData = sortedData.map(item => ({
-              time: item.time,
-              value: item.close
-            }));
-            secondarySeriesInstance.current.setData(lineData);
-          }
           chartInstance.current.timeScale().fitContent();
 
           // Add Markers for Entry and Exit
-          const entryMarkers = [];
-          const exitMarkers = [];
+          const markers = [];
           
           // Helper to find closest data point in the series
           const findClosestTime = (targetTimeStr) => {
-            if (!targetTimeStr) return null;
-            const targetSec = Math.floor(new Date(targetTimeStr).getTime() / 1000);
-            if (isNaN(targetSec)) return null;
+            const targetSec = parseToTimestamp(targetTimeStr);
+            if (!targetSec) return null;
             
             let closest = sortedData[0].time;
             let minDiff = Math.abs(sortedData[0].time - targetSec);
@@ -124,33 +143,46 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           const exactExitTime = findClosestTime(exitTime);
           const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
 
-          if (exactEntryTime) {
-            entryMarkers.push({
+          if (isSameCandle) {
+            // กรณีเข้าออกในแท่งเทียนแท่งเดียวกัน (สีกราฟม่วงเรืองรองผสม สัญลักษณ์ชัดเจน)
+            markers.push({
               time: exactEntryTime,
-              position: 'belowBar', // Entry always below the candle
-              color: '#3b82f6', // blue-500 (สีน้ำเงิน)
-              shape: 'arrowUp',
-              text: isSameCandle ? '▲ ENTRY' : 'ENTRY',
+              position: 'belowBar',
+              color: '#8b5cf6', // purple-500
+              shape: 'circle',
+              text: '▲ ENTRY / ▼ EXIT',
               size: 2
             });
+          } else {
+            // กรณีคนละแท่งเทียน แสดงลูกศรแยกกันสวยงาม
+            if (exactEntryTime) {
+              markers.push({
+                time: exactEntryTime,
+                position: 'belowBar', // Entry always below the candle
+                color: '#3b82f6', // blue-500 (สีน้ำเงิน)
+                shape: 'arrowUp',
+                text: 'ENTRY',
+                size: 2
+              });
+            }
+
+            if (exactExitTime) {
+              markers.push({
+                time: exactExitTime,
+                position: 'aboveBar', // Exit always above the candle
+                color: '#f59e0b', // amber-500 (สีส้มเหลือง)
+                shape: 'arrowDown',
+                text: 'EXIT',
+                size: 2
+              });
+            }
           }
 
-          if (exactExitTime) {
-            exitMarkers.push({
-              time: exactExitTime,
-              position: 'aboveBar', // Exit always above the candle
-              color: '#f59e0b', // amber-500 (สีส้มเหลือง)
-              shape: 'arrowDown',
-              text: isSameCandle ? '▼ EXIT' : 'EXIT',
-              size: 2
-            });
-          }
-
+          // เรียงเวลาจากน้อยไปมากตามข้อกำหนดของ Lightweight Charts
+          markers.sort((a, b) => a.time - b.time);
+          
           if (seriesInstance.current) {
-            seriesInstance.current.setMarkers(entryMarkers);
-          }
-          if (secondarySeriesInstance.current) {
-            secondarySeriesInstance.current.setMarkers(exitMarkers);
+            seriesInstance.current.setMarkers(markers);
           }
         }
       } catch (e) {
