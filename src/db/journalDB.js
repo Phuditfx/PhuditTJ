@@ -143,6 +143,45 @@ export const saveDividends = async (email, dividends) => {
     } catch (e) {}
 };
 
+// --- Funding History Storage ---
+export const getStoredFundingHistory = async (email) => {
+    if (!email) return [];
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().fundingHistory) {
+            fbData = docSnap.data().fundingHistory;
+        }
+    } catch (e) {
+        console.error("Error fetching funding history from Firebase:", e);
+    }
+    
+    if (fbData) return fbData;
+    
+    try {
+        const local = localStorage.getItem(`phudit_funding_${cleanEmail}`);
+        if (local) return JSON.parse(local);
+    } catch (e) {}
+    return [];
+};
+
+export const saveFundingHistory = async (email, history) => {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
+    try {
+        localStorage.setItem(`phudit_funding_${cleanEmail}`, JSON.stringify(history));
+    } catch (e) {}
+    
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { fundingHistory: history }, { merge: true });
+    } catch (e) {}
+};
+
+
 export const getStoredInitialBalance = async (email) => {
     if (!email) return 10000;
     const cleanEmail = email.trim().toLowerCase();

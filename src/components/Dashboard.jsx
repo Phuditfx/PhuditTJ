@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RANK_SYSTEM } from '../db/journalDB';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
+import PortfolioProjection from './PortfolioProjection';
 
 export default function Dashboard({ 
   accountBalance, 
@@ -10,13 +11,18 @@ export default function Dashboard({
   targetRR, 
   setTargetRR, 
   trades,
-  currentRank 
+  currentRank,
+  fundingHistory = [],
+  setFundingHistory
 }) {
   const { t } = useLanguage();
   const [localBalance, setLocalBalance] = React.useState(initialBalance);
   const [localRR, setLocalRR] = React.useState(targetRR);
   const [isBalanceSaved, setIsBalanceSaved] = React.useState(false);
   const [isRRSaved, setIsRRSaved] = React.useState(false);
+  const [showFundingModal, setShowFundingModal] = useState(false);
+  const [fundingAmount, setFundingAmount] = useState('');
+  const [fundingType, setFundingType] = useState('deposit');
 
   React.useEffect(() => {
     setLocalBalance(initialBalance);
@@ -135,6 +141,31 @@ export default function Dashboard({
 
   const monthlyData = Object.keys(monthlyMap).map(k => ({ name: k, pnl: monthlyMap[k] })).slice(-6);
 
+  const handleSaveFunding = () => {
+    if (!fundingAmount || isNaN(fundingAmount) || Number(fundingAmount) <= 0) return;
+    const newFunding = {
+      id: 'f-' + Date.now(),
+      date: new Date().toISOString(),
+      amount: parseFloat(fundingAmount),
+      type: fundingType
+    };
+    if (setFundingHistory) {
+      setFundingHistory([...fundingHistory, newFunding]);
+    }
+    
+    // Also adjust current initialBalance directly for immediate effect without needing to calculate all over again for the UI components that rely purely on `initialBalance + pnl`
+    if (fundingType === 'deposit') {
+      setInitialBalance(initialBalance + parseFloat(fundingAmount));
+      setLocalBalance(initialBalance + parseFloat(fundingAmount));
+    } else {
+      setInitialBalance(initialBalance - parseFloat(fundingAmount));
+      setLocalBalance(initialBalance - parseFloat(fundingAmount));
+    }
+    
+    setShowFundingModal(false);
+    setFundingAmount('');
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -167,6 +198,14 @@ export default function Dashboard({
                 {isBalanceSaved ? '✓' : t('dashboard.save')}
               </button>
             </div>
+          </div>
+          <div className="mt-2 text-right">
+            <button
+              onClick={() => setShowFundingModal(true)}
+              className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-2 py-1 rounded transition-colors"
+            >
+              + Add Deposit/Withdrawal
+            </button>
           </div>
         </div>
 
@@ -393,6 +432,13 @@ export default function Dashboard({
         </div>
       </div>
 
+      {/* 🔮 Portfolio Projection Section */}
+      <PortfolioProjection 
+        trades={trades} 
+        initialBalance={initialBalance} 
+        fundingHistory={fundingHistory} 
+      />
+
       {/* 📈 Analytics Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
@@ -550,6 +596,57 @@ export default function Dashboard({
           </table>
         </div>
       </div>
+
+      {/* Funding Modal */}
+      {showFundingModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl flex flex-col gap-4 relative">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">💰 Add Funding Transaction</h3>
+            
+            <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-lg">
+              <button
+                onClick={() => setFundingType('deposit')}
+                className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${fundingType === 'deposit' ? 'bg-emerald-500 text-white shadow' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+              >
+                Deposit (ฝาก)
+              </button>
+              <button
+                onClick={() => setFundingType('withdrawal')}
+                className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${fundingType === 'withdrawal' ? 'bg-rose-500 text-white shadow' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+              >
+                Withdrawal (ถอน)
+              </button>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-500 block mb-1">Amount ($)</label>
+              <input
+                type="number"
+                value={fundingAmount}
+                onChange={(e) => setFundingAmount(e.target.value)}
+                placeholder="e.g. 1000"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2 font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                onClick={() => setShowFundingModal(false)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveFunding}
+                disabled={!fundingAmount || Number(fundingAmount) <= 0}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

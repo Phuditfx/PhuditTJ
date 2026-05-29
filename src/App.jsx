@@ -16,7 +16,9 @@ import {
   getStoredPlans,
   savePlans,
   getStoredDividends,
-  saveDividends
+  saveDividends,
+  getStoredFundingHistory,
+  saveFundingHistory
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -59,6 +61,7 @@ export default function App() {
   const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
   const [plans, setPlans] = useState([]);
   const [dividends, setDividends] = useState([]);
+  const [fundingHistory, setFundingHistory] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   useEffect(() => {
@@ -81,6 +84,7 @@ export default function App() {
         const p = await getStoredProfile(currentUser);
         const pl = await getStoredPlans(currentUser);
         const div = await getStoredDividends(currentUser);
+        const funding = await getStoredFundingHistory(currentUser);
         if (isMounted) {
           setTrades(t);
           setInitialBalanceState(b);
@@ -88,12 +92,14 @@ export default function App() {
           setProfile(p);
           setPlans(pl);
           setDividends(div);
+          setFundingHistory(funding);
           setDataLoading(false);
         }
       } else {
         setTrades([]);
         setPlans([]);
         setDividends([]);
+        setFundingHistory([]);
       }
     };
     loadData();
@@ -592,6 +598,11 @@ export default function App() {
                 setTargetRR={setTargetRR}
                 trades={trades}
                 currentRank={currentRank}
+                fundingHistory={fundingHistory}
+                setFundingHistory={(newHistory) => {
+                  setFundingHistory(newHistory);
+                  saveFundingHistory(currentUser, newHistory);
+                }}
               />
             )}
             
