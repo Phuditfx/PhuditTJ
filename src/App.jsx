@@ -50,8 +50,7 @@ export default function App() {
   }, []);
 
   const handleLogin = (email, rememberMe) => {
-    // Explicitly set the user to ensure UI updates immediately
-    setCurrentUser(email);
+    // Rely completely on onAuthStateChanged to prevent race conditions
   };
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
@@ -66,9 +65,17 @@ export default function App() {
   
   useEffect(() => {
     let isMounted = true;
+    let timeoutId;
+
     const loadData = async () => {
       if (currentUser) {
         setDataLoading(true);
+
+        // Safety timeout in case Firebase hangs
+        timeoutId = setTimeout(() => {
+          if (isMounted) setDataLoading(false);
+        }, 8000);
+
         try {
           const status = await getUserStatus(currentUser);
           if (status === 'pending') {
@@ -77,13 +84,15 @@ export default function App() {
             return;
           }
 
-          const t = await getStoredTrades(currentUser);
-          const b = await getStoredInitialBalance(currentUser);
-          const rr = await getStoredTargetRR(currentUser);
-          const p = await getStoredProfile(currentUser);
-          const pl = await getStoredPlans(currentUser);
-          const div = await getStoredDividends(currentUser);
-          const funding = await getStoredFundingHistory(currentUser);
+          const [t, b, rr, p, pl, div, funding] = await Promise.all([
+            getStoredTrades(currentUser),
+            getStoredInitialBalance(currentUser),
+            getStoredTargetRR(currentUser),
+            getStoredProfile(currentUser),
+            getStoredPlans(currentUser),
+            getStoredDividends(currentUser),
+            getStoredFundingHistory(currentUser)
+          ]);
           
           if (isMounted) {
             setTrades(t);
@@ -97,6 +106,7 @@ export default function App() {
         } catch (error) {
           console.error("Error loading data:", error);
         } finally {
+          clearTimeout(timeoutId);
           if (isMounted) {
             setDataLoading(false);
           }
@@ -112,7 +122,10 @@ export default function App() {
       }
     };
     loadData();
-    return () => { isMounted = false; };
+    return () => { 
+      isMounted = false; 
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [currentUser]);
 
   // ซิงค์ขนาดตัวอักษรของระบบ
