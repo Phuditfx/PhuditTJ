@@ -105,7 +105,7 @@ export default function App() {
             setPlans(pl);
             setDividends(div);
             setFundingHistory(funding);
-            setIsVip(vip);
+            setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || vip);
           }
         } catch (error) {
           console.error("Error loading data:", error);
@@ -360,6 +360,12 @@ export default function App() {
     });
     setTrades(updatedTrades);
     saveTrades(currentUser, updatedTrades);
+  };
+
+  // นำเข้าข้อมูลการเทรด (Import Trades)
+  const handleImportTrades = (importedTrades) => {
+    setTrades(importedTrades);
+    saveTrades(currentUser, importedTrades);
   };
 
   const [theme, setTheme] = useState(() => {
