@@ -59,11 +59,11 @@ export default function CalendarView({ trades }) {
         >
           <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{day}</span>
           {dayTrades.length > 0 && (
-            <div className="flex flex-col items-center justify-center h-full">
-              <span className={`text-[10px] md:text-lg font-mono font-black truncate w-full text-center ${pnlColor}`}>
-                {totalPnL > 0 ? '+' : ''}${totalPnL.toFixed(2)}
+            <div className="flex flex-col gap-0.5 mt-auto">
+              <span className={`text-[8px] md:text-[10px] font-black truncate ${pnlColor}`}>
+                ${new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short", maximumFractionDigits: 1 }).format(totalPnL)}
               </span>
-              <span className="text-[8px] md:text-[10px] text-slate-500 font-bold mt-1 truncate">{dayTrades.length} Trades</span>
+              <span className="text-[7px] md:text-[9px] text-slate-500 font-semibold">{dayTrades.length} trades</span>
             </div>
           )}
         </div>

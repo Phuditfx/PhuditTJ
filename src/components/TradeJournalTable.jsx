@@ -206,7 +206,7 @@ const TradeRow = React.memo(({
         </td>
         
         {/* จัดการปุ่ม Close / Edit / Delete */}
-        <td className="py-4 px-4 text-right font-sans">
+        <td className="py-4 px-4 text-right font-sans sticky right-0 bg-white dark:bg-[#0f172a] shadow-[-8px_0_15px_-5px_rgba(0,0,0,0.1)] z-10 border-l border-slate-200 dark:border-slate-800">
           <div className="grid grid-cols-2 gap-1.5 w-max ml-auto">
             <button
               onClick={() => setChartModalTrade(trade)}
@@ -823,7 +823,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               <th className="py-3 px-3 text-right">{t('journal.pnl')}</th>
               <th className="py-3 px-3 text-center">{t('journal.actualRr')}</th>
               <th className="py-3 px-4 text-center">{t('journal.qualitative')}</th>
-              <th className="py-3 px-4 text-right">{t('journal.action')}</th>
+              <th className="py-3 px-4 text-right sticky right-0 bg-slate-50 dark:bg-slate-900 z-10 shadow-[-8px_0_15px_-5px_rgba(0,0,0,0.1)] border-l border-slate-200 dark:border-slate-800">{t('journal.action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">

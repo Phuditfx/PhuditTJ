@@ -540,12 +540,13 @@ export default function App() {
         </div>
 
         {/* Mobile Only: Account & Date Filters */}
-        <div className="lg:hidden flex gap-2 w-full mt-2">
-          <select 
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
-          >
+        <div className="lg:hidden flex flex-col gap-2 w-full mt-2">
+          <div className="flex gap-2 w-full">
+            <select 
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
+            >
             {accounts && accounts.map(acc => (
               <option key={acc.id} value={acc.id}>{acc.name}</option>
             ))}
@@ -560,6 +561,13 @@ export default function App() {
             <option value="YTD">YTD</option>
             <option value="All">All</option>
           </select>
+          </div>
+          <button 
+            onClick={() => setShowAccountModal(true)}
+            className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1 shadow-sm"
+          >
+            ⚙️ Manage Accounts
+          </button>
         </div>
       </header>
 
