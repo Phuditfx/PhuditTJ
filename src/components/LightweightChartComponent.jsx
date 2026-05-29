@@ -170,12 +170,6 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           const exactEntryTime = findClosestTime(entryTime, 'entryTime');
           let exactExitTime = findClosestTime(exitTime, 'exitTime');
 
-          // Fallback: If it is closed but exitTime is missing (old trade), use the last available bar
-          if (!exactExitTime && status === 'Closed' && sortedData.length > 0) {
-            exactExitTime = sortedData[sortedData.length - 1].time;
-            console.log(`[Chart Debug] Trade is Closed but exitTime is missing. Fallback to last bar: ${exactExitTime}`);
-          }
-
           if (exactEntryTime) {
             console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);
             markers.push({

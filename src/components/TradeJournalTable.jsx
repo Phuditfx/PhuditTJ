@@ -838,6 +838,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [chartModalTrade, setChartModalTrade] = useState(null);
   const [editingOpenTrade, setEditingOpenTrade] = useState(null);
   const [exitPrice, setExitPrice] = useState('');
+  const [editExitTime, setEditExitTime] = useState('');
   const [mfePrice, setMfePrice] = useState('');
   const [maePrice, setMaePrice] = useState('');
   
@@ -999,7 +1000,15 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     setEditingOpenTrade(null);
   };
 
-  // เปิด Modal ปิดออเดอร์ (หรือแก้ไขออเดอร์ที่ปิดแล้ว)
+  const formatDateTimeLocal = (isoString) => {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    if (isNaN(d)) return '';
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  // เปิด Modal ปิดออเดอร์ (หรือแก้ไข)
   const handleOpenCloseModal = async (trade) => {
     setSelectedTrade(trade);
     if (trade.status === 'Closed') {
@@ -1016,6 +1025,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setEditPlan(trade.planId || '');
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
+      setEditExitTime(trade.exitDateTime ? formatDateTimeLocal(trade.exitDateTime) : formatDateTimeLocal(new Date().toISOString()));
     } else {
       setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
@@ -1030,8 +1040,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setEditPlan(trade.planId || '');
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
-      
-      // ดึงราคา Real-time
+      setEditExitTime(formatDateTimeLocal(new Date().toISOString()));
       setIsFetchingPrice(true);
       const livePrice = await fetchRealTimePrice(trade.symbol);
       setIsFetchingPrice(false);
@@ -1139,7 +1148,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       ...selectedTrade,
       shares: sharesToClose,
       actualExitPrice: pExit,
-      exitDateTime: selectedTrade.exitDateTime || new Date().toISOString(),
+      exitDateTime: editExitTime ? new Date(editExitTime).toISOString() : (selectedTrade.exitDateTime || new Date().toISOString()),
       status: 'Closed',
       pnl,
       actualRR,
@@ -1429,6 +1438,20 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-sm"
                   />
                 </div>
+              </div>
+
+              {/* Exit Date / Time */}
+              <div className="flex flex-col gap-1.5 pt-2">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold flex justify-between">
+                  <span>Actual Exit Date / Time</span>
+                  <span className="text-[9px] text-slate-400">(Optional for old trades)</span>
+                </label>
+                <input 
+                  type="datetime-local"
+                  value={editExitTime}
+                  onChange={(e) => setEditExitTime(e.target.value)}
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
+                />
               </div>
 
               {/* MFE / MAE Section */}
