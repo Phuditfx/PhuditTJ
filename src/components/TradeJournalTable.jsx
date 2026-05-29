@@ -1733,6 +1733,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 exitTime={chartModalTrade.exitDateTime}
                 direction={chartModalTrade.direction}
                 status={chartModalTrade.status}
+                actualExitPrice={chartModalTrade.actualExitPrice}
                 tp2={ (() => {
                    const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
                    if (gap > 0) {

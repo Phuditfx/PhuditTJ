@@ -61,7 +61,7 @@ const parseToTimestamp = (dateStr) => {
   return Math.floor(timeMs / 1000);
 };
 
-export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status }) {
+export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status, actualExitPrice }) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
@@ -169,6 +169,36 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
 
           const exactEntryTime = findClosestTime(entryTime, 'entryTime');
           let exactExitTime = findClosestTime(exitTime, 'exitTime');
+
+          // Smart Fallback for old closed trades without exitTime
+          if (!exactExitTime && status === 'Closed' && actualExitPrice) {
+            const exitPriceNum = parseFloat(actualExitPrice);
+            if (!isNaN(exitPriceNum)) {
+              // Find the first candle after entryTime where the low/high encompasses the exit price
+              let entryIndex = 0;
+              if (exactEntryTime) {
+                entryIndex = sortedData.findIndex(d => d.time === exactEntryTime);
+                if (entryIndex === -1) entryIndex = 0;
+              }
+              
+              for (let i = entryIndex; i < sortedData.length; i++) {
+                const bar = sortedData[i];
+                if (bar.low <= exitPriceNum && bar.high >= exitPriceNum) {
+                  exactExitTime = bar.time;
+                  console.log(`[Chart Debug] Smart Fallback: Found candle hitting ${exitPriceNum} at ${exactExitTime}`);
+                  break;
+                }
+              }
+              
+              // If still not found, we don't have a good guess. We can just let it be missing.
+              // Alternatively, fallback to the last bar if the user absolutely wants to see the arrow.
+              // Since the user complained it "disappeared", let's fallback to the last bar if it's still null.
+              if (!exactExitTime && sortedData.length > 0) {
+                 exactExitTime = sortedData[sortedData.length - 1].time;
+                 console.log(`[Chart Debug] Smart Fallback failed. Falling back to last bar: ${exactExitTime}`);
+              }
+            }
+          }
 
           if (exactEntryTime) {
             console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);
