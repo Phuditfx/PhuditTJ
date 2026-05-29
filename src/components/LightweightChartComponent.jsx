@@ -61,7 +61,7 @@ const parseToTimestamp = (dateStr) => {
   return Math.floor(timeMs / 1000);
 };
 
-export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime }) {
+export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status }) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
@@ -168,7 +168,13 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           };
 
           const exactEntryTime = findClosestTime(entryTime, 'entryTime');
-          const exactExitTime = findClosestTime(exitTime, 'exitTime');
+          let exactExitTime = findClosestTime(exitTime, 'exitTime');
+
+          // Fallback: If it is closed but exitTime is missing (old trade), use the last available bar
+          if (!exactExitTime && status === 'Closed' && sortedData.length > 0) {
+            exactExitTime = sortedData[sortedData.length - 1].time;
+            console.log(`[Chart Debug] Trade is Closed but exitTime is missing. Fallback to last bar: ${exactExitTime}`);
+          }
 
           if (exactEntryTime) {
             console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);

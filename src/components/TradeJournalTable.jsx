@@ -1708,6 +1708,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 tp1={chartModalTrade.takeProfit}
                 entryTime={chartModalTrade.dateTime}
                 exitTime={chartModalTrade.exitDateTime}
+                direction={chartModalTrade.direction}
+                status={chartModalTrade.status}
                 tp2={ (() => {
                    const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
                    if (gap > 0) {
