@@ -413,8 +413,6 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
-  const [showManual, setShowManual] = useState(false);
-
   const handleLoadSampleData = () => {
     const symbols = ['AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'BTCUSD', 'ETHUSD'];
     const sampleTrades = [];
@@ -728,33 +726,7 @@ export default function App() {
         )}
       </div>
 
-      {/* User Manual Modal */}
-      {showManual && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-5 relative max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
-              <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">📖 คู่มือการใช้งาน Phudit TJ</h3>
-              <button 
-                onClick={() => setShowManual(false)} 
-                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 font-black cursor-pointer text-xl"
-              >✕</button>
-            </div>
-            <div className="text-sm text-slate-750 dark:text-slate-300 space-y-4">
-              <p><strong>1. ระบบ Login & ฐานข้อมูล:</strong> ข้อมูลทั้งหมดจะถูกผูกกับอีเมลและเซฟไว้ใน Browser ของคุณเอง.</p>
-              <p><strong>2. DASHBOARD & RANKS:</strong> เริ่มต้นโดยการตั้งค่าเงินทุน (Initial Balance) ระบบจะอัปเดตยศ (Rank Level) อัตโนมัติจากยอดเงินปัจจุบัน.</p>
-              <p><strong>3. PORTFOLIO GROWTH & PROJECTION (New!):</strong> กราฟใหม่ในหน้า Dashboard ช่วยให้คุณเห็นการเติบโตแบบบันทึกประวัติ ฝาก/ถอน และรัน AI (Monte Carlo & Statistical) คาดการณ์ความสำเร็จของระบบคุณในอนาคตได้ 1-36 เดือน!</p>
-              <p><strong>4. ALPHA TRADER (TI SWING PICK):</strong> กรอก <code>TI Entry Alert</code> (จุดเบรคระดับ Day) และจุดเข้า (Entry). ระบบจะดึงข้อมูลราคามาวาดกราฟแท่งเทียนแบบเรียลไทม์ (Lightweight Chart) พร้อมตีเส้น Entry, SL, TP ให้อัตโนมัติ เพื่อให้หาจุดซื้อขายได้คมที่สุด.</p>
-              <p><strong>5. STOP LOSS & AUTO-TP:</strong> มีปุ่ม Quick SL คำนวณ % ลัด และ <strong>🤖 AI Auto-SL</strong> เป็นไกด์ไลน์. เมื่อได้ SL แล้ว ระบบ Auto-TP จะคำนวณเป้าหมายกำไร 1R, 2R, 3R ให้ทันที.</p>
-              <p><strong>6. QUICK ORDER WIDGET & TRADING PLANS:</strong> ทุกการตั้งค่าจาก Alpha Trader จะ Sync มาที่ Widget นี้ให้กด Save เข้า Journal สะดวกๆ และคุณสามารถสร้างแผนการเทรด (Trading Plans) เพื่อเช็คลิสต์ก่อนเข้าเทรดได้.</p>
-              <p><strong>7. TRADE JOURNAL & AI COACH:</strong> สำหรับออเดอร์ที่ยังเปิดอยู่ ระบบจะดึงราคาปัจจุบันมาคำนวณ Live PnL ให้อัตโนมัติ และเมื่อปิดออเดอร์ ระบบ AI จะประเมินคะแนน (AI Score) พร้อมให้คำแนะนำอย่างละเอียด.</p>
-              <p><strong>👑 Owner Dashboard:</strong> เฉพาะผู้ดูแลระบบ <code>phudit.mahawongsanan@gmail.com</code> ที่จะเข้าถึงหน้ารวมสถิติผู้ใช้งานได้.</p>
-            </div>
-            <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-850 mt-2">
-              <button onClick={() => setShowManual(false)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold text-sm cursor-pointer">เข้าใจแล้ว</button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* ⚙️ Profile Settings Modal */}
       {showSettingsModal && (
