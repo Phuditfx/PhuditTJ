@@ -421,6 +421,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
           </a>
         </div>
       </div>
+      </div>
       
       {!isVip && (
         <div className="absolute inset-0 flex items-center justify-center z-50 flex-col gap-3 pointer-events-auto">
