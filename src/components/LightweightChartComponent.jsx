@@ -166,12 +166,10 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           };
 
           const exactEntryTime = findClosestTime(entryTime, 'entryTime');
-          const exactExitTime = findClosestTime(exitTime, 'exitTime');
           const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
 
           if (isSameCandle) {
             console.log(`[Chart Debug] Entry and Exit are on the same daily candle: ${exactEntryTime}`);
-            // กรณีเข้าออกในแท่งเทียนแท่งเดียวกัน (สีกราฟม่วงเรืองรองผสม สัญลักษณ์ชัดเจน)
             markers.push({
               time: exactEntryTime,
               position: 'belowBar',
@@ -180,13 +178,12 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
               text: '▲ ENTRY / ▼ EXIT'
             });
           } else {
-            // กรณีคนละแท่งเทียน แสดงลูกศรแยกกันสวยงาม
             if (exactEntryTime) {
               console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);
               markers.push({
                 time: exactEntryTime,
-                position: 'belowBar', // Entry always below the candle
-                color: '#3b82f6', // blue-500 (สีน้ำเงิน)
+                position: 'belowBar',
+                color: '#3b82f6',
                 shape: 'arrowUp',
                 text: 'ENTRY'
               });
@@ -196,8 +193,8 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
               console.log(`[Chart Debug] Adding Exit marker at candle: ${exactExitTime}`);
               markers.push({
                 time: exactExitTime,
-                position: 'aboveBar', // Exit always above the candle
-                color: '#f59e0b', // amber-500 (สีส้มเหลือง)
+                position: 'aboveBar',
+                color: '#f59e0b',
                 shape: 'arrowDown',
                 text: 'EXIT'
               });
