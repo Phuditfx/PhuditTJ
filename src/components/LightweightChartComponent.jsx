@@ -2,10 +2,28 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
 
-// 📅 ตัวแปลงวันที่ระดับสูงสุดเพื่อดักจับทุกประเภทฟอร์แมต (ISO String, Local String, หรือ Timestamp)
+// 📅 ตัวแปลงวันที่ระดับสูงสุดเพื่อดักจับทุกประเภทฟอร์แมต (ISO String, Local String, Timestamp Object, หรือ Unix Number)
 const parseToTimestamp = (dateStr) => {
   if (!dateStr) return null;
   
+  // ดักจับกรณีเป็น Object (เช่น Firestore Timestamp, Date object)
+  if (typeof dateStr === 'object') {
+    if (typeof dateStr.seconds === 'number') {
+      return dateStr.seconds;
+    }
+    if (typeof dateStr._seconds === 'number') {
+      return dateStr._seconds;
+    }
+    if (typeof dateStr.toDate === 'function') {
+      try {
+        return Math.floor(dateStr.toDate().getTime() / 1000);
+      } catch (e) {}
+    }
+    if (dateStr instanceof Date) {
+      return Math.floor(dateStr.getTime() / 1000);
+    }
+  }
+
   // หากเป็นตัวเลข Unix Timestamp อยู่แล้ว
   if (typeof dateStr === 'number') {
     return dateStr > 1000000000000 ? Math.floor(dateStr / 1000) : dateStr;
@@ -21,6 +39,8 @@ const parseToTimestamp = (dateStr) => {
   let normalizedStr = dateStr;
   if (typeof dateStr === 'string') {
     normalizedStr = dateStr.trim().replace(' ', 'T');
+  } else {
+    normalizedStr = String(dateStr);
   }
   
   const parsed = new Date(normalizedStr);
@@ -107,13 +127,17 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
       if (!symbol) return;
       setLoading(true);
       try {
+        console.log(`[Chart Debug] Fetching historical data for symbol: ${symbol}`);
         const data = await fetchHistoricalData(symbol);
+        
         // Only update if component is still mounted and instances are active
         if (seriesInstance.current && chartInstance.current && data && data.length > 0) {
           // Deduplicate and sort data by time to prevent Lightweight Charts crash
           const uniqueDataMap = new Map();
           data.forEach(item => uniqueDataMap.set(item.time, item));
           const sortedData = Array.from(uniqueDataMap.values()).sort((a, b) => a.time - b.time);
+          
+          console.log(`[Chart Debug] Loaded ${sortedData.length} daily bars. First timestamp: ${sortedData[0].time}, Last timestamp: ${sortedData[sortedData.length - 1].time}`);
           
           seriesInstance.current.setData(sortedData);
           chartInstance.current.timeScale().fitContent();
@@ -122,8 +146,9 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           const markers = [];
           
           // Helper to find closest data point in the series
-          const findClosestTime = (targetTimeStr) => {
+          const findClosestTime = (targetTimeStr, label) => {
             const targetSec = parseToTimestamp(targetTimeStr);
+            console.log(`[Chart Debug] parseToTimestamp(${label}: ${targetTimeStr}) => ${targetSec}`);
             if (!targetSec) return null;
             
             let closest = sortedData[0].time;
@@ -136,14 +161,16 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
                 closest = sortedData[i].time;
               }
             }
+            console.log(`[Chart Debug] findClosestTime(${label}) closest bar: ${closest} (Diff: ${Math.abs(closest - targetSec)}s)`);
             return closest;
           };
 
-          const exactEntryTime = findClosestTime(entryTime);
-          const exactExitTime = findClosestTime(exitTime);
+          const exactEntryTime = findClosestTime(entryTime, 'entryTime');
+          const exactExitTime = findClosestTime(exitTime, 'exitTime');
           const isSameCandle = exactEntryTime && exactExitTime && exactEntryTime === exactExitTime;
 
           if (isSameCandle) {
+            console.log(`[Chart Debug] Entry and Exit are on the same daily candle: ${exactEntryTime}`);
             // กรณีเข้าออกในแท่งเทียนแท่งเดียวกัน (สีกราฟม่วงเรืองรองผสม สัญลักษณ์ชัดเจน)
             markers.push({
               time: exactEntryTime,
@@ -155,6 +182,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           } else {
             // กรณีคนละแท่งเทียน แสดงลูกศรแยกกันสวยงาม
             if (exactEntryTime) {
+              console.log(`[Chart Debug] Adding Entry marker at candle: ${exactEntryTime}`);
               markers.push({
                 time: exactEntryTime,
                 position: 'belowBar', // Entry always below the candle
@@ -165,6 +193,7 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
             }
 
             if (exactExitTime) {
+              console.log(`[Chart Debug] Adding Exit marker at candle: ${exactExitTime}`);
               markers.push({
                 time: exactExitTime,
                 position: 'aboveBar', // Exit always above the candle
@@ -177,16 +206,45 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
 
           // เรียงเวลาจากน้อยไปมากตามข้อกำหนดของ Lightweight Charts
           markers.sort((a, b) => a.time - b.time);
+          console.log('[Chart Debug] Final Markers Array:', markers);
           
-          // ใช้ setTimeout เพื่อหน่วงเวลาให้ DOM และชาร์ตทำการเรนเดอร์แท่งเทียนจนเสร็จสมบูรณ์ ป้องกันปัญหารอยต่อเวลา/การเคลียร์ภาพในช่วงอนิเมชั่น
+          // โทรเรียกเซ็ตมาร์กเกอร์ทันที และดักรอบเวลาหลายระดับเพื่อแก้ปัญหา canvas ทับซ้อน/animation paint
+          if (seriesInstance.current) {
+            seriesInstance.current.setMarkers(markers);
+          }
+          
+          // ลำดับการรันที่ 1: 50ms
+          setTimeout(() => {
+            if (seriesInstance.current) {
+              seriesInstance.current.setMarkers(markers);
+            }
+          }, 50);
+          
+          // ลำดับการรันที่ 2: 150ms
           setTimeout(() => {
             if (seriesInstance.current) {
               seriesInstance.current.setMarkers(markers);
             }
           }, 150);
+
+          // ลำดับการรันที่ 3: 400ms
+          setTimeout(() => {
+            if (seriesInstance.current) {
+              seriesInstance.current.setMarkers(markers);
+            }
+          }, 400);
+
+          // ลำดับการรันที่ 4: 800ms
+          setTimeout(() => {
+            if (seriesInstance.current) {
+              seriesInstance.current.setMarkers(markers);
+            }
+          }, 800);
+        } else {
+          console.warn('[Chart Debug] Data loading skipped or empty. seriesInstance:', !!seriesInstance.current, 'chartInstance:', !!chartInstance.current, 'data length:', data?.length);
         }
       } catch (e) {
-        console.error("Error setting chart data:", e);
+        console.error("[Chart Debug] Error setting chart data:", e);
       }
       setLoading(false);
     };
