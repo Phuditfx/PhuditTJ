@@ -32,6 +32,8 @@ import OwnerDashboard from './components/OwnerDashboard';
 import CalendarView from './components/CalendarView';
 import TradingPlans from './components/TradingPlans';
 import DividendTracker from './components/DividendTracker';
+import Analytics from './components/Analytics';
+import Sidebar from './components/Sidebar';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -198,7 +200,10 @@ export default function App() {
   ];
 
   // จัดเก็บค่าแถบเมนูหลักที่แสดงอยู่
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | journal | fighter | owner
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | journal | fighter | owner | analytics
+  const [accountId, setAccountId] = useState('default');
+  const [globalDateRange, setGlobalDateRange] = useState('All'); // 1W, 1M, YTD, All
+
 
   // Shared State ระหว่าง Fighter Engine และ Quick Order Widget
   const [sharedOrder, setSharedOrder] = useState({
@@ -240,6 +245,7 @@ export default function App() {
       ...newTradeData,
       id: 't-' + Date.now(),
       dateTime: new Date().toISOString(), // วันเวลา ณ ปัจจุบัน
+      accountId: accountId, // ระบุว่าออเดอร์นี้เป็นของบัญชีไหน
       pnl: 0,
       actualRR: 0,
       aiScore: null,
@@ -256,6 +262,9 @@ export default function App() {
 
   // อัปเดตข้อมูลการเทรด (เช่น เมื่อปิดดีลเทรด)
   const handleUpdateTrade = (updatedTrade) => {
+    // Make sure we keep the accountId if not specified
+    if (!updatedTrade.accountId) updatedTrade.accountId = accountId;
+    
     setTrades(prevTrades => {
       const updatedTradesList = prevTrades.map(t => t.id === updatedTrade.id ? updatedTrade : t);
       saveTrades(currentUser, updatedTradesList);
@@ -265,6 +274,8 @@ export default function App() {
 
   // เพิ่มออเดอร์โดยตรง (เช่น จากการแบ่งปิดออเดอร์)
   const handleAddTradeDirect = (newTrade) => {
+    if (!newTrade.accountId) newTrade.accountId = accountId;
+    
     setTrades(prevTrades => {
       const updatedTradesList = [newTrade, ...prevTrades];
       saveTrades(currentUser, updatedTradesList);
@@ -367,6 +378,74 @@ export default function App() {
   };
 
   const [showManual, setShowManual] = useState(false);
+
+  const handleLoadSampleData = () => {
+    const symbols = ['AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'BTCUSD', 'ETHUSD'];
+    const sampleTrades = [];
+    let currentBalance = initialBalance;
+
+    for (let i = 0; i < 20; i++) {
+      const isWin = Math.random() > 0.4; // 60% win rate
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      const direction = Math.random() > 0.5 ? 'Long' : 'Short';
+      const entryPrice = Math.random() * 200 + 50;
+      const shares = Math.floor(Math.random() * 50) + 1;
+      
+      const pnl = isWin 
+        ? Math.random() * 500 + 100 // Win $100 - $600
+        : -(Math.random() * 300 + 50); // Loss $50 - $350
+
+      const daysAgo = Math.floor(Math.random() * 60); // Random date within last 60 days
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+
+      sampleTrades.push({
+        id: `sample-${Date.now()}-${i}`,
+        symbol,
+        direction,
+        status: 'Closed',
+        entryPrice: entryPrice.toFixed(2),
+        actualExitPrice: (entryPrice + (isWin ? pnl/shares : pnl/shares)).toFixed(2),
+        shares,
+        pnl: parseFloat(pnl.toFixed(2)),
+        dateTime: d.toISOString(),
+        accountId: accountId || 'default',
+        planAdherenceScore: Math.floor(Math.random() * 50) + 50, // 50-100
+        actualRR: (pnl / (Math.abs(pnl) + 50)).toFixed(2),
+      });
+    }
+
+    setTrades([...sampleTrades, ...trades]);
+    saveTrades(currentUser, [...sampleTrades, ...trades]);
+  };
+
+  // กรอง Trades ตาม Account และ Date Range
+  const filteredGlobalTrades = useMemo(() => {
+    return trades.filter(t => {
+      const tradeAcc = t.accountId || 'default';
+      if (tradeAcc !== accountId) return false;
+
+      if (globalDateRange === 'All') return true;
+      if (!t.dateTime) return true;
+      
+      const tradeDate = new Date(t.dateTime);
+      const now = new Date();
+      
+      if (globalDateRange === '1W') {
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return tradeDate >= oneWeekAgo;
+      }
+      if (globalDateRange === '1M') {
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return tradeDate >= oneMonthAgo;
+      }
+      if (globalDateRange === 'YTD') {
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return tradeDate >= startOfYear;
+      }
+      return true;
+    });
+  }, [trades, accountId, globalDateRange]);
 
   if (!authReady) {
     return (
@@ -528,20 +607,33 @@ export default function App() {
       </header>
 
       {/* 💻 Main Layout container */}
-      <main className="max-w-[1400px] w-full mx-auto p-4 md:p-6 pb-24 md:pb-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow items-start">
+      <main className="max-w-[1600px] w-full mx-auto p-4 md:p-6 pb-24 md:pb-6 flex flex-col lg:flex-row gap-6 flex-grow items-start">
         
-        {/* 📋 Left & Central Side (Dashboard & Sub-pages) - 9 Columns */}
-        <div className="lg:col-span-9 flex flex-col gap-6 w-full">
+        {/* Left Navigation Sidebar */}
+        <div className="hidden lg:block w-64 flex-shrink-0">
+          <Sidebar 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            accountId={accountId} 
+            setAccountId={setAccountId} 
+            globalDateRange={globalDateRange}
+            setGlobalDateRange={setGlobalDateRange}
+            isVip={isVip} 
+            isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
+          />
+        </div>
+
+        {/* 📋 Central Main Content Area */}
+        <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
+
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
-            {/* แถบ Tab เลือกสลับการแสดงผลหลัก */}
-            <div className="hidden md:flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b border-brand-border dark:border-slate-800/80 gap-2 p-1 bg-brand-surface dark:bg-slate-900/60 backdrop-blur rounded-xl border w-max snap-x">
+            {/* Mobile Title (Tabs removed for desktop, replaced by Sidebar) */}
+            <div className="lg:hidden flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b border-brand-border dark:border-slate-800/80 gap-2 p-1 bg-brand-surface dark:bg-slate-900/60 backdrop-blur rounded-xl border w-max snap-x">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'dashboard'
-                    ? 'bg-brand-primary text-white shadow-md'
-                    : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                  activeTab === 'dashboard' ? 'bg-brand-primary text-white shadow-md' : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
                 {t('app.dashboard')}
@@ -549,69 +641,12 @@ export default function App() {
               <button
                 onClick={() => setActiveTab('journal')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'journal'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
+                  activeTab === 'journal' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
                 }`}
               >
                 {t('app.journal')} ({trades.length})
               </button>
-              <button
-                onClick={() => setActiveTab('fighter')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'fighter'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                }`}
-              >
-                ⚡ {t('app.fighter')}
-              </button>
-              {isVip && (
-                <>
-                  <button
-                    onClick={() => setActiveTab('calendar')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                      activeTab === 'calendar'
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                    }`}
-                  >
-                    {t('app.calendar')}
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('plans')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                      activeTab === 'plans'
-                        ? 'bg-amber-600 text-white shadow-md shadow-amber-950/20'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                    }`}
-                  >
-                    {t('app.plans')}
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('dividends')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                      activeTab === 'dividends'
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/20'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                    }`}
-                  >
-                    {t('app.dividends')}
-                  </button>
-                </>
-              )}
-              {currentUser === 'phudit.mahawongsanan@gmail.com' && (
-                <button
-                  onClick={() => setActiveTab('owner')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                    activeTab === 'owner'
-                      ? 'bg-amber-600 text-white shadow-md shadow-amber-950/20'
-                      : 'text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                  }`}
-                >
-                  👑 {t('app.owner')}
-                </button>
-              )}
+              {/* Additional mobile tabs can go here */}
             </div>
             
             <div className="flex gap-2">
@@ -639,7 +674,7 @@ export default function App() {
                 setInitialBalance={setInitialBalance}
                 targetRR={targetRR}
                 setTargetRR={setTargetRR}
-                trades={trades}
+                trades={filteredGlobalTrades}
                 currentRank={currentRank}
                 fundingHistory={fundingHistory}
                 isVip={isVip}
@@ -647,12 +682,13 @@ export default function App() {
                   setFundingHistory(newHistory);
                   saveFundingHistory(currentUser, newHistory);
                 }}
+                onLoadSampleData={handleLoadSampleData}
               />
             )}
             
             {activeTab === 'journal' && (
               <TradeJournalTable 
-                trades={trades}
+                trades={filteredGlobalTrades}
                 onUpdateTrade={handleUpdateTrade}
                 onAddTrade={handleAddTradeDirect}
                 onDeleteTrade={handleDeleteTrade}
@@ -663,6 +699,10 @@ export default function App() {
                 plans={plans}
                 isVip={isVip}
               />
+            )}
+
+            {activeTab === 'analytics' && (
+              <Analytics trades={filteredGlobalTrades} />
             )}
 
             <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
@@ -701,8 +741,8 @@ export default function App() {
 
         </div>
 
-        {/* ⚡ Right Side Snap Widget Sidebar - 3 Columns */}
-        <aside className="lg:col-span-3 w-full flex flex-col gap-6 lg:sticky lg:top-24">
+        {/* ⚡ Right Side Snap Widget Sidebar */}
+        <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-24">
           <QuickOrderWidget 
             currentRank={currentRank}
             accountBalance={accountBalance}

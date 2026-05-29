@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
 
-export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long' }) {
+export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime }) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
@@ -78,6 +78,61 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           
           seriesInstance.current.setData(sortedData);
           chartInstance.current.timeScale().fitContent();
+
+          // Add Markers for Entry and Exit
+          const markers = [];
+          
+          // Helper to find closest data point in the series
+          const findClosestTime = (targetTimeStr) => {
+            if (!targetTimeStr) return null;
+            const targetSec = Math.floor(new Date(targetTimeStr).getTime() / 1000);
+            if (isNaN(targetSec)) return null;
+            
+            let closest = sortedData[0].time;
+            let minDiff = Math.abs(sortedData[0].time - targetSec);
+            
+            for (let i = 1; i < sortedData.length; i++) {
+              const diff = Math.abs(sortedData[i].time - targetSec);
+              if (diff < minDiff) {
+                minDiff = diff;
+                closest = sortedData[i].time;
+              }
+            }
+            return closest;
+          };
+
+          const exactEntryTime = findClosestTime(entryTime);
+          if (exactEntryTime) {
+            markers.push({
+              time: exactEntryTime,
+              position: direction === 'Long' ? 'belowBar' : 'aboveBar',
+              color: '#3b82f6', // blue-500
+              shape: direction === 'Long' ? 'arrowUp' : 'arrowDown',
+              text: 'ENTRY',
+              size: 2
+            });
+          }
+
+          const exactExitTime = findClosestTime(exitTime);
+          if (exactExitTime) {
+            // Determine if exit was profitable (very naive check based on entry price)
+            const isWin = direction === 'Long' ? (tp1 && entry < tp1) : (tp1 && entry > tp1);
+            markers.push({
+              time: exactExitTime,
+              position: direction === 'Long' ? 'aboveBar' : 'belowBar',
+              color: '#f59e0b', // amber-500
+              shape: direction === 'Long' ? 'arrowDown' : 'arrowUp',
+              text: 'EXIT',
+              size: 2
+            });
+          }
+
+          // Sort markers by time (required by lightweight-charts)
+          markers.sort((a, b) => a.time - b.time);
+          
+          if (markers.length > 0) {
+            seriesInstance.current.setMarkers(markers);
+          }
         }
       } catch (e) {
         console.error("Error setting chart data:", e);

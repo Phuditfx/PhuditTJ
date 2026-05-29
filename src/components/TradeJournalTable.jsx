@@ -634,6 +634,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       ...selectedTrade,
       shares: sharesToClose,
       actualExitPrice: pExit,
+      exitDateTime: selectedTrade.exitDateTime || new Date().toISOString(),
       status: 'Closed',
       pnl,
       actualRR,
@@ -1193,6 +1194,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 entry={chartModalTrade.entryPrice}
                 stopLoss={chartModalTrade.stopLoss}
                 tp1={chartModalTrade.takeProfit}
+                entryTime={chartModalTrade.dateTime}
+                exitTime={chartModalTrade.exitDateTime}
                 tp2={ (() => {
                    const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
                    if (gap > 0) {
