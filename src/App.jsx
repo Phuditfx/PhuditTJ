@@ -20,7 +20,8 @@ import {
   getStoredFundingHistory,
   saveFundingHistory,
   getUserVipStatus,
-  subscribeToUserData
+  subscribeToUserData,
+  saveAccounts
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -59,14 +60,21 @@ export default function App() {
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
   const [trades, setTrades] = useState([]);
-  const [initialBalance, setInitialBalanceState] = useState(10000);
-  const [targetRR, setTargetRRState] = useState(20);
+  const [initialBalances, setInitialBalances] = useState({ 'default': 10000 });
+  const [targetRR, setTargetRR] = useState(20);
   const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
   const [plans, setPlans] = useState([]);
   const [dividends, setDividends] = useState([]);
   const [fundingHistory, setFundingHistory] = useState([]);
+  const [accounts, setAccounts] = useState([{ id: 'default', name: 'Main Account' }]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isVip, setIsVip] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [accountId, setAccountId] = useState('default');
+  const [globalDateRange, setGlobalDateRange] = useState('1M');
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [showManual, setShowManual] = useState(false);
   
   useEffect(() => {
     let isMounted = true;
@@ -90,12 +98,13 @@ export default function App() {
         }
 
         setTrades(data.trades);
-        setInitialBalanceState(data.initialBalance);
-        setTargetRRState(data.targetRR);
+        setInitialBalances(data.initialBalances || { 'default': 10000 });
+        setTargetRR(data.targetRR || 20);
         setProfile(data.profile);
-        setPlans(data.plans);
-        setDividends(data.dividends);
-        setFundingHistory(data.fundingHistory);
+        setPlans(data.plans || []);
+        setDividends(data.dividends || []);
+        setFundingHistory(data.fundingHistory || []);
+        setAccounts(data.accounts || [{ id: 'default', name: 'Main Account' }]);
         setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
         
         setDataLoading(false);
@@ -138,11 +147,11 @@ export default function App() {
 
   useEffect(() => {
     if (showSettingsModal) {
-      setTempProfileName(profile.name || currentUser.split('@')[0]);
+      setTempProfileName(profile.name || (currentUser ? currentUser.split('@')[0] : ''));
       setTempProfilePhoto(profile.photo || '');
       setTempFontSize(profile.fontSize || 'normal');
     }
-  }, [showSettingsModal, profile]);
+  }, [showSettingsModal, profile, currentUser]);
 
   const handleTempFontSizeChange = (size) => {
     setTempFontSize(size);
@@ -199,12 +208,6 @@ export default function App() {
     { value: 'xlarge', label: '📢 ใหญ่มาก (X-Large)', desc: 'ขนาดขยายพิเศษ (20px)' },
   ];
 
-  // จัดเก็บค่าแถบเมนูหลักที่แสดงอยู่
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | journal | fighter | owner | analytics
-  const [accountId, setAccountId] = useState('default');
-  const [globalDateRange, setGlobalDateRange] = useState('All'); // 1W, 1M, YTD, All
-
-
   // Shared State ระหว่าง Fighter Engine และ Quick Order Widget
   const [sharedOrder, setSharedOrder] = useState({
     symbol: '',
@@ -216,28 +219,63 @@ export default function App() {
     tp3: ''
   });
 
+  const initialBalance = initialBalances[accountId] || 10000;
+
   // บันทึกและซิงค์เงินตั้งต้นลง LocalStorage
-  const setInitialBalance = (value) => {
-    setInitialBalanceState(value);
-    saveInitialBalance(currentUser, value);
+  const setInitialBalance = (newBalance) => {
+    const updatedBalances = { ...initialBalances, [accountId]: parseFloat(newBalance) || 0 };
+    setInitialBalances(updatedBalances);
+    saveInitialBalance(currentUser, updatedBalances);
   };
 
   // บันทึกและซิงค์เป้าหมาย RR ลง LocalStorage
   const setTargetRR = (value) => {
-    setTargetRRState(value);
+    setTargetRR(value);
     saveTargetRR(currentUser, value);
   };
 
-  // 📈 คำนวณยอดเงินในพอร์ตปัจจุบันแบบเรียลไทม์ (Initial Balance + ผลรวมกำไรขาดทุนของออเดอร์ที่ปิดแล้ว)
-  const accountBalance = useMemo(() => {
-    const netPnL = trades.reduce((acc, t) => acc + (t.status === 'Closed' ? (parseFloat(t.pnl) || 0) : 0), 0);
-    return Math.max(0, initialBalance + netPnL);
-  }, [trades, initialBalance]);
-
   // 🏆 คำนวณยศปัจจุบันอัตโนมัติจากยอดคงเหลือในพอร์ต
   const currentRank = useMemo(() => {
-    return RANK_SYSTEM.slice().reverse().find(r => accountBalance >= r.minPort) || RANK_SYSTEM[0];
-  }, [accountBalance]);
+    let rank = RANK_SYSTEM[0];
+    for (let i = 0; i < RANK_SYSTEM.length; i++) {
+      if (initialBalance >= RANK_SYSTEM[i].minPort) rank = RANK_SYSTEM[i];
+    }
+    return rank;
+  }, [initialBalance]);
+
+  // กรอง Trades ตาม Account และ Date Range
+  const filteredGlobalTrades = useMemo(() => {
+    return trades.filter(t => {
+      const tradeAcc = t.accountId || 'default';
+      if (tradeAcc !== accountId) return false;
+
+      if (globalDateRange === 'All') return true;
+      if (!t.dateTime) return true;
+      
+      const tradeDate = new Date(t.dateTime);
+      const now = new Date();
+      
+      if (globalDateRange === '1W') {
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return tradeDate >= oneWeekAgo;
+      }
+      if (globalDateRange === '1M') {
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return tradeDate >= oneMonthAgo;
+      }
+      if (globalDateRange === 'YTD') {
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return tradeDate >= startOfYear;
+      }
+      return true;
+    });
+  }, [trades, accountId, globalDateRange]);
+
+  // 📈 คำนวณยอดเงินในพอร์ตปัจจุบันแบบเรียลไทม์ (Initial Balance + ผลรวมกำไรขาดทุนของออเดอร์ที่ปิดแล้ว)
+  const accountBalance = useMemo(() => {
+    const netPnL = filteredGlobalTrades.reduce((acc, t) => acc + (t.status === 'Closed' ? (parseFloat(t.pnl) || 0) : 0), 0);
+    return Math.max(0, initialBalance + netPnL);
+  }, [filteredGlobalTrades, initialBalance]);
 
   // บันทึกออเดอร์ใหม่ (เปิดออเดอร์จาก Sidebar)
   const handleSaveTrade = (newTradeData) => {
@@ -256,13 +294,11 @@ export default function App() {
     setTrades(updatedTrades);
     saveTrades(currentUser, updatedTrades);
     
-    // เปลี่ยนแถบมาที่บันทึกประวัติการเทรดอัตโนมัติ เพื่อให้ผู้ใช้เห็นออเดอร์ที่บันทึก
     setActiveTab('journal');
   };
 
   // อัปเดตข้อมูลการเทรด (เช่น เมื่อปิดดีลเทรด)
   const handleUpdateTrade = (updatedTrade) => {
-    // Make sure we keep the accountId if not specified
     if (!updatedTrade.accountId) updatedTrade.accountId = accountId;
     
     setTrades(prevTrades => {
@@ -382,20 +418,15 @@ export default function App() {
   const handleLoadSampleData = () => {
     const symbols = ['AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'BTCUSD', 'ETHUSD'];
     const sampleTrades = [];
-    let currentBalance = initialBalance;
 
     for (let i = 0; i < 20; i++) {
-      const isWin = Math.random() > 0.4; // 60% win rate
+      const isWin = Math.random() > 0.4;
       const symbol = symbols[Math.floor(Math.random() * symbols.length)];
       const direction = Math.random() > 0.5 ? 'Long' : 'Short';
       const entryPrice = Math.random() * 200 + 50;
       const shares = Math.floor(Math.random() * 50) + 1;
-      
-      const pnl = isWin 
-        ? Math.random() * 500 + 100 // Win $100 - $600
-        : -(Math.random() * 300 + 50); // Loss $50 - $350
-
-      const daysAgo = Math.floor(Math.random() * 60); // Random date within last 60 days
+      const pnl = isWin ? Math.random() * 500 + 100 : -(Math.random() * 300 + 50);
+      const daysAgo = Math.floor(Math.random() * 60);
       const d = new Date();
       d.setDate(d.getDate() - daysAgo);
 
@@ -404,13 +435,13 @@ export default function App() {
         symbol,
         direction,
         status: 'Closed',
-        entryPrice: entryPrice.toFixed(2),
-        actualExitPrice: (entryPrice + (isWin ? pnl/shares : pnl/shares)).toFixed(2),
+        entryPrice: Number(entryPrice).toFixed(2),
+        actualExitPrice: Number(entryPrice + (isWin ? pnl/shares : pnl/shares)).toFixed(2),
         shares,
         pnl: parseFloat(pnl.toFixed(2)),
         dateTime: d.toISOString(),
-        accountId: accountId || 'default',
-        planAdherenceScore: Math.floor(Math.random() * 50) + 50, // 50-100
+        accountId: accountId,
+        planAdherenceScore: Math.floor(Math.random() * 50) + 50,
         actualRR: (pnl / (Math.abs(pnl) + 50)).toFixed(2),
       });
     }
@@ -419,33 +450,34 @@ export default function App() {
     saveTrades(currentUser, [...sampleTrades, ...trades]);
   };
 
-  // กรอง Trades ตาม Account และ Date Range
-  const filteredGlobalTrades = useMemo(() => {
-    return trades.filter(t => {
-      const tradeAcc = t.accountId || 'default';
-      if (tradeAcc !== accountId) return false;
+  const handleAddAccount = () => {
+    if (!newAccountName.trim()) return;
+    const newAccount = { id: `acc-${Date.now()}`, name: newAccountName.trim() };
+    const updatedAccounts = [...accounts, newAccount];
+    setAccounts(updatedAccounts);
+    saveAccounts(currentUser, updatedAccounts);
+    setNewAccountName('');
+  };
 
-      if (globalDateRange === 'All') return true;
-      if (!t.dateTime) return true;
-      
-      const tradeDate = new Date(t.dateTime);
-      const now = new Date();
-      
-      if (globalDateRange === '1W') {
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return tradeDate >= oneWeekAgo;
+  const handleDeleteAccount = (idToDelete) => {
+    if (accounts.length <= 1) {
+      alert(t('common.cannotDeleteLastAccount', 'Cannot delete the last remaining account.'));
+      return;
+    }
+    if (window.confirm(t('common.confirmDeleteAccount', 'Are you sure you want to delete this account? All trades inside it will be permanently deleted!'))) {
+      const updatedAccounts = accounts.filter(a => a.id !== idToDelete);
+      setAccounts(updatedAccounts);
+      saveAccounts(currentUser, updatedAccounts);
+
+      const remainingTrades = trades.filter(t => t.accountId !== idToDelete);
+      setTrades(remainingTrades);
+      saveTrades(currentUser, remainingTrades);
+
+      if (accountId === idToDelete) {
+        setAccountId(updatedAccounts[0].id);
       }
-      if (globalDateRange === '1M') {
-        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return tradeDate >= oneMonthAgo;
-      }
-      if (globalDateRange === 'YTD') {
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        return tradeDate >= startOfYear;
-      }
-      return true;
-    });
-  }, [trades, accountId, globalDateRange]);
+    }
+  };
 
   if (!authReady) {
     return (
@@ -472,144 +504,68 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/30 transition-colors duration-300">
       
-      {/* 🧭 Top Glassmorphism Navigation Bar */}
       <header className="glass-panel sticky top-0 z-40 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
-        {/* Logo and Theme toggle row for mobile */}
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="PDTJ Logo" 
-              className="w-10 h-10 object-contain drop-shadow-md rounded-lg"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-            {/* Fallback in case logo.png is not found */}
-            <div className="bg-brand-primary p-2 rounded-lg text-white font-black text-xl shadow-md shadow-brand-primary/40 select-none animate-pulse hidden">
-              💎
-            </div>
+            <img src="/logo.png" alt="PDTJ Logo" className="w-10 h-10 object-contain drop-shadow-md rounded-lg" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+            <div className="bg-brand-primary p-2 rounded-lg text-white font-black text-xl shadow-md shadow-brand-primary/40 select-none animate-pulse hidden">💎</div>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-brand-text-primary dark:text-white m-0 leading-none">
-                PDTJ
-              </h1>
+              <h1 className="text-xl font-extrabold tracking-tight text-brand-text-primary dark:text-white m-0 leading-none">PDTJ</h1>
               <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-widest font-bold hidden sm:block">Phudit Trade Journal</p>
             </div>
           </div>
-          
-          <div className="md:hidden flex items-center gap-2">
-            <button
-              onClick={() => setShowManual(true)}
-              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-500 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
-              title="Manual"
-            >
-              📖
-            </button>
-            <button
-              onClick={toggleLanguage}
-              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-indigo-500 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid font-bold text-[10px]"
-              title="Toggle Language"
-            >
-              {language === 'th' ? 'EN' : 'TH'}
-            </button>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm flex items-center justify-center w-9 h-9 border-solid"
-              title={theme === 'dark' ? 'เปิดโหมดสว่าง (Soft Slate)' : 'เปิดโหมดมืด (Dark Mode)'}
-              aria-label="Toggle Theme"
-            >
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
-          </div>
         </div>
 
-        {/* ยศของพอร์ตรวมปัจจุบัน & สลับธีม */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-center">
           <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 px-4 py-1.5 rounded-xl shadow-inner w-full md:w-auto justify-between md:justify-center">
-            
-            {/* กล่องแสดงโปรไฟล์ผู้ใช้และข้อมูล */}
-            <div 
-              className="flex items-center gap-2 cursor-pointer group hover:opacity-90 active:scale-95 transition-all" 
-              onClick={() => setShowSettingsModal(true)}
-              title="คลิกเพื่อตั้งค่าโปรไฟล์และขนาดตัวอักษร"
-            >
+            <div className="flex items-center gap-2 cursor-pointer group hover:opacity-90 active:scale-95 transition-all" onClick={() => setShowSettingsModal(true)}>
               {profile.photo ? (
-                <img 
-                  src={profile.photo} 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-sm"
-                />
+                <img src={profile.photo} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-150 dark:border-indigo-900/50 flex items-center justify-center shadow-sm text-[13px]">
-                  👤
-                </div>
+                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-150 dark:border-indigo-900/50 flex items-center justify-center shadow-sm text-[13px]">👤</div>
               )}
               <div className="flex flex-col text-left">
-                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">
-                  {profile.name || currentUser.split('@')[0]}
-                </span>
-                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none max-w-[100px] sm:max-w-none truncate">
-                  {currentUser}
-                </span>
+                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">{profile.name || currentUser.split('@')[0]}</span>
+                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none max-w-[100px] sm:max-w-none truncate">{currentUser}</span>
               </div>
             </div>
-
             <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
-
-            <div className="flex flex-col text-right">
-              <button 
-                onClick={() => setShowSettingsModal(true)}
-                className="text-[9px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-750 dark:hover:text-indigo-300 font-bold uppercase tracking-widest cursor-pointer text-right flex items-center justify-end gap-0.5"
-              >
-                ⚙️ Settings
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="text-[9px] text-rose-500 dark:text-rose-450 hover:text-rose-600 dark:hover:text-rose-350 font-bold uppercase tracking-widest mt-0.5 text-right cursor-pointer"
-              >
-                {t('app.logout')}
-              </button>
-            </div>
-
-            {/* ซ่อนเส้นคั่น และ ยศ/เงิน ในจอมือถือ (เล็กกว่า md) */}
-            <div className="hidden md:block w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
-
             <div className="hidden md:block text-right">
               <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold">Rank Level</span>
               <span className="text-sm font-extrabold text-amber-605 dark:text-amber-400 block font-sans">{currentRank.name}</span>
             </div>
-            
             <div className="hidden md:block w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
-            
             <div className="hidden md:block text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
               ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
+        </div>
 
-          <button
-            onClick={toggleLanguage}
-            className="hidden md:flex p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-indigo-500 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm items-center justify-center w-9 h-9 border-solid font-bold text-xs"
-            title="Toggle Language"
+        {/* Mobile Only: Account & Date Filters */}
+        <div className="lg:hidden flex gap-2 w-full mt-2">
+          <select 
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
           >
-            {language === 'th' ? 'EN' : 'TH'}
-          </button>
-          
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="hidden md:flex p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-amber-500 dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm items-center justify-center w-9 h-9 border-solid"
-            title={theme === 'dark' ? 'เปิดโหมดสว่าง (Soft Slate)' : 'เปิดโหมดมืด (Dark Mode)'}
-            aria-label="Toggle Theme"
+            {accounts && accounts.map(acc => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+          <select 
+            value={globalDateRange}
+            onChange={(e) => setGlobalDateRange(e.target.value)}
+            className="w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+            <option value="1W">1W</option>
+            <option value="1M">1M</option>
+            <option value="YTD">YTD</option>
+            <option value="All">All</option>
+          </select>
         </div>
       </header>
 
-      {/* 💻 Main Layout container */}
       <main className="max-w-[1600px] w-full mx-auto p-4 md:p-6 pb-24 md:pb-6 flex flex-col lg:flex-row gap-6 flex-grow items-start">
-        
-        {/* Left Navigation Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
           <Sidebar 
             activeTab={activeTab} 
@@ -619,53 +575,13 @@ export default function App() {
             globalDateRange={globalDateRange}
             setGlobalDateRange={setGlobalDateRange}
             isVip={isVip} 
-            isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
+            accounts={accounts}
+            setShowAccountModal={setShowAccountModal}
+            setShowManual={setShowManual}
           />
         </div>
 
-        {/* 📋 Central Main Content Area */}
         <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
-
-          
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
-            {/* Mobile Title (Tabs removed for desktop, replaced by Sidebar) */}
-            <div className="lg:hidden flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b border-brand-border dark:border-slate-800/80 gap-2 p-1 bg-brand-surface dark:bg-slate-900/60 backdrop-blur rounded-xl border w-max snap-x">
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'dashboard' ? 'bg-brand-primary text-white shadow-md' : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                }`}
-              >
-                {t('app.dashboard')}
-              </button>
-              <button
-                onClick={() => setActiveTab('journal')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'journal' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35'
-                }`}
-              >
-                {t('app.journal')} ({trades.length})
-              </button>
-              {/* Additional mobile tabs can go here */}
-            </div>
-            
-            <div className="flex gap-2">
-              <button 
-                onClick={() => import('./utils/logger').then(m => m.downloadLogs())}
-                className="hidden md:flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-black tracking-wide text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all cursor-pointer shadow border border-indigo-200 dark:border-indigo-800"
-              >
-                📥 โหลด Logs
-              </button>
-              <button 
-                onClick={() => setShowManual(true)}
-                className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black tracking-wide text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35 transition-all cursor-pointer shadow border border-slate-200 dark:border-slate-700"
-              >
-                📖 {t('app.manual')}
-              </button>
-            </div>
-          </div>
-
-          {/* เรนเดอร์แท็บเนื้อหาที่เลือก */}
           <div className="w-full">
             {activeTab === 'dashboard' && (
               <Dashboard 
@@ -701,10 +617,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'analytics' && (
-              <Analytics trades={filteredGlobalTrades} />
-            )}
-
+            {activeTab === 'analytics' && <Analytics trades={filteredGlobalTrades} />}
             <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
               <FighterComponent 
                 accountBalance={accountBalance}
@@ -713,11 +626,7 @@ export default function App() {
                 isVip={isVip}
               />
             </div>
-
-            {activeTab === 'calendar' && (
-              <CalendarView trades={trades} />
-            )}
-
+            {activeTab === 'calendar' && <CalendarView trades={trades} />}
             {activeTab === 'plans' && (
               <TradingPlans 
                 plans={plans}
@@ -725,7 +634,6 @@ export default function App() {
                 onDeletePlan={handleDeletePlan}
               />
             )}
-
             {activeTab === 'dividends' && (
               <DividendTracker 
                 dividends={dividends}
@@ -733,13 +641,10 @@ export default function App() {
                 onDeleteDividend={handleDeleteDividend}
               />
             )}
-
             {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
               <OwnerDashboard currentUser={currentUser} />
             )}
           </div>
-
-        </div>
 
         {/* ⚡ Right Side Snap Widget Sidebar */}
         <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-24">
@@ -969,6 +874,40 @@ export default function App() {
           </div>
         </div>
       )}
+
+            {/* Manual Modal */}
+            {showManual && (
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 relative max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-2 sticky top-0 bg-white dark:bg-slate-900 py-2 border-b border-slate-200 dark:border-slate-800">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">📖 {t('manual.title', 'User Manual & Guides')}</h3>
+                    <button onClick={() => setShowManual(false)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xl">✕</button>
+                  </div>
+                  
+                  <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
+                    <div>
+                      <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1">1. {t('manual.accounts', 'Managing Trading Accounts')}</h4>
+                      <p>{t('manual.accountsDesc', 'You can create multiple accounts (e.g., Main, Challenge). Each account has its own initial balance and trade history. You can filter the dashboard and charts by selecting an account from the Sidebar or Top Menu on mobile.')}</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1">2. {t('manual.dateRange', 'Global Date Filters')}</h4>
+                      <p>{t('manual.dateRangeDesc', 'Use the 1W, 1M, YTD, or All filters to adjust the data shown on the Dashboard and Trades table. It instantly recalculates your PnL and win rates.')}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1">3. {t('manual.analytics', 'Analytics & Deep Stats')}</h4>
+                      <p>{t('manual.analyticsDesc', 'The Analytics tab provides a visual representation of your Equity Curve, Win Rate distribution, and average profit/loss to help you find your edge.')}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1">4. {t('manual.sampleData', 'Sample Data (Testing)')}</h4>
+                      <p>{t('manual.sampleDataDesc', 'If your dashboard is empty, you can click "Add Sample Trades" to instantly populate it with dummy data so you can test out the charts and features.')}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
     {/* 🔴 Global Confirm Modal */}
       {confirmDialog.isOpen && (

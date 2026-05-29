@@ -60,10 +60,10 @@ export default function CalendarView({ trades }) {
           <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{day}</span>
           {dayTrades.length > 0 && (
             <div className="flex flex-col items-center justify-center h-full">
-              <span className={`text-sm md:text-lg font-mono font-black ${pnlColor}`}>
+              <span className={`text-[10px] md:text-lg font-mono font-black truncate w-full text-center ${pnlColor}`}>
                 {totalPnL > 0 ? '+' : ''}${totalPnL.toFixed(2)}
               </span>
-              <span className="text-[10px] text-slate-500 font-bold mt-1">{dayTrades.length} Trades</span>
+              <span className="text-[8px] md:text-[10px] text-slate-500 font-bold mt-1 truncate">{dayTrades.length} Trades</span>
             </div>
           )}
         </div>

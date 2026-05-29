@@ -18,14 +18,14 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem('phudit_lang', language);
   }, [language]);
 
-  const t = (key) => {
+  const t = (key, defaultText) => {
     const keys = key.split('.');
     let value = dictionaries[language];
     for (let k of keys) {
       if (value && value[k]) {
         value = value[k];
       } else {
-        return key; // return the key itself if not found
+        return defaultText || key; 
       }
     }
     return value;

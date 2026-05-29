@@ -190,6 +190,19 @@ export const saveFundingHistory = async (email, history) => {
     } catch (e) {}
 };
 
+// --- Accounts Storage ---
+export const saveAccounts = async (email, accounts) => {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+        localStorage.setItem(`phudit_accounts_${cleanEmail}`, JSON.stringify(accounts));
+    } catch (e) {}
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { accounts }, { merge: true });
+    } catch (e) {}
+};
+
 
 export const getStoredInitialBalance = async (email) => {
     if (!email) return 10000;
@@ -211,17 +224,17 @@ export const getStoredInitialBalance = async (email) => {
     return local ? parseFloat(local) : 10000;
 };
 
-export const saveInitialBalance = async (email, balance) => {
+export const saveInitialBalance = async (email, balanceObj) => {
     if (!email) return;
     const cleanEmail = email.trim().toLowerCase();
     
     try {
-        localStorage.setItem(`phudit_balance_${cleanEmail}`, balance.toString());
+        localStorage.setItem(`phudit_balance_${cleanEmail}`, JSON.stringify(balanceObj));
     } catch (e) {}
 
     try {
         const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { initialBalance: balance }, { merge: true });
+        await setDoc(userRef, { initialBalances: balanceObj }, { merge: true });
     } catch (e) {
         console.error("Error saving balance to Firebase:", e);
     }
@@ -580,12 +593,13 @@ export const subscribeToUserData = (email, callback) => {
             const data = docSnap.data();
             callback({
                 trades: data.trades || [],
-                initialBalance: data.initialBalance !== undefined ? data.initialBalance : 10000,
+                initialBalances: data.initialBalances || (data.initialBalance !== undefined ? { 'default': data.initialBalance } : { 'default': 10000 }),
                 targetRR: data.targetRR !== undefined ? data.targetRR : 20,
                 profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal', ...data.profile },
                 plans: data.plans || [],
                 dividends: data.dividends || [],
                 fundingHistory: data.fundingHistory || [],
+                accounts: data.accounts || [{ id: 'default', name: 'Main Account' }],
                 isVip: data.isVip || false,
                 status: data.status || 'approved'
             });
@@ -593,12 +607,13 @@ export const subscribeToUserData = (email, callback) => {
             // Sync fallback local storage just in case it's needed offline later
             try {
                 if (data.trades) localStorage.setItem(`phudit_trades_${cleanEmail}`, JSON.stringify(data.trades));
-                if (data.initialBalance !== undefined) localStorage.setItem(`phudit_balance_${cleanEmail}`, data.initialBalance.toString());
+                if (data.initialBalances) localStorage.setItem(`phudit_balance_${cleanEmail}`, JSON.stringify(data.initialBalances));
                 if (data.targetRR !== undefined) localStorage.setItem(`phudit_rr_${cleanEmail}`, data.targetRR.toString());
                 if (data.profile) localStorage.setItem(`phudit_profile_${cleanEmail}`, JSON.stringify(data.profile));
                 if (data.plans) localStorage.setItem(`phudit_plans_${cleanEmail}`, JSON.stringify(data.plans));
                 if (data.dividends) localStorage.setItem(`phudit_dividends_${cleanEmail}`, JSON.stringify(data.dividends));
                 if (data.fundingHistory) localStorage.setItem(`phudit_funding_${cleanEmail}`, JSON.stringify(data.fundingHistory));
+                if (data.accounts) localStorage.setItem(`phudit_accounts_${cleanEmail}`, JSON.stringify(data.accounts));
             } catch (e) {}
         } else {
             callback(null);

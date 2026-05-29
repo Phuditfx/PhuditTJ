@@ -1,9 +1,8 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner }) {
+export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, accounts, setShowAccountModal }) {
   const { t } = useLanguage();
-
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: 'Overview' },
     { id: 'journal', icon: '📓', label: 'Trades Table' },
@@ -17,26 +16,28 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'dividends', icon: '💰', label: 'Dividends' },
   ];
 
-  const ACCOUNTS = [
-    { id: 'default', name: 'Main Account' },
-    { id: 'acc2', name: 'Challenge Acc' },
-    { id: 'acc3', name: 'Swing Portfolio' }
-  ];
-
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-24">
       
       {/* Account Selector */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
-          Trading Account
-        </label>
-        <select
+      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+        <div className="flex justify-between items-center mb-1">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">
+            {t('common.tradingAccount', 'Trading Account')}
+          </label>
+          <button 
+            onClick={() => setShowAccountModal(true)}
+            className="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold px-2 py-1 rounded"
+          >
+            ⚙️ Manage
+          </button>
+        </div>
+        <select 
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
-          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 focus:outline-none focus:border-indigo-500 cursor-pointer"
+          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 transition-colors"
         >
-          {ACCOUNTS.map(acc => (
+          {accounts && accounts.map(acc => (
             <option key={acc.id} value={acc.id}>{acc.name}</option>
           ))}
         </select>
@@ -120,6 +121,24 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             <span>Owner Dashboard</span>
           </button>
         )}
+
+        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+          <button 
+            onClick={() => setShowManual && setShowManual(true)}
+            className="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35 border border-slate-200 dark:border-slate-700"
+          >
+            <span className="text-sm">📖</span>
+            <span>{t('app.manual', 'User Manual')}</span>
+          </button>
+          
+          <button 
+            onClick={() => import('../utils/logger').then(m => m.downloadLogs && m.downloadLogs())}
+            className="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800"
+          >
+            <span className="text-sm">📥</span>
+            <span>Download Logs</span>
+          </button>
+        </div>
       </nav>
 
     </aside>

@@ -49,7 +49,7 @@ const TradeRow = React.memo(({
             <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mb-0.5">TI: ${trade.tiEntryAlert.toFixed(2)}</div>
           )}
           <div className="text-slate-700 dark:text-slate-300 font-bold">
-            En: ${trade.entryPrice.toFixed(2)}
+            En: ${Number(trade.entryPrice).toFixed(2)}
             {trade.tiEntryAlert > 0 && !isClosed && (() => {
               const isLong = trade.direction === 'Long';
               const diff = isLong 

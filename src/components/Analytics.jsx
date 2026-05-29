@@ -103,8 +103,8 @@ export default function Analytics({ trades }) {
                     data={winLossData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius="45%"
+                    outerRadius="75%"
                     paddingAngle={5}
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -139,11 +139,11 @@ export default function Analytics({ trades }) {
                     data={avgWinLossData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius="45%"
+                    outerRadius="75%"
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, value }) => `${name} $${value.toFixed(2)}`}
+                    label={({ name, value }) => `${name} $${value.toFixed(0)}`}
                   >
                     {avgWinLossData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
