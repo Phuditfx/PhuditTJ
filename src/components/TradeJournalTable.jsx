@@ -551,9 +551,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             ) : (
               filteredTrades.map((trade) => {
                 const isClosed = trade.status === 'Closed';
+                const isFeedbackActive = activeFeedbackTradeId === trade.id;
                 
                 return (
-                  <tr key={trade.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-800 dark:text-slate-200 transition-colors">
+                  <React.Fragment key={trade.id}>
+                  <tr className={`hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-800 dark:text-slate-200 transition-colors ${isFeedbackActive ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
                     {/* วันเวลา */}
                     <td className="py-4 px-4 text-slate-500 dark:text-slate-400 font-sans">
                       {trade.dateTime ? new Date(trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
@@ -786,47 +788,46 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                       </div>
                     </td>
                   </tr>
+                  
+                  {/* Expanded AI Coach Feedback Row */}
+                  {isFeedbackActive && (
+                    <tr>
+                      <td colSpan="10" className="p-0 border-b-2 border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-950/20">
+                        <div className="p-4 border-l-4 border-indigo-500 animate-fade-in shadow-inner">
+                          <div className="flex justify-between items-center pb-2">
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1.5">
+                              <span>⚡ AI Coach Feedback for {trade.symbol}</span>
+                            </span>
+                            <button 
+                              onClick={() => setActiveFeedbackTradeId(null)}
+                              className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 text-xs font-bold cursor-pointer"
+                            >
+                              ✕ ปิดข้อแนะนำ
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans mt-1 whitespace-pre-wrap">
+                            {trade.aiFeedback}
+                          </p>
+                          {trade.notes && (
+                            <div className="mt-2 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 font-sans whitespace-pre-wrap">
+                              <span className="font-bold">📝 หมายเหตุ:</span><br/>{trade.notes}
+                            </div>
+                          )}
+                          <div className="flex gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/20">
+                            <span>สภาวะตลาด: <strong className="text-slate-800 dark:text-slate-200 font-mono">{trade.contextScore}/10</strong></span>
+                            <span>ระดับวินัย: <strong className="text-emerald-600 dark:text-emerald-400">{trade.planAdherence}</strong></span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })
             )}
           </tbody>
         </table>
       </div>
-
-      {/* 🔮 แสดงข้อความฟีดแบ็ก AI ในหน้าต่างยืดหดได้ */}
-      {activeFeedbackTradeId && (
-        (() => {
-          const t = trades.find(tr => tr.id === activeFeedbackTradeId);
-          if (!t) return null;
-          return (
-            <div className="crypto-card p-4 flex flex-col gap-2 relative animate-fade-in">
-              <div className="flex justify-between items-center border-b border-indigo-200 dark:border-indigo-900/40 pb-2">
-                <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1.5">
-                  <span>⚡ AI Coach Feedback for {t.symbol}</span>
-                </span>
-                <button 
-                  onClick={() => setActiveFeedbackTradeId(null)}
-                  className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 text-xs font-bold cursor-pointer"
-                >
-                  ✕ ปิดข้อแนะนำ
-                </button>
-              </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans mt-1 whitespace-pre-wrap">
-                {t.aiFeedback}
-              </p>
-              {t.notes && (
-                <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 font-sans whitespace-pre-wrap">
-                  <span className="font-bold">📝 หมายเหตุ:</span><br/>{t.notes}
-                </div>
-              )}
-              <div className="flex gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/20">
-                <span>สภาวะตลาด: <strong className="text-slate-800 dark:text-slate-200 font-mono">{t.contextScore}/10</strong></span>
-                <span>ระดับวินัย: <strong className="text-emerald-600 dark:text-emerald-400">{t.planAdherence}</strong></span>
-              </div>
-            </div>
-          );
-        })()
-      )}
 
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (
