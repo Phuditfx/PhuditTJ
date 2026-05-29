@@ -89,7 +89,11 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
           
           seriesInstance.current.setData(sortedData);
           if (secondarySeriesInstance.current) {
-            secondarySeriesInstance.current.setData(sortedData);
+            const lineData = sortedData.map(item => ({
+              time: item.time,
+              value: item.close
+            }));
+            secondarySeriesInstance.current.setData(lineData);
           }
           chartInstance.current.timeScale().fitContent();
 
