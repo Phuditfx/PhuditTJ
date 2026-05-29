@@ -5,6 +5,290 @@ import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
 import { useLanguage } from '../contexts/LanguageContext';
 
+const TradeRow = React.memo(({
+  trade,
+  livePrice,
+  isVip,
+  isFeedbackActive,
+  setActiveFeedbackTradeId,
+  setChartModalTrade,
+  handleOpenEditModal,
+  handleOpenCloseModal,
+  requestConfirm,
+  onDeleteTrade
+}) => {
+  const isClosed = trade.status === 'Closed';
+  
+  return (
+    <React.Fragment>
+      <tr className={`hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-800 dark:text-slate-200 transition-colors ${isFeedbackActive ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+        {/* วันเวลา */}
+        <td className="py-4 px-4 text-slate-500 dark:text-slate-400 font-sans">
+          {trade.dateTime ? new Date(trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
+        </td>
+        
+        {/* หุ้น */}
+        <td className="py-4 px-3 font-bold text-slate-900 dark:text-white text-sm font-sans uppercase">
+          {trade.symbol}
+        </td>
+        
+        {/* ทิศทาง */}
+        <td className="py-4 px-3 font-sans">
+          <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+            trade.direction === 'Long' 
+              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
+              : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+          }`}>
+            {trade.direction}
+          </span>
+        </td>
+        
+        {/* ราคาเข้า/ออก */}
+        <td className="py-4 px-3 text-right">
+          {trade.tiEntryAlert > 0 && !isClosed && (
+            <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mb-0.5">TI: ${trade.tiEntryAlert.toFixed(2)}</div>
+          )}
+          <div className="text-slate-700 dark:text-slate-300 font-bold">
+            En: ${trade.entryPrice.toFixed(2)}
+            {trade.tiEntryAlert > 0 && !isClosed && (() => {
+              const isLong = trade.direction === 'Long';
+              const diff = isLong 
+                ? trade.tiEntryAlert - trade.entryPrice 
+                : trade.entryPrice - trade.tiEntryAlert;
+              const pct = (diff / trade.tiEntryAlert) * 100;
+              const isPositive = pct >= 0;
+              
+              return (
+                <span className={`ml-1 text-[9px] ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} title="Variance from Day Breakout">
+                  ({isPositive ? '+' : ''}{pct.toFixed(2)}%)
+                </span>
+              );
+            })()}
+          </div>
+          <div className="text-[10px] text-slate-405 dark:text-slate-500">
+            {isClosed ? `Ex: $${trade.actualExitPrice.toFixed(2)}` : 'Active'}
+          </div>
+        </td>
+        
+        {/* SL/TP */}
+        <td className="py-4 px-3 text-right text-slate-400">
+          <div className="text-rose-600 dark:text-rose-400/80">SL: ${trade.stopLoss.toFixed(2)}</div>
+          <div className="text-indigo-650 dark:text-indigo-400/80">TP: ${trade.takeProfit.toFixed(2)}</div>
+        </td>
+        
+        {/* หุ้นเศษ */}
+        <td className="py-4 px-3 text-right text-slate-700 dark:text-slate-300 font-bold">
+          {trade.shares.toFixed(4)}
+        </td>
+        
+        {/* PnL ($) */}
+        <td className={`py-4 px-3 text-right text-sm font-extrabold relative ${
+          !isClosed && !livePrice
+            ? 'text-slate-400 dark:text-slate-500' 
+            : (() => {
+                const pnl = isClosed ? parseFloat(trade.pnl || 0) : (trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares);
+                return pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+              })()
+        }`}>
+          <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
+            {(() => {
+              if (isClosed) {
+                const parsedPnl = parseFloat(trade.pnl || 0);
+                return `${parsedPnl >= 0 ? '+' : '-'}$${Math.abs(parsedPnl).toFixed(2)}`;
+              } else if (livePrice) {
+                const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+                return <span className="animate-pulse">{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</span>;
+              }
+              return '-';
+            })()}
+          </div>
+          {!isVip && (
+            <div className="absolute inset-0 flex items-center justify-end z-10 opacity-70">
+              <span className="text-xs">🔒</span>
+            </div>
+          )}
+        </td>
+        
+        {/* Actual RR */}
+        <td className="py-4 px-3 text-center relative">
+          <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
+            {(() => {
+              let rrToShow = null;
+              if (isClosed) {
+                rrToShow = trade.actualRR;
+              } else if (livePrice) {
+                const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+                const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+                const initialRisk = trade.plannedRisk || (gap * trade.shares);
+                if (initialRisk > 0) {
+                  rrToShow = pnl / initialRisk;
+                }
+              }
+
+              if (rrToShow === null) {
+                return <span className="text-slate-500">-</span>;
+              }
+
+              return (
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <span className={`px-2 py-0.5 rounded font-black text-xs ${!isClosed ? 'opacity-80 animate-pulse' : ''} ${
+                    rrToShow >= 2 
+                      ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                      : rrToShow >= 0 
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
+                        : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {rrToShow.toFixed(4)} R
+                  </span>
+                  {trade.isSplit && (
+                    <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
+                      SPLIT
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+          {!isVip && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
+              <span className="text-xs">🔒</span>
+            </div>
+          )}
+        </td>
+        
+        {/* Qualitative Analysis */}
+        <td className="py-4 px-4 font-sans text-center relative">
+          <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
+            {!isClosed ? (
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">รอประเมินผลปิดไม้</span>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                {/* Context Score */}
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 px-2 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400">
+                  🌌 {trade.contextScore}/10
+                </div>
+
+                {/* AI Score */}
+                {trade.aiScore && (
+                  <button
+                    onClick={() => setActiveFeedbackTradeId(isFeedbackActive ? null : trade.id)}
+                    className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-900/50 px-2 py-0.5 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                    title="คลิกเพื่อเปิดดู AI รีวิว"
+                  >
+                    <span>⚡ AI: {trade.aiScore}/10</span>
+                    <span className="text-[9px] text-slate-500">▼</span>
+                  </button>
+                )}
+
+                {/* Plan Adherence Indicator */}
+                <div className={`w-2 h-2 rounded-full ${
+                  trade.planAdherenceScore === 100 
+                    ? 'bg-emerald-400' 
+                    : trade.planAdherenceScore === 50 
+                      ? 'bg-amber-400' 
+                      : 'bg-rose-400'
+                }`} title={trade.planAdherence}></div>
+
+                {/* Notes Icon */}
+                {trade.notes && (
+                  <span className="text-[12px] cursor-help ml-1" title={trade.notes}>
+                    📝
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          {!isVip && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
+              <span className="text-xs">🔒 VIP</span>
+            </div>
+          )}
+        </td>
+        
+        {/* จัดการปุ่ม Close / Edit / Delete */}
+        <td className="py-4 px-4 text-right font-sans">
+          <div className="grid grid-cols-2 gap-1.5 w-max ml-auto">
+            <button
+              onClick={() => setChartModalTrade(trade)}
+              className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/20"
+            >
+              Chart
+            </button>
+            {!isClosed && (
+              <button
+                onClick={() => handleOpenEditModal(trade)}
+                className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-amber-900/20"
+              >
+                Edit
+              </button>
+            )}
+            {!isClosed ? (
+              <button
+                onClick={() => handleOpenCloseModal(trade)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            ) : (
+              <button
+                onClick={() => handleOpenCloseModal(trade)}
+                className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-800/80 font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer"
+              >
+                Edit
+              </button>
+            )}
+            <button
+              onClick={() => {
+                requestConfirm(
+                  "ลบออเดอร์",
+                  "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
+                  () => onDeleteTrade(trade.id)
+                );
+              }}
+              className="bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-slate-405 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/40 px-2 py-1 rounded text-xs transition-colors cursor-pointer font-semibold"
+            >
+              Del
+            </button>
+          </div>
+        </td>
+      </tr>
+      
+      {/* Expanded AI Coach Feedback Row */}
+      {isFeedbackActive && (
+        <tr>
+          <td colSpan="10" className="p-0 border-b-2 border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-950/20">
+            <div className="p-4 border-l-4 border-indigo-500 animate-fade-in shadow-inner">
+              <div className="flex justify-between items-center pb-2">
+                <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1.5">
+                  <span>⚡ AI Coach Feedback for {trade.symbol}</span>
+                </span>
+                <button 
+                  onClick={() => setActiveFeedbackTradeId(null)}
+                  className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 text-xs font-bold cursor-pointer"
+                >
+                  ✕ ปิดข้อแนะนำ
+                </button>
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans mt-1 whitespace-pre-wrap">
+                {trade.aiFeedback}
+              </p>
+              {trade.notes && (
+                <div className="mt-2 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 font-sans whitespace-pre-wrap">
+                  <span className="font-bold">📝 หมายเหตุ:</span><br/>{trade.notes}
+                </div>
+              )}
+              <div className="flex gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/20">
+                <span>สภาวะตลาด: <strong className="text-slate-800 dark:text-slate-200 font-mono">{trade.contextScore}/10</strong></span>
+                <span>ระดับวินัย: <strong className="text-emerald-600 dark:text-emerald-400">{trade.planAdherence}</strong></span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
+});
+
 export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, plans = [], isVip }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
@@ -550,278 +834,22 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </tr>
             ) : (
               filteredTrades.map((trade) => {
-                const isClosed = trade.status === 'Closed';
                 const isFeedbackActive = activeFeedbackTradeId === trade.id;
                 
                 return (
-                  <React.Fragment key={trade.id}>
-                  <tr className={`hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-800 dark:text-slate-200 transition-colors ${isFeedbackActive ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
-                    {/* วันเวลา */}
-                    <td className="py-4 px-4 text-slate-500 dark:text-slate-400 font-sans">
-                      {trade.dateTime ? new Date(trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
-                    </td>
-                    
-                    {/* หุ้น */}
-                    <td className="py-4 px-3 font-bold text-slate-900 dark:text-white text-sm font-sans uppercase">
-                      {trade.symbol}
-                    </td>
-                    
-                    {/* ทิศทาง */}
-                    <td className="py-4 px-3 font-sans">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                        trade.direction === 'Long' 
-                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
-                          : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
-                      }`}>
-                        {trade.direction}
-                      </span>
-                    </td>
-                    
-                    {/* ราคาเข้า/ออก */}
-                    <td className="py-4 px-3 text-right">
-                      {trade.tiEntryAlert > 0 && (
-                        <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold mb-0.5">TI: ${trade.tiEntryAlert.toFixed(2)}</div>
-                      )}
-                      <div className="text-slate-700 dark:text-slate-300 font-bold">
-                        En: ${trade.entryPrice.toFixed(2)}
-                        {trade.tiEntryAlert > 0 && (() => {
-                          const isLong = trade.direction === 'Long';
-                          const diff = isLong 
-                            ? trade.tiEntryAlert - trade.entryPrice 
-                            : trade.entryPrice - trade.tiEntryAlert;
-                          const pct = (diff / trade.tiEntryAlert) * 100;
-                          const isPositive = pct >= 0;
-                          
-                          return (
-                            <span className={`ml-1 text-[9px] ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} title="Variance from Day Breakout">
-                              ({isPositive ? '+' : ''}{pct.toFixed(2)}%)
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      <div className="text-[10px] text-slate-405 dark:text-slate-500">
-                        {isClosed ? `Ex: $${trade.actualExitPrice.toFixed(2)}` : 'Active'}
-                      </div>
-                    </td>
-                    
-                    {/* SL/TP */}
-                    <td className="py-4 px-3 text-right text-slate-400">
-                      <div className="text-rose-600 dark:text-rose-400/80">SL: ${trade.stopLoss.toFixed(2)}</div>
-                      <div className="text-indigo-650 dark:text-indigo-400/80">TP: ${trade.takeProfit.toFixed(2)}</div>
-                    </td>
-                    
-                    {/* หุ้นเศษ */}
-                    <td className="py-4 px-3 text-right text-slate-700 dark:text-slate-300 font-bold">
-                      {trade.shares.toFixed(4)}
-                    </td>
-                    
-                    {/* PnL ($) */}
-                    <td className={`py-4 px-3 text-right text-sm font-extrabold relative ${
-                      !isClosed && !livePrices[trade.symbol]
-                        ? 'text-slate-400 dark:text-slate-500' 
-                        : (() => {
-                            const pnl = isClosed ? parseFloat(trade.pnl || 0) : (trade.direction === 'Long' ? (livePrices[trade.symbol] - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrices[trade.symbol]) * trade.shares);
-                            return pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
-                          })()
-                    }`}>
-                      <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
-                        {(() => {
-                          if (isClosed) {
-                            const parsedPnl = parseFloat(trade.pnl || 0);
-                            return `${parsedPnl >= 0 ? '+' : '-'}$${Math.abs(parsedPnl).toFixed(2)}`;
-                          } else if (livePrices[trade.symbol]) {
-                            const livePrice = livePrices[trade.symbol];
-                            const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
-                            return <span className="animate-pulse">{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</span>;
-                          }
-                          return '-';
-                        })()}
-                      </div>
-                      {!isVip && (
-                        <div className="absolute inset-0 flex items-center justify-end z-10 opacity-70">
-                          <span className="text-xs">🔒</span>
-                        </div>
-                      )}
-                    </td>
-                    
-                    {/* Actual RR */}
-                    <td className="py-4 px-3 text-center relative">
-                      <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
-                        {(() => {
-                          let rrToShow = null;
-                          if (isClosed) {
-                            rrToShow = trade.actualRR;
-                          } else if (livePrices[trade.symbol]) {
-                            const livePrice = livePrices[trade.symbol];
-                            const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
-                            const gap = Math.abs(trade.entryPrice - trade.stopLoss);
-                            const initialRisk = trade.plannedRisk || (gap * trade.shares);
-                            if (initialRisk > 0) {
-                              rrToShow = pnl / initialRisk;
-                            }
-                          }
-
-                          if (rrToShow === null) {
-                            return <span className="text-slate-500">-</span>;
-                          }
-
-                          return (
-                            <div className="flex flex-col items-center justify-center gap-1">
-                              <span className={`px-2 py-0.5 rounded font-black text-xs ${!isClosed ? 'opacity-80 animate-pulse' : ''} ${
-                                rrToShow >= 2 
-                                  ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
-                                  : rrToShow >= 0 
-                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
-                                    : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                              }`}>
-                                {rrToShow.toFixed(4)} R
-                              </span>
-                              {trade.isSplit && (
-                                <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold cursor-help" title="ไม้แบ่งปิดออเดอร์: RR อ้างอิงจาก Risk ตั้งต้น">
-                                  SPLIT
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      {!isVip && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
-                          <span className="text-xs">🔒</span>
-                        </div>
-                      )}
-                    </td>
-                    
-                    {/* Qualitative Analysis */}
-                    <td className="py-4 px-4 font-sans text-center relative">
-                      <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
-                        {!isClosed ? (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">รอประเมินผลปิดไม้</span>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            {/* Context Score */}
-                            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 px-2 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400">
-                              🌌 {trade.contextScore}/10
-                            </div>
-
-                            {/* AI Score */}
-                            {trade.aiScore && (
-                              <button
-                                onClick={() => setActiveFeedbackTradeId(activeFeedbackTradeId === trade.id ? null : trade.id)}
-                                className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-900/50 px-2 py-0.5 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
-                                title="คลิกเพื่อเปิดดู AI รีวิว"
-                              >
-                                <span>⚡ AI: {trade.aiScore}/10</span>
-                                <span className="text-[9px] text-slate-500">▼</span>
-                              </button>
-                            )}
-
-                            {/* Plan Adherence Indicator */}
-                            <div className={`w-2 h-2 rounded-full ${
-                              trade.planAdherenceScore === 100 
-                                ? 'bg-emerald-400' 
-                                : trade.planAdherenceScore === 50 
-                                  ? 'bg-amber-400' 
-                                  : 'bg-rose-400'
-                            }`} title={trade.planAdherence}></div>
-
-                            {/* Notes Icon */}
-                            {trade.notes && (
-                              <span className="text-[12px] cursor-help ml-1" title={trade.notes}>
-                                📝
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {!isVip && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
-                          <span className="text-xs">🔒 VIP</span>
-                        </div>
-                      )}
-                    </td>
-                    
-                    {/* จัดการปุ่ม Close / Edit / Delete */}
-                    <td className="py-4 px-4 text-right font-sans">
-                      <div className="grid grid-cols-2 gap-1.5 w-max ml-auto">
-                        <button
-                          onClick={() => setChartModalTrade(trade)}
-                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-sky-900/20"
-                        >
-                          Chart
-                        </button>
-                        {!isClosed && (
-                          <button
-                            onClick={() => handleOpenEditModal(trade)}
-                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-amber-900/20"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {!isClosed ? (
-                          <button
-                            onClick={() => handleOpenCloseModal(trade)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer"
-                          >
-                            Close
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleOpenCloseModal(trade)}
-                            className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-800/80 font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            requestConfirm(
-                              "ลบออเดอร์",
-                              "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
-                              () => onDeleteTrade(trade.id)
-                            );
-                          }}
-                          className="bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-slate-405 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/40 px-2 py-1 rounded text-xs transition-colors cursor-pointer font-semibold"
-                        >
-                          Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  {/* Expanded AI Coach Feedback Row */}
-                  {isFeedbackActive && (
-                    <tr>
-                      <td colSpan="10" className="p-0 border-b-2 border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-950/20">
-                        <div className="p-4 border-l-4 border-indigo-500 animate-fade-in shadow-inner">
-                          <div className="flex justify-between items-center pb-2">
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1.5">
-                              <span>⚡ AI Coach Feedback for {trade.symbol}</span>
-                            </span>
-                            <button 
-                              onClick={() => setActiveFeedbackTradeId(null)}
-                              className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 text-xs font-bold cursor-pointer"
-                            >
-                              ✕ ปิดข้อแนะนำ
-                            </button>
-                          </div>
-                          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans mt-1 whitespace-pre-wrap">
-                            {trade.aiFeedback}
-                          </p>
-                          {trade.notes && (
-                            <div className="mt-2 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 font-sans whitespace-pre-wrap">
-                              <span className="font-bold">📝 หมายเหตุ:</span><br/>{trade.notes}
-                            </div>
-                          )}
-                          <div className="flex gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/20">
-                            <span>สภาวะตลาด: <strong className="text-slate-800 dark:text-slate-200 font-mono">{trade.contextScore}/10</strong></span>
-                            <span>ระดับวินัย: <strong className="text-emerald-600 dark:text-emerald-400">{trade.planAdherence}</strong></span>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  </React.Fragment>
+                  <TradeRow
+                    key={trade.id}
+                    trade={trade}
+                    livePrice={livePrices[trade.symbol]}
+                    isVip={isVip}
+                    isFeedbackActive={isFeedbackActive}
+                    setActiveFeedbackTradeId={setActiveFeedbackTradeId}
+                    setChartModalTrade={setChartModalTrade}
+                    handleOpenEditModal={handleOpenEditModal}
+                    handleOpenCloseModal={handleOpenCloseModal}
+                    requestConfirm={requestConfirm}
+                    onDeleteTrade={onDeleteTrade}
+                  />
                 );
               })
             )}

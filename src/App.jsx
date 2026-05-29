@@ -19,7 +19,8 @@ import {
   saveDividends,
   getStoredFundingHistory,
   saveFundingHistory,
-  getUserVipStatus
+  getUserVipStatus,
+  subscribeToUserData
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -67,69 +68,48 @@ export default function App() {
   
   useEffect(() => {
     let isMounted = true;
-    let timeoutId;
+    let unsubscribeSnapshot = null;
 
-    const loadData = async () => {
-      if (currentUser) {
-        setDataLoading(true);
+    if (currentUser) {
+      setDataLoading(true);
 
-        // Safety timeout in case Firebase hangs
-        timeoutId = setTimeout(() => {
-          if (isMounted) setDataLoading(false);
-        }, 8000);
-
-        try {
-          const status = await getUserStatus(currentUser);
-          if (status === 'pending') {
-            alert("⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
-            await logoutUser();
-            return;
-          }
-
-          const [t, b, rr, p, pl, div, funding, vip] = await Promise.all([
-            getStoredTrades(currentUser),
-            getStoredInitialBalance(currentUser),
-            getStoredTargetRR(currentUser),
-            getStoredProfile(currentUser),
-            getStoredPlans(currentUser),
-            getStoredDividends(currentUser),
-            getStoredFundingHistory(currentUser),
-            getUserVipStatus(currentUser)
-          ]);
-          
-          if (isMounted) {
-            setTrades(t);
-            setInitialBalanceState(b);
-            setTargetRRState(rr);
-            setProfile(p);
-            setPlans(pl);
-            setDividends(div);
-            setFundingHistory(funding);
-            setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || vip);
-          }
-        } catch (error) {
-          console.error("Error loading data:", error);
-        } finally {
-          clearTimeout(timeoutId);
-          if (isMounted) {
-            setDataLoading(false);
-          }
+      unsubscribeSnapshot = subscribeToUserData(currentUser, (data) => {
+        if (!isMounted) return;
+        
+        if (!data) {
+           setDataLoading(false);
+           return;
         }
-      } else {
-        setTrades([]);
-        setPlans([]);
-        setDividends([]);
-        setFundingHistory([]);
-        setIsVip(false);
-        if (isMounted) {
-          setDataLoading(false);
+
+        if (data.status === 'pending') {
+          alert("⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
+          logoutUser();
+          return;
         }
-      }
-    };
-    loadData();
+
+        setTrades(data.trades);
+        setInitialBalanceState(data.initialBalance);
+        setTargetRRState(data.targetRR);
+        setProfile(data.profile);
+        setPlans(data.plans);
+        setDividends(data.dividends);
+        setFundingHistory(data.fundingHistory);
+        setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
+        
+        setDataLoading(false);
+      });
+    } else {
+      setTrades([]);
+      setPlans([]);
+      setDividends([]);
+      setFundingHistory([]);
+      setIsVip(false);
+      setDataLoading(false);
+    }
+
     return () => { 
       isMounted = false; 
-      if (timeoutId) clearTimeout(timeoutId);
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
     };
   }, [currentUser]);
 

@@ -1,5 +1,5 @@
 import { db, auth } from '../firebaseConfig';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 
 // ตารางยศและข้อจำกัดของพอร์ต (อ้างอิงจาก Dashboard.js เดิม)
@@ -568,4 +568,42 @@ export const simulateAIAssessment = (trade) => {
     }
 
     return { aiScore, aiFeedback: feedback };
+};
+
+export const subscribeToUserData = (email, callback) => {
+    if (!email) return () => {};
+    const cleanEmail = email.trim().toLowerCase();
+    const userRef = doc(db, 'users', cleanEmail);
+    
+    return onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            callback({
+                trades: data.trades || [],
+                initialBalance: data.initialBalance !== undefined ? data.initialBalance : 10000,
+                targetRR: data.targetRR !== undefined ? data.targetRR : 20,
+                profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal', ...data.profile },
+                plans: data.plans || [],
+                dividends: data.dividends || [],
+                fundingHistory: data.fundingHistory || [],
+                isVip: data.isVip || false,
+                status: data.status || 'approved'
+            });
+            
+            // Sync fallback local storage just in case it's needed offline later
+            try {
+                if (data.trades) localStorage.setItem(`phudit_trades_${cleanEmail}`, JSON.stringify(data.trades));
+                if (data.initialBalance !== undefined) localStorage.setItem(`phudit_balance_${cleanEmail}`, data.initialBalance.toString());
+                if (data.targetRR !== undefined) localStorage.setItem(`phudit_rr_${cleanEmail}`, data.targetRR.toString());
+                if (data.profile) localStorage.setItem(`phudit_profile_${cleanEmail}`, JSON.stringify(data.profile));
+                if (data.plans) localStorage.setItem(`phudit_plans_${cleanEmail}`, JSON.stringify(data.plans));
+                if (data.dividends) localStorage.setItem(`phudit_dividends_${cleanEmail}`, JSON.stringify(data.dividends));
+                if (data.fundingHistory) localStorage.setItem(`phudit_funding_${cleanEmail}`, JSON.stringify(data.fundingHistory));
+            } catch (e) {}
+        } else {
+            callback(null);
+        }
+    }, (error) => {
+        console.error("Error in onSnapshot:", error);
+    });
 };
