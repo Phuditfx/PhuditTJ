@@ -645,6 +645,7 @@ export default function App() {
               <OwnerDashboard currentUser={currentUser} />
             )}
           </div>
+        </div>
 
         {/* ⚡ Right Side Snap Widget Sidebar */}
         <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-24">
