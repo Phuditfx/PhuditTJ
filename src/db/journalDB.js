@@ -445,9 +445,11 @@ export const registerUser = async (email, password, displayName) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
+    const finalDisplayName = displayName || email.split('@')[0];
+    
     // Default initial data structure
     await setDoc(doc(db, 'users', email.trim().toLowerCase()), {
-        profile: { name: displayName, photo: '', fontSize: 'normal' },
+        profile: { name: finalDisplayName, photo: '', fontSize: 'normal' },
         initialBalances: { 'default': 10000 },
         targetRR: 20,
         accounts: [{ id: 'default', name: 'Main Account' }],
