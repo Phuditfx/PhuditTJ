@@ -601,7 +601,8 @@ export const subscribeToUserData = (email, callback) => {
                 fundingHistory: data.fundingHistory || [],
                 accounts: data.accounts || [{ id: 'default', name: 'Main Account' }],
                 isVip: data.isVip || false,
-                status: data.status || 'approved'
+                status: data.status || 'approved',
+                feedPosts: data.feedPosts || []
             });
             
             // Sync fallback local storage just in case it's needed offline later
@@ -614,6 +615,7 @@ export const subscribeToUserData = (email, callback) => {
                 if (data.dividends) localStorage.setItem(`phudit_dividends_${cleanEmail}`, JSON.stringify(data.dividends));
                 if (data.fundingHistory) localStorage.setItem(`phudit_funding_${cleanEmail}`, JSON.stringify(data.fundingHistory));
                 if (data.accounts) localStorage.setItem(`phudit_accounts_${cleanEmail}`, JSON.stringify(data.accounts));
+                if (data.feedPosts) localStorage.setItem(`phudit_feed_${cleanEmail}`, JSON.stringify(data.feedPosts));
             } catch (e) {}
         } else {
             callback(null);
@@ -621,4 +623,57 @@ export const subscribeToUserData = (email, callback) => {
     }, (error) => {
         console.error("Error in onSnapshot:", error);
     });
+};
+
+// --- Feed Posts Storage ---
+export const getStoredFeedPosts = async (email) => {
+    if (!email) return [];
+    const cleanEmail = email.trim().toLowerCase();
+    let fbData = null;
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists() && docSnap.data().feedPosts) {
+            fbData = docSnap.data().feedPosts;
+        }
+    } catch (e) {
+        console.error("Error fetching feed posts from Firebase:", e);
+    }
+    
+    if (fbData) return fbData;
+    
+    try {
+        const local = localStorage.getItem(`phudit_feed_${cleanEmail}`);
+        if (local) return JSON.parse(local);
+    } catch (e) {}
+    return [];
+};
+
+export const saveFeedPosts = async (email, feedPosts) => {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    
+    try {
+        localStorage.setItem(`phudit_feed_${cleanEmail}`, JSON.stringify(feedPosts));
+    } catch (e) {}
+    
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        await setDoc(userRef, { feedPosts }, { merge: true });
+    } catch (e) {}
+};
+
+// --- Storage Calculation ---
+export const calculateStorageUsage = async (email) => {
+    if (!email) return 0;
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+        const userRef = doc(db, 'users', cleanEmail);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const dataStr = JSON.stringify(docSnap.data());
+            return dataStr.length; // Approximate size in bytes
+        }
+    } catch (e) {}
+    return 0;
 };

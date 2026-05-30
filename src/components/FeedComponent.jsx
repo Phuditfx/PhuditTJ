@@ -1,53 +1,12 @@
 import React, { useState } from 'react';
 import { ImagePlus, X, Plus, Send, Clock, UserCircle2 } from 'lucide-react';
 
-export default function FeedComponent() {
+export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
   const [postTitle, setPostTitle] = useState('');
-  const [blocks, setBlocks] = useState([{ id: Date.now(), text: '', image: null, previewUrl: null }]);
-
-  // Mock data for posts
-  const [posts, setPosts] = useState([
-    {
-      id: 'p1',
-      author: {
-        name: 'Phudit',
-        avatar: null
-      },
-      timestamp: '2 hours ago',
-      title: 'Nvidia Earnings Breakout Setup',
-      blocks: [
-        {
-          id: 'b1',
-          text: 'NVDA is forming a massive bull flag right at the $120 resistance level. The volume profile suggests heavy accumulation over the past week.',
-          imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800'
-        },
-        {
-          id: 'b2',
-          text: 'If we get a clean break above $125 with sustained volume, my target is $140. Stop loss tight at $118 just below the EMA20.',
-          imageUrl: null
-        }
-      ]
-    },
-    {
-      id: 'p2',
-      author: {
-        name: 'Phudit',
-        avatar: null
-      },
-      timestamp: 'Yesterday',
-      title: 'Market Review: Why I am shifting to cash',
-      blocks: [
-        {
-          id: 'b1',
-          text: 'The SPY is showing divergence on the daily timeframe. Breadth is weakening while the index pushes to marginally new highs. This usually precedes a pullback.',
-          imageUrl: null
-        }
-      ]
-    }
-  ]);
+  const [blocks, setBlocks] = useState([{ id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
 
   const handleAddBlock = () => {
-    setBlocks([...blocks, { id: Date.now(), text: '', image: null, previewUrl: null }]);
+    setBlocks([...blocks, { id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
   };
 
   const handleRemoveBlock = (idToRemove) => {
@@ -59,11 +18,44 @@ export default function FeedComponent() {
     setBlocks(blocks.map(b => b.id === id ? { ...b, text: newText } : b));
   };
 
-  const handleBlockImageChange = (id, e) => {
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.6 quality to save storage
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          resolve(dataUrl);
+        };
+      };
+    });
+  };
+
+  const handleBlockImageChange = async (id, e) => {
     const file = e.target.files[0];
     if (file) {
       const previewUrl = URL.createObjectURL(file);
-      setBlocks(blocks.map(b => b.id === id ? { ...b, image: file, previewUrl } : b));
+      const base64 = await compressImage(file);
+      setBlocks(blocks.map(b => b.id === id ? { ...b, image: file, previewUrl, base64 } : b));
     }
   };
 
@@ -71,7 +63,7 @@ export default function FeedComponent() {
     setBlocks(blocks.map(b => {
       if (b.id === id) {
         if (b.previewUrl) URL.revokeObjectURL(b.previewUrl);
-        return { ...b, image: null, previewUrl: null };
+        return { ...b, image: null, previewUrl: null, base64: null };
       }
       return b;
     }));
@@ -86,21 +78,21 @@ export default function FeedComponent() {
     const newPost = {
       id: 'p' + Date.now(),
       author: {
-        name: 'Phudit',
+        name: currentUser ? currentUser.split('@')[0] : 'Trader',
         avatar: null
       },
-      timestamp: 'Just now',
+      timestamp: new Date().toLocaleString(),
       title: postTitle,
       blocks: blocks.map(b => ({
         id: 'b' + Date.now() + Math.random(),
         text: b.text,
-        imageUrl: b.previewUrl // Use local object URL for instant rendering
+        imageUrl: b.base64 // Save compressed base64 string
       }))
     };
 
-    setPosts([newPost, ...posts]);
+    onSavePost(newPost);
     setPostTitle('');
-    setBlocks([{ id: Date.now(), text: '', image: null, previewUrl: null }]);
+    setBlocks([{ id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
   };
 
   return (

@@ -9,6 +9,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'feed', icon: '📰', label: 'Trading Bulletin' },
     { id: 'analytics', icon: '📈', label: 'Analytics & Stats' },
     { id: 'fighter', icon: '⚡', label: 'Trade Simulator' },
+    { id: 'data', icon: '⚙️', label: 'Data Management' },
   ];
 
   const VIP_ITEMS = [
@@ -130,14 +131,6 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           >
             <span className="text-sm">📖</span>
             <span>{t('app.manual', 'User Manual')}</span>
-          </button>
-          
-          <button 
-            onClick={() => import('../utils/logger').then(m => m.downloadLogs && m.downloadLogs())}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800"
-          >
-            <span className="text-sm">📥</span>
-            <span>Download Logs</span>
           </button>
         </div>
       </nav>

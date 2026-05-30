@@ -21,7 +21,8 @@ import {
   saveFundingHistory,
   getUserVipStatus,
   subscribeToUserData,
-  saveAccounts
+  saveAccounts,
+  saveFeedPosts
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -36,6 +37,7 @@ import DividendTracker from './components/DividendTracker';
 import Analytics from './components/Analytics';
 import Sidebar from './components/Sidebar';
 import FeedComponent from './components/FeedComponent';
+import DataManager from './components/DataManager';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -68,6 +70,7 @@ export default function App() {
   const [dividends, setDividends] = useState([]);
   const [fundingHistory, setFundingHistory] = useState([]);
   const [accounts, setAccounts] = useState([{ id: 'default', name: 'Main Account' }]);
+  const [feedPosts, setFeedPosts] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isVip, setIsVip] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -135,6 +138,7 @@ export default function App() {
         setDividends(data.dividends || []);
         setFundingHistory(data.fundingHistory || []);
         setAccounts(data.accounts || [{ id: 'default', name: 'Main Account' }]);
+        setFeedPosts(data.feedPosts || []);
         setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
         
         setDataLoading(false);
@@ -144,6 +148,7 @@ export default function App() {
       setPlans([]);
       setDividends([]);
       setFundingHistory([]);
+      setFeedPosts([]);
       setIsVip(false);
       setDataLoading(false);
     }
@@ -373,7 +378,15 @@ export default function App() {
     saveDividends(currentUser, updatedDivs);
   };
 
+  // จัดการ Feed Posts
+  const handleSaveFeedPost = (newPost) => {
+    const updated = [newPost, ...feedPosts];
+    setFeedPosts(updated);
+    saveFeedPosts(currentUser, updated);
+  };
+
   // ระบบ Global Confirm Modal
+
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -760,7 +773,22 @@ export default function App() {
                 requestAlert={requestAlert}
               />
             )}
-            {activeTab === 'feed' && <FeedComponent />}
+            {activeTab === 'feed' && (
+              <FeedComponent 
+                posts={feedPosts} 
+                onSavePost={handleSaveFeedPost} 
+                currentUser={currentUser} 
+              />
+            )}
+            {activeTab === 'data' && (
+              <DataManager 
+                currentUser={currentUser}
+                trades={trades} setTrades={setTrades}
+                feedPosts={feedPosts} setFeedPosts={setFeedPosts}
+                plans={plans} setPlans={setPlans}
+                dividends={dividends} setDividends={setDividends}
+              />
+            )}
             {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
               <OwnerDashboard 
                 currentUser={currentUser} 
