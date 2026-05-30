@@ -165,6 +165,9 @@ export const subscribeToUserData = (email, callback) => {
                 });
             }
             state[stateKey] = items;
+            
+            try { localStorage.setItem(`phudit_${tableName}_${cleanEmail}`, JSON.stringify(items)); } catch(e) {}
+            
             notify();
         }
     };
