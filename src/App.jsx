@@ -79,6 +79,7 @@ export default function App() {
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editingBalanceValue, setEditingBalanceValue] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [promptDialog, setPromptDialog] = useState({ isOpen: false, title: '', message: '', placeholder: '', onConfirm: null });
   const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '' });
 
@@ -607,7 +608,38 @@ export default function App() {
               Logout
             </button>
           </div>
+          {/* Mobile Hamburger Button */}
+          <button 
+            className="sm:hidden ml-2 p-2 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* Mobile Slide-down Menu */}
+        {isMobileMenuOpen && (
+          <div className="sm:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in">
+            <button onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }} className="w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
+              {language === 'en' ? 'Switch to Thai (TH)' : 'Switch to English (EN)'}
+            </button>
+            <button onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }} className="w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
+              {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+            </button>
+            <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full py-2.5 flex justify-center items-center gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-400 text-sm font-bold cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+              </svg>
+              Logout
+            </button>
+          </div>
+        )}
 
         {/* Mobile Only: Account & Date Filters */}
         <div className="lg:hidden flex flex-col gap-2 w-full mt-2">

@@ -636,10 +636,10 @@ const DesktopTradeCard = React.memo(({
         </div>
 
         {/* Col 3: Profit / Loss & RR */}
-        <div className="flex flex-col gap-2 justify-between">
+        <div className="flex flex-col gap-2">
           <div className="flex flex-col">
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Net P/L</span>
-            <div className={`mt-1 p-2 rounded-lg relative text-right flex items-center justify-between border ${
+            <div className={`mt-0.5 py-[3px] px-2 h-[34px] rounded-lg relative text-right flex items-center justify-between border ${
               pnl !== null && pnl >= 0 
                 ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20' 
                 : pnl !== null 
@@ -665,9 +665,9 @@ const DesktopTradeCard = React.memo(({
             </div>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col mt-[2px]">
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Risk Reward</span>
-            <div className={`mt-0.5 text-center ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
+            <div className={`mt-[3px] text-center ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
               {rrToShow !== null ? (
                 <span className={`px-2 py-0.5 rounded font-black text-xs font-mono inline-block ${
                   rrToShow >= 2 
