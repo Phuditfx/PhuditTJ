@@ -590,7 +590,7 @@ const DesktopTradeCard = React.memo(({
           <div className="flex flex-col mt-1.5">
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Close Date</span>
             <span className="text-[10.5px] font-mono text-slate-600 dark:text-slate-400 mt-0.5 tracking-tighter">
-              {isClosed && trade.exitDateTime ? new Date(trade.exitDateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
+              {isClosed ? (trade.exitDateTime || trade.dateTime ? new Date(trade.exitDateTime || trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-') : '-'}
             </span>
           </div>
           {trade.tiEntryAlert > 0 && !isClosed && (
@@ -607,7 +607,7 @@ const DesktopTradeCard = React.memo(({
         <div className="flex flex-col gap-2 border-r border-slate-100 dark:border-slate-800/40 pr-2">
           <div className="flex flex-col">
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Prices</span>
-            <div className="text-[11px] font-bold font-mono text-slate-700 dark:text-slate-300 mt-0.5 flex flex-col gap-0.5">
+            <div className="text-xs font-bold font-mono text-slate-700 dark:text-slate-300 mt-0.5 flex flex-col gap-0.5">
               <div className="flex justify-between gap-1.5">
                 <span className="text-slate-400 font-semibold">Entry:</span>
                 <span>${Number(trade.entryPrice).toFixed(2)}</span>
@@ -622,7 +622,7 @@ const DesktopTradeCard = React.memo(({
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Stop/Target</span>
-            <div className="text-[10px] font-mono mt-0.5 flex flex-col gap-0.5">
+            <div className="text-xs font-bold font-mono mt-0.5 flex flex-col gap-0.5">
               <div className="flex justify-between text-rose-600 dark:text-rose-400/80">
                 <span>SL:</span>
                 <span>${trade.stopLoss.toFixed(2)}</span>
@@ -669,7 +669,7 @@ const DesktopTradeCard = React.memo(({
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Risk Reward</span>
             <div className={`mt-[3px] text-center ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
               {rrToShow !== null ? (
-                <span className={`px-2 py-0.5 rounded font-black text-xs font-mono inline-block ${
+                <span className={`px-2 py-[2.5px] rounded font-black text-sm font-mono inline-block ${
                   rrToShow >= 2 
                     ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-250/20' 
                     : rrToShow >= 0 
