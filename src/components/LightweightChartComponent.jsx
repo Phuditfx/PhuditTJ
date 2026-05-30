@@ -330,8 +330,14 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
     updateLine('tp1', tp1, '#10b981', 'TP1 (1R)'); // emerald-500
     updateLine('tp2', tp2, '#059669', 'TP2 (2R)'); // emerald-600
     updateLine('tp3', tp3, '#047857', 'TP3 (3R)'); // emerald-700
+
+    if (status === 'Closed' && actualExitPrice) {
+      updateLine('exit', actualExitPrice, '#f59e0b', 'EXIT', 1); // amber-500, dashed
+    } else {
+      updateLine('exit', null, '#f59e0b', 'EXIT', 1);
+    }
     
-  }, [entry, stopLoss, tp1, tp2, tp3, loading]);
+  }, [entry, stopLoss, tp1, tp2, tp3, loading, status, actualExitPrice]);
 
   return (
     <div className="relative w-full h-full">
