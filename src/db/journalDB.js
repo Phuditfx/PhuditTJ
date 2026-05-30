@@ -85,89 +85,6 @@ export const migrateDataToSubcollections = async (email) => {
 };
 
 // ==========================================
-// REAL-TIME DATA SUBSCRIPTION
-// ==========================================
-export const subscribeToUserData = (email, callback) => {
-    if (!email) return () => {};
-    const cleanEmail = email.trim().toLowerCase();
-    
-    // Initial State
-    const state = {
-        trades: [],
-        plans: [],
-        feedPosts: [],
-        dividends: [],
-        fundingHistory: [],
-        initialBalances: { 'default': 10000 },
-        targetRR: 20,
-        profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal' },
-        accounts: [{ id: 'default', name: 'Main Account' }],
-        isVip: false,
-        status: 'approved'
-    };
-
-    let isNotifying = false;
-    const notify = () => {
-        if (isNotifying) return;
-        isNotifying = true;
-        setTimeout(() => {
-            callback({ ...state });
-            isNotifying = false;
-        }, 100); // Debounce to prevent multiple re-renders
-    };
-
-    // 1. Listen to Main Document (Configs)
-    const unsubUser = onSnapshot(doc(db, 'users', cleanEmail), (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            state.initialBalances = data.initialBalances || { 'default': 10000 };
-            state.targetRR = data.targetRR !== undefined ? data.targetRR : 20;
-            state.profile = { ...state.profile, ...data.profile };
-            state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
-            state.isVip = data.isVip || false;
-            state.status = data.status || 'approved';
-        }
-        notify();
-    });
-
-    // 2. Listen to Subcollections
-    const listenCol = (colName, stateKey) => {
-        return onSnapshot(collection(db, 'users', cleanEmail, colName), (snapshot) => {
-            const items = [];
-            snapshot.forEach(doc => items.push(doc.data()));
-            // Sort items descending by ID or timestamp if possible
-            if (stateKey === 'trades' || stateKey === 'feedPosts') {
-                 items.sort((a, b) => {
-                    const idA = a.id ? a.id.toString() : '';
-                    const idB = b.id ? b.id.toString() : '';
-                    return idB.localeCompare(idA);
-                 });
-            }
-            state[stateKey] = items;
-            notify();
-        });
-    };
-
-    const unsubTrades = listenCol('trades', 'trades');
-    const unsubPlans = listenCol('plans', 'plans');
-    const unsubFeed = listenCol('feedPosts', 'feedPosts');
-    const unsubDivs = listenCol('dividends', 'dividends');
-    const unsubFunding = listenCol('fundingHistory', 'fundingHistory');
-
-    // Trigger Migration if needed
-    migrateDataToSubcollections(cleanEmail);
-
-    return () => {
-        unsubUser();
-        unsubTrades();
-        unsubPlans();
-        unsubFeed();
-        unsubDivs();
-        unsubFunding();
-    };
-};
-
-// ==========================================
 // SUBCOLLECTION SYNC LOGIC
 // ==========================================
 const syncArrayToSubcollection = async (email, colName, itemsArray) => {
@@ -229,6 +146,111 @@ export const savePlans = (email, items) => syncArrayToSubcollection(email, 'plan
 export const saveFeedPosts = (email, items) => syncArrayToSubcollection(email, 'feedPosts', items);
 export const saveDividends = (email, items) => syncArrayToSubcollection(email, 'dividends', items);
 export const saveFundingHistory = (email, items) => syncArrayToSubcollection(email, 'fundingHistory', items);
+
+// ==========================================
+// REAL-TIME DATA SUBSCRIPTION
+// ==========================================
+export const subscribeToUserData = (email, callback) => {
+    if (!email) return () => {};
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Initial State
+    const state = {
+        trades: [],
+        plans: [],
+        feedPosts: [],
+        dividends: [],
+        fundingHistory: [],
+        initialBalances: { 'default': 10000 },
+        targetRR: 20,
+        profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal' },
+        accounts: [{ id: 'default', name: 'Main Account' }],
+        isVip: false,
+        status: 'approved'
+    };
+
+    let isNotifying = false;
+    const notify = () => {
+        if (isNotifying) return;
+        isNotifying = true;
+        setTimeout(() => {
+            callback({ ...state });
+            isNotifying = false;
+        }, 100); // Debounce to prevent multiple re-renders
+    };
+
+    // 1. Listen to Main Document (Configs)
+    const unsubUser = onSnapshot(doc(db, 'users', cleanEmail), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            state.initialBalances = data.initialBalances || { 'default': 10000 };
+            state.targetRR = data.targetRR !== undefined ? data.targetRR : 20;
+            state.profile = { ...state.profile, ...data.profile };
+            state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
+            state.isVip = data.isVip || false;
+            state.status = data.status || 'approved';
+        }
+        notify();
+    });
+
+    // 2. Listen to Subcollections
+    const listenCol = (colName, stateKey, oldLocalKey) => {
+        let isFirstLoad = true;
+        return onSnapshot(collection(db, 'users', cleanEmail, colName), (snapshot) => {
+            const items = [];
+            snapshot.forEach(doc => items.push(doc.data()));
+            
+            // LOCAL STORAGE RECOVERY MECHANISM
+            // If Firebase subcollection is empty, but the old LocalStorage has data, recover it!
+            if (isFirstLoad && items.length === 0) {
+                try {
+                    const localData = localStorage.getItem(`${oldLocalKey}_${cleanEmail}`);
+                    if (localData) {
+                        const parsed = JSON.parse(localData);
+                        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                            console.log(`Recovering ${colName} from LocalStorage...`);
+                            // Write to the new Subcollection. This will trigger onSnapshot again.
+                            syncArrayToSubcollection(cleanEmail, colName, parsed);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Recovery failed for", colName, e);
+                }
+            }
+            isFirstLoad = false;
+
+            // Sort items descending by ID or timestamp if possible
+            if (stateKey === 'trades' || stateKey === 'feedPosts') {
+                 items.sort((a, b) => {
+                    const idA = a.id ? a.id.toString() : '';
+                    const idB = b.id ? b.id.toString() : '';
+                    return idB.localeCompare(idA);
+                 });
+            }
+            state[stateKey] = items;
+            notify();
+        });
+    };
+
+    const unsubTrades = listenCol('trades', 'trades', 'phudit_trades');
+    const unsubPlans = listenCol('plans', 'plans', 'phudit_plans');
+    const unsubFeed = listenCol('feedPosts', 'feedPosts', 'phudit_feed');
+    const unsubDivs = listenCol('dividends', 'dividends', 'phudit_dividends');
+    const unsubFunding = listenCol('fundingHistory', 'fundingHistory', 'phudit_funding');
+
+    // Trigger Migration if needed
+    migrateDataToSubcollections(cleanEmail);
+
+    return () => {
+        unsubUser();
+        unsubTrades();
+        unsubPlans();
+        unsubFeed();
+        unsubDivs();
+        unsubFunding();
+    };
+};
+
 
 // ==========================================
 // CONFIGURATIONS (Saved to Main Document)
