@@ -350,18 +350,64 @@ export const toggleUserVip = async (email, isVip) => {
 export const getAllUsersData = async () => {
     try {
         const { data: users } = await supabase.from('users').select('*');
+        const { data: allTrades } = await supabase.from('trades').select('email, data');
+        const { data: allFunding } = await supabase.from('funding_history').select('email, data');
+        
         if (!users) return [];
         
-        return users.map(data => ({
-            email: data.email,
-            status: data.status || 'approved',
-            isVip: data.isVip || false,
-            createdAt: data.created_at,
-            tradesCount: 0, 
-            currentBal: 10000, 
-            netPnL: 0
-        }));
+        const tradesByEmail = {};
+        if (allTrades) {
+            allTrades.forEach(row => {
+                if (!tradesByEmail[row.email]) tradesByEmail[row.email] = [];
+                tradesByEmail[row.email].push(row.data);
+            });
+        }
+        
+        const fundingByEmail = {};
+        if (allFunding) {
+            allFunding.forEach(row => {
+                if (!fundingByEmail[row.email]) fundingByEmail[row.email] = [];
+                fundingByEmail[row.email].push(row.data);
+            });
+        }
+        
+        return users.map(user => {
+            const userEmail = user.email.toLowerCase();
+            const trades = tradesByEmail[userEmail] || [];
+            const funding = fundingByEmail[userEmail] || [];
+            
+            let tradesCount = 0;
+            let netPnL = 0;
+            
+            trades.forEach(t => {
+                if (t.status === 'Closed') {
+                    tradesCount++;
+                    netPnL += parseFloat(t.pnl) || 0;
+                }
+            });
+            
+            let fundingTotal = 0;
+            funding.forEach(f => {
+                const amt = parseFloat(f.amount) || 0;
+                if (f.type === 'deposit') fundingTotal += amt;
+                if (f.type === 'withdraw') fundingTotal -= amt;
+            });
+            
+            const initialBal = user.initialBalances?.['default'] || 10000;
+            const currentBal = initialBal + fundingTotal + netPnL;
+
+            return {
+                email: user.email,
+                status: user.status || 'approved',
+                isVip: user.isVip || false,
+                createdAt: user.created_at,
+                tradesCount,
+                currentBal,
+                netPnL
+            };
+        });
     } catch (e) {
+        console.error("Error in getAllUsersData:", e);
         return [];
     }
 };
