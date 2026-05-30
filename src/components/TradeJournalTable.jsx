@@ -984,7 +984,10 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             } catch (err) {
               if (requestAlert) requestAlert("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการอ่านไฟล์: " + err.message);
             }
-      reader.readAsText(file);
+          };
+          reader.readAsText(file);
+        }
+      );
     }
     // reset input
     e.target.value = null;
