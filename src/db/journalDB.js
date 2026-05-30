@@ -179,6 +179,14 @@ export const subscribeToUserData = (email, callback) => {
         }, 100); // Debounce to prevent multiple re-renders
     };
 
+    let unsubTrades = null;
+    let unsubPlans = null;
+    let unsubFeed = null;
+    let unsubDivs = null;
+    let unsubFunding = null;
+
+    let hasInitializedSubcollections = false;
+
     // 1. Listen to Main Document (Configs)
     const unsubUser = onSnapshot(doc(db, 'users', cleanEmail), (docSnap) => {
         if (docSnap.exists()) {
@@ -190,11 +198,20 @@ export const subscribeToUserData = (email, callback) => {
             state.isVip = data.isVip || false;
             state.status = data.status || 'approved';
         }
+        
+        if (!hasInitializedSubcollections) {
+            hasInitializedSubcollections = true;
+            unsubTrades = listenCol('trades', 'trades', 'phudit_trades', state.isVip); // VIP = realtime, Non-VIP = one-time
+            unsubPlans = listenCol('plans', 'plans', 'phudit_plans', true);
+            unsubFeed = listenCol('feedPosts', 'feedPosts', 'phudit_feed', true);
+            unsubDivs = listenCol('dividends', 'dividends', 'phudit_dividends', true);
+            unsubFunding = listenCol('fundingHistory', 'fundingHistory', 'phudit_funding', true);
+        }
         notify();
     });
 
-    // 2. Listen to Subcollections
-    const listenCol = (colName, stateKey, oldLocalKey) => {
+    // 2. Listen to Subcollections (Realtime vs One-time)
+    const listenCol = (colName, stateKey, oldLocalKey, isRealtime) => {
         let isFirstLoad = true;
         let recoveredItems = null;
 
@@ -205,66 +222,68 @@ export const subscribeToUserData = (email, callback) => {
                 const parsed = JSON.parse(localData);
                 if (parsed && Array.isArray(parsed) && parsed.length > 0) {
                     recoveredItems = parsed;
+                    state[stateKey] = parsed; // Populate immediately
                 }
             }
         } catch(e) {}
 
-        return onSnapshot(
-            collection(db, 'users', cleanEmail, colName), 
-            (snapshot) => {
-                const items = [];
-                snapshot.forEach(doc => items.push(doc.data()));
-                
-                // Trigger background sync if Firebase is empty but we have local data
-                if (isFirstLoad && items.length === 0 && recoveredItems) {
-                    console.log(`Recovering ${colName} from LocalStorage...`);
-                    syncArrayToSubcollection(cleanEmail, colName, recoveredItems);
-                }
-                isFirstLoad = false;
-
-                // Prevent empty server snapshots from hiding the data before sync finishes
-                if (items.length === 0 && recoveredItems) {
-                    items.push(...recoveredItems);
-                }
-
-                // Sort items descending by ID or timestamp if possible
-                if (stateKey === 'trades' || stateKey === 'feedPosts') {
-                     items.sort((a, b) => {
-                        const idA = a.id ? a.id.toString() : '';
-                        const idB = b.id ? b.id.toString() : '';
-                        return idB.localeCompare(idA);
-                     });
-                }
-                state[stateKey] = items;
-                notify();
-            },
-            (error) => {
-                console.error(`Error listening to ${colName}:`, error);
-                // Even on error, we keep recoveredItems
-                if (recoveredItems) {
-                    state[stateKey] = recoveredItems;
-                    notify();
-                }
+        const handleData = (items) => {
+            if (isFirstLoad && items.length === 0 && recoveredItems) {
+                console.log(`Recovering ${colName} from LocalStorage...`);
+                syncArrayToSubcollection(cleanEmail, colName, recoveredItems);
             }
-        );
+            isFirstLoad = false;
+
+            if (items.length === 0 && recoveredItems) {
+                items.push(...recoveredItems);
+            }
+
+            if (stateKey === 'trades' || stateKey === 'feedPosts') {
+                 items.sort((a, b) => {
+                    const idA = a.id ? a.id.toString() : '';
+                    const idB = b.id ? b.id.toString() : '';
+                    return idB.localeCompare(idA);
+                 });
+            }
+            state[stateKey] = items;
+            notify();
+        };
+
+        if (isRealtime) {
+            return onSnapshot(
+                collection(db, 'users', cleanEmail, colName), 
+                (snapshot) => {
+                    const items = [];
+                    snapshot.forEach(doc => items.push(doc.data()));
+                    handleData(items);
+                },
+                (error) => {
+                    console.error(`Error listening to ${colName}:`, error);
+                    if (recoveredItems) {
+                        state[stateKey] = recoveredItems;
+                        notify();
+                    }
+                }
+            );
+        } else {
+            // ONE-TIME FETCH (For Non-VIPs)
+            import('firebase/firestore').then(({ getDocs, collection }) => {
+                getDocs(collection(db, 'users', cleanEmail, colName)).then(snapshot => {
+                    const items = [];
+                    snapshot.forEach(doc => items.push(doc.data()));
+                    handleData(items);
+                }).catch(error => {
+                    console.error(`Error fetching ${colName}:`, error);
+                    if (recoveredItems) {
+                        state[stateKey] = recoveredItems;
+                        notify();
+                    }
+                });
+            });
+            return () => {}; // empty unsubscribe
+        }
     };
 
-    const unsubTrades = listenCol('trades', 'trades', 'phudit_trades');
-    const unsubPlans = listenCol('plans', 'plans', 'phudit_plans');
-    const unsubFeed = listenCol('feedPosts', 'feedPosts', 'phudit_feed');
-    const unsubDivs = listenCol('dividends', 'dividends', 'phudit_dividends');
-    const unsubFunding = listenCol('fundingHistory', 'fundingHistory', 'phudit_funding');
-
-    // Trigger Migration if needed
-    migrateDataToSubcollections(cleanEmail);
-
-    return () => {
-        unsubUser();
-        unsubTrades();
-        unsubPlans();
-        unsubFeed();
-        unsubDivs();
-        unsubFunding();
     };
 };
 

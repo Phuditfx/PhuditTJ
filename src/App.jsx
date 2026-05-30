@@ -426,9 +426,59 @@ export default function App() {
   };
 
   // นำเข้าข้อมูลการเทรด (Import Trades)
-  const handleImportTrades = (importedTrades) => {
-    setTrades(importedTrades);
-    saveTrades(currentUser, importedTrades);
+  const handleImportData = (importedData) => {
+    // Check if it's the new full backup format
+    if (importedData.trades && Array.isArray(importedData.trades)) {
+      setTrades(importedData.trades);
+      saveTrades(currentUser, importedData.trades);
+      
+      if (importedData.plans) {
+        setPlans(importedData.plans);
+        savePlans(currentUser, importedData.plans);
+      }
+      if (importedData.feedPosts) {
+        setFeedPosts(importedData.feedPosts);
+        saveFeedPosts(currentUser, importedData.feedPosts);
+      }
+      if (importedData.dividends) {
+        setDividends(importedData.dividends);
+        saveDividends(currentUser, importedData.dividends);
+      }
+      // other non-subcollection data
+      if (importedData.accounts) {
+        setAccounts(importedData.accounts);
+        saveAccounts(currentUser, importedData.accounts);
+      }
+      if (importedData.initialBalances) {
+        setInitialBalances(importedData.initialBalances);
+        saveInitialBalance(currentUser, importedData.initialBalances);
+      }
+    } else if (Array.isArray(importedData)) {
+      // Legacy format (only trades array)
+      setTrades(importedData);
+      saveTrades(currentUser, importedData);
+    }
+  };
+
+  const handleExportFullJSON = () => {
+    const fullData = {
+      version: "2.0",
+      exportDate: new Date().toISOString(),
+      trades,
+      plans,
+      feedPosts,
+      dividends,
+      fundingHistory,
+      accounts,
+      initialBalances
+    };
+    const dataStr = JSON.stringify(fullData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    const exportFileDefaultName = `PhuditTJ_FullBackup_${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
   };
 
   const [theme, setTheme] = useState(() => {
@@ -507,19 +557,24 @@ export default function App() {
       requestAlert("ไม่สามารถลบได้", t('common.cannotDeleteLastAccount', 'Cannot delete the last remaining account.'));
       return;
     }
-    if (window.confirm(t('common.confirmDeleteAccount', 'Are you sure you want to delete this account? All trades inside it will be permanently deleted!'))) {
-      const updatedAccounts = accounts.filter(a => a.id !== idToDelete);
-      setAccounts(updatedAccounts);
-      saveAccounts(currentUser, updatedAccounts);
+    
+    requestConfirm(
+      t('common.confirmDeleteAccountTitle', 'Confirm Delete Account'),
+      t('common.confirmDeleteAccount', 'Are you sure you want to delete this account? All trades inside it will be permanently deleted!'),
+      () => {
+        const updatedAccounts = accounts.filter(a => a.id !== idToDelete);
+        setAccounts(updatedAccounts);
+        saveAccounts(currentUser, updatedAccounts);
 
-      const remainingTrades = trades.filter(t => t.accountId !== idToDelete);
-      setTrades(remainingTrades);
-      saveTrades(currentUser, remainingTrades);
+        const remainingTrades = trades.filter(t => t.accountId !== idToDelete);
+        setTrades(remainingTrades);
+        saveTrades(currentUser, remainingTrades);
 
-      if (accountId === idToDelete) {
-        setAccountId(updatedAccounts[0].id);
+        if (accountId === idToDelete) {
+          setAccountId(updatedAccounts[0].id);
+        }
       }
-    }
+    );
   };
 
   const handleRenameAccount = (accId, newName) => {
@@ -728,7 +783,8 @@ export default function App() {
                 onDeleteTrade={handleDeleteTrade}
                 onClearAllTrades={handleClearAllTrades}
                 onDeleteTradesByMonth={handleDeleteTradesByMonth}
-                onImportTrades={handleImportTrades}
+                onImportData={handleImportData}
+                onExportJSON={handleExportFullJSON}
                 requestConfirm={requestConfirm}
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}

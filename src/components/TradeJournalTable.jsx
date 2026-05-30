@@ -696,11 +696,22 @@ const DesktopTradeCard = React.memo(({
       {/* 🛠️ Bottom Action Buttons Bar */}
       <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/40 mt-1">
         <button
-          onClick={() => setChartModalTrade(trade)}
-          className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm shadow-sky-955/20 flex items-center justify-center gap-1"
-          title="ดูชาร์ตกราฟ"
+          onClick={() => {
+            if (!isVip) {
+              if (requestAlert) requestAlert("VIP Only", "คุณสมบัตินี้สำหรับสมาชิก VIP เท่านั้น");
+              else alert("คุณสมบัตินี้สำหรับสมาชิก VIP เท่านั้น");
+              return;
+            }
+            setChartModalTrade(trade);
+          }}
+          className={`flex-1 font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1 ${
+            isVip 
+              ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-sky-955/20' 
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700'
+          }`}
+          title={isVip ? "ดูชาร์ตกราฟ" : "VIP Only"}
         >
-          📈 Chart
+          📈 Chart {!isVip && '🔒'}
         </button>
         {!isClosed && (
           <button
@@ -812,7 +823,7 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, requestPrompt, requestAlert, plans = [], isVip }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -950,13 +961,18 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
   // Export to JSON
   const handleExportJSON = () => {
-    const dataStr = JSON.stringify(filteredTrades, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const exportFileDefaultName = 'TradeJournal_Backup.json';
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    if (onExportJSON) {
+      onExportJSON();
+    } else {
+      // Fallback just in case
+      const dataStr = JSON.stringify(filteredTrades, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const exportFileDefaultName = 'TradeJournal_Backup.json';
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
   };
 
   // Import JSON File
@@ -975,9 +991,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
           reader.onload = (evt) => {
             try {
               if (file.name.endsWith('.json')) {
-                const importedTrades = JSON.parse(evt.target.result);
-                if (Array.isArray(importedTrades)) {
-                  if (onImportTrades) onImportTrades(importedTrades);
+                const importedData = JSON.parse(evt.target.result);
+                if (importedData) {
+                  if (onImportData) onImportData(importedData);
                   if (requestAlert) requestAlert("สำเร็จ", "✅ นำเข้าข้อมูลการเทรดเรียบร้อยแล้ว");
                 } else {
                   if (requestAlert) requestAlert("ข้อผิดพลาด", "รูปแบบไฟล์ JSON ไม่ถูกต้อง");
