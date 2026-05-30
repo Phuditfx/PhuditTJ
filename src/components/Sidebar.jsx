@@ -6,6 +6,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: 'Overview' },
     { id: 'journal', icon: '📓', label: 'Trades Table' },
+    { id: 'feed', icon: '📰', label: 'Trading Bulletin' },
     { id: 'analytics', icon: '📈', label: 'Analytics & Stats' },
     { id: 'fighter', icon: '⚡', label: 'Trade Simulator' },
   ];

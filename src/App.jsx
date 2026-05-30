@@ -35,6 +35,7 @@ import TradingPlans from './components/TradingPlans';
 import DividendTracker from './components/DividendTracker';
 import Analytics from './components/Analytics';
 import Sidebar from './components/Sidebar';
+import FeedComponent from './components/FeedComponent';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -759,6 +760,7 @@ export default function App() {
                 requestAlert={requestAlert}
               />
             )}
+            {activeTab === 'feed' && <FeedComponent />}
             {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
               <OwnerDashboard 
                 currentUser={currentUser} 
@@ -828,6 +830,15 @@ export default function App() {
         >
           <span className="text-xl">📅</span>
           <span className="text-[10px] font-bold mt-1">Cal</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('feed')}
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
+            activeTab === 'feed' ? 'text-brand-primary' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">📰</span>
+          <span className="text-[10px] font-bold mt-1">Feed</span>
         </button>
         <button
           onClick={() => setActiveTab('plans')}

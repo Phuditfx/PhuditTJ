@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "firebase": "^12.13.0",
     "lightweight-charts": "^5.2.0",
+    "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "recharts": "^3.8.1",
