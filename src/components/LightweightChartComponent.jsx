@@ -181,7 +181,8 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
                 if (entryIndex === -1) entryIndex = 0;
               }
               
-              for (let i = entryIndex; i < sortedData.length; i++) {
+              // Search backwards to find the LAST time the price hit the exit price
+              for (let i = sortedData.length - 1; i >= entryIndex; i--) {
                 const bar = sortedData[i];
                 if (bar.low <= exitPriceNum && bar.high >= exitPriceNum) {
                   exactExitTime = bar.time;

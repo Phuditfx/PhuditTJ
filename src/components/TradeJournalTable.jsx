@@ -348,13 +348,18 @@ const TradeCard = React.memo(({
             <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold">SPLIT</span>
           )}
         </div>
-        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-          {trade.dateTime ? new Date(trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
-        </span>
       </div>
 
       {/* Middle: Key Metrics Grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <div className="flex justify-between">
+          <span className="text-slate-400 font-semibold">Open:</span>
+          <span className="text-slate-600 dark:text-slate-400 font-mono text-[10px]">{trade.dateTime ? new Date(trade.dateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400 font-semibold">Close:</span>
+          <span className="text-slate-600 dark:text-slate-400 font-mono text-[10px]">{isClosed && trade.exitDateTime ? new Date(trade.exitDateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}</span>
+        </div>
         <div className="flex justify-between">
           <span className="text-slate-400 font-semibold">Entry:</span>
           <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">${Number(trade.entryPrice).toFixed(2)}</span>
@@ -564,9 +569,6 @@ const DesktopTradeCard = React.memo(({
             </span>
           )}
         </div>
-        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-wider">
-          {formattedDate}
-        </div>
       </div>
 
       {/* 📊 Content Grid (3 Columns) */}
@@ -577,6 +579,18 @@ const DesktopTradeCard = React.memo(({
             <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Shares</span>
             <span className="text-xs font-bold font-mono text-slate-800 dark:text-slate-200 mt-0.5">
               {trade.shares.toFixed(4)}
+            </span>
+          </div>
+          <div className="flex flex-col mt-2">
+            <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Open Date</span>
+            <span className="text-[10.5px] font-mono text-slate-600 dark:text-slate-400 mt-0.5 tracking-tighter">
+              {formattedDate}
+            </span>
+          </div>
+          <div className="flex flex-col mt-1.5">
+            <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold">Close Date</span>
+            <span className="text-[10.5px] font-mono text-slate-600 dark:text-slate-400 mt-0.5 tracking-tighter">
+              {isClosed && trade.exitDateTime ? new Date(trade.exitDateTime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}
             </span>
           </div>
           {trade.tiEntryAlert > 0 && !isClosed && (

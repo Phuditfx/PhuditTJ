@@ -424,6 +424,10 @@ export default function App() {
     localStorage.setItem('phudit_tj_theme', theme);
   }, [theme]);
 
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
   const handleLogout = async () => {
     await logoutUser();
     setActiveTab('dashboard');
@@ -576,6 +580,17 @@ export default function App() {
             <div className="hidden md:block text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
               ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 ml-2">
+            <button onClick={toggleLanguage} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm" title={language === 'en' ? 'Switch to Thai' : 'Switch to English'}>
+              {language === 'en' ? '🇹🇭' : '🇬🇧'}
+            </button>
+            <button onClick={toggleTheme} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm" title="Toggle Theme">
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            <button onClick={handleLogout} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/40 text-rose-500 transition-colors shadow-sm" title="Logout">
+              🚪
+            </button>
           </div>
         </div>
 
@@ -1003,7 +1018,7 @@ export default function App() {
 
                     {/* Balance & P/L Stats */}
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center">
+                      <div className="text-center flex flex-col items-center justify-center">
                         <span className="text-[9px] text-slate-400 font-bold uppercase block">Initial Bal.</span>
                         {isEditingBal ? (
                           <div className="flex gap-1 mt-0.5">
@@ -1021,13 +1036,37 @@ export default function App() {
                             >✓</button>
                           </div>
                         ) : (
-                          <span 
-                            className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                            onClick={() => { setEditingBalanceId(acc.id); setEditingBalanceValue(accBalance.toString()); }}
-                            title="Click to edit"
-                          >
-                            ${accBalance.toLocaleString()}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span 
+                              className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              onClick={() => { setEditingBalanceId(acc.id); setEditingBalanceValue(accBalance.toString()); }}
+                              title="Click to edit"
+                            >
+                              ${accBalance.toLocaleString()}
+                            </span>
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => {
+                                  const amount = window.prompt(`Enter deposit amount for ${acc.name}:`);
+                                  if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                                    handleUpdateInitialBalance(acc.id, accBalance + parseFloat(amount));
+                                  }
+                                }}
+                                className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer"
+                                title="Deposit"
+                              >+</button>
+                              <button 
+                                onClick={() => {
+                                  const amount = window.prompt(`Enter withdrawal amount for ${acc.name}:`);
+                                  if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                                    handleUpdateInitialBalance(acc.id, accBalance - parseFloat(amount));
+                                  }
+                                }}
+                                className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900 px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer"
+                                title="Withdraw"
+                              >-</button>
+                            </div>
+                          </div>
                         )}
                       </div>
                       <div className="text-center">
