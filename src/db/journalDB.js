@@ -283,7 +283,7 @@ export const verifyUser = async (email, password) => {
         }
         
         const { data: userData } = await supabase.from('users').select('status').eq('email', cleanEmail).single();
-        if (userData && userData.status === 'pending') {
+        if (cleanEmail !== 'phudit.mahawongsanan@gmail.com' && userData && userData.status === 'pending') {
             await supabase.auth.signOut();
             return { success: false, error: '⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ' };
         }

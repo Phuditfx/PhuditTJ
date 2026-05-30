@@ -130,7 +130,7 @@ export default function App() {
            return;
         }
 
-        if (data.status === 'pending') {
+        if (data.status === 'pending' && currentUser !== 'phudit.mahawongsanan@gmail.com') {
           requestAlert("รอการอนุมัติ", "⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
           logoutUser();
           return;
