@@ -2,8 +2,11 @@
   "app": {
     "title": "💎 Phudit Trade Journal & Coach AI",
     "logout": "🚪 Logout",
-    "dashboard": "📊 Dashboard",
-    "journal": "📓 Trade Journal",
+    "dashboard": "Overview",
+    "journal": "Trades Table",
+    "feed": "Trading Bulletin",
+    "analytics": "Analytics",
+    "data": "Data Management",
     "calendar": "📅 Calendar",
     "plans": "📝 Trading Plans",
     "dividends": "💰 Dividends",
@@ -34,6 +37,9 @@
     "long": "Long",
     "short": "Short",
     "noData": "No data available",
+    "emptyTitle": "Your dashboard is empty right now.",
+    "emptyDesc": "Click \"Add Sample Trades\" to populate your dashboard with example data — this lets you explore all the features without importing your own trades first.",
+    "addSample": "Add Sample Trades",
     "initialBalance": "Initial Balance",
     "save": "Save",
     "closedTrades": "Closed Trades",
@@ -144,5 +150,10 @@
     "actualRr": "Actual RR",
     "qualitative": "Qualitative Analysis",
     "noTradesFilter": "No trades match the current filter"
+  },
+  "common": {
+    "dateRange": "Date Range",
+    "mainMenu": "Main Menu",
+    "tradingAccount": "Trading Account"
   }
 }

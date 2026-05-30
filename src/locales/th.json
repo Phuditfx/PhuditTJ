@@ -2,8 +2,11 @@
   "app": {
     "title": "💎 Phudit Trade Journal & Coach AI",
     "logout": "🚪 ออกจากระบบ",
-    "dashboard": "📊 แดชบอร์ด",
-    "journal": "📓 บันทึกการเทรด",
+    "dashboard": "ภาพรวม (Overview)",
+    "journal": "ตารางบันทึกเทรด (Trades Table)",
+    "feed": "บอร์ดซื้อขาย (Trading Bulletin)",
+    "analytics": "สถิติขั้นสูง (Analytics)",
+    "data": "จัดการข้อมูล (Data)",
     "calendar": "📅 ปฏิทิน",
     "plans": "📝 แผนการเทรด",
     "dividends": "💰 ปันผล",
@@ -34,6 +37,9 @@
     "long": "Long",
     "short": "Short",
     "noData": "ยังไม่มีข้อมูล",
+    "emptyTitle": "แดชบอร์ดของคุณยังว่างเปล่า",
+    "emptyDesc": "คลิก \"เพิ่มข้อมูลตัวอย่าง\" เพื่อจำลองข้อมูลเข้าสู่แดชบอร์ด — ช่วยให้คุณสำรวจฟีเจอร์ทั้งหมดได้โดยไม่ต้องเพิ่มข้อมูลจริงของคุณก่อน",
+    "addSample": "เพิ่มข้อมูลตัวอย่าง",
     "initialBalance": "เงินลงทุนเริ่มต้น",
     "save": "บันทึก",
     "closedTrades": "ออเดอร์ที่ปิดแล้ว",
@@ -144,5 +150,10 @@
     "actualRr": "Actual RR",
     "qualitative": "Qualitative Analysis",
     "noTradesFilter": "ไม่มีประวัติออเดอร์ตามเงื่อนไขตัวกรอง"
+  },
+  "common": {
+    "dateRange": "ช่วงเวลา (Date Range)",
+    "mainMenu": "เมนูหลัก (Main Menu)",
+    "tradingAccount": "บัญชีเทรด (Trading Account)"
   }
 }

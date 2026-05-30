@@ -170,17 +170,17 @@ export default function Dashboard({
 
   if (trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-8 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center">
         <div className="text-6xl mb-6">📊</div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-3">Your dashboard is empty right now.</h2>
-        <p className="text-slate-500 dark:text-slate-400 max-w-lg mb-8 leading-relaxed">
-          Click "Add Sample Trades" to populate your dashboard with example data — this lets you explore all the features without importing your own trades first.
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-3">{t('dashboard.emptyTitle', 'Your dashboard is empty right now.')}</h2>
+        <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
+          {t('dashboard.emptyDesc', 'Click "Add Sample Trades" to populate your dashboard with example data — this lets you explore all the features without importing your own trades first.')}
         </p>
-        <button
+        <button 
           onClick={onLoadSampleData}
-          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-500/30 transition-all flex items-center gap-2 text-lg hover:scale-105 active:scale-95"
         >
-          ✨ Add Sample Trades
+          ✨ {t('dashboard.addSample', 'Add Sample Trades')}
         </button>
       </div>
     );

@@ -4,18 +4,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner, accounts, setShowAccountModal, setShowManual }) {
   const { t } = useLanguage();
   const NAV_ITEMS = [
-    { id: 'dashboard', icon: '📊', label: 'Overview' },
-    { id: 'journal', icon: '📓', label: 'Trades Table' },
-    { id: 'feed', icon: '📰', label: 'Trading Bulletin' },
-    { id: 'analytics', icon: '📈', label: 'Analytics & Stats' },
-    { id: 'fighter', icon: '⚡', label: 'Trade Simulator' },
-    { id: 'data', icon: '⚙️', label: 'Data Management' },
+    { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'journal', icon: '📓', label: t('app.journal', 'Trades Table').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'feed', icon: '📰', label: t('app.feed', 'Trading Bulletin').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'analytics', icon: '📈', label: t('app.analytics', 'Analytics & Stats').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'fighter', icon: '⚡', label: t('app.fighter', 'Trade Simulator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'data', icon: '⚙️', label: t('app.data', 'Data Management').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
 
   const VIP_ITEMS = [
-    { id: 'calendar', icon: '📅', label: 'Calendars' },
-    { id: 'plans', icon: '📝', label: 'Plans & Playbooks' },
-    { id: 'dividends', icon: '💰', label: 'Dividends' },
+    { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'dividends', icon: '💰', label: t('app.dividends', 'Dividends').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
 
   return (
@@ -48,7 +48,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
       {/* Date Range Filter */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
-          Date Range
+          {t('common.dateRange', 'Date Range')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {['1W', '1M', 'YTD', 'All'].map(range => (
@@ -70,7 +70,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
       {/* Navigation */}
       <nav className="flex flex-col gap-1">
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-3">
-          Main Menu
+          {t('common.mainMenu', 'Main Menu')}
         </div>
         
         {NAV_ITEMS.map((item) => (

@@ -198,46 +198,55 @@ export const subscribeToUserData = (email, callback) => {
         let isFirstLoad = true;
         let recoveredItems = null;
 
-        return onSnapshot(collection(db, 'users', cleanEmail, colName), (snapshot) => {
-            const items = [];
-            snapshot.forEach(doc => items.push(doc.data()));
-            
-            // LOCAL STORAGE RECOVERY MECHANISM
-            // If Firebase subcollection is empty, but the old LocalStorage has data, recover it!
-            if (isFirstLoad && items.length === 0) {
-                try {
-                    const localData = localStorage.getItem(`${oldLocalKey}_${cleanEmail}`);
-                    if (localData) {
-                        const parsed = JSON.parse(localData);
-                        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                            console.log(`Recovering ${colName} from LocalStorage...`);
-                            recoveredItems = parsed;
-                            // Write to the new Subcollection in the background
-                            syncArrayToSubcollection(cleanEmail, colName, parsed);
-                        }
-                    }
-                } catch (e) {
-                    console.error("Recovery failed for", colName, e);
+        // PRE-LOAD LOCAL STORAGE SYNCHRONOUSLY
+        try {
+            const localData = localStorage.getItem(`${oldLocalKey}_${cleanEmail}`);
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                    recoveredItems = parsed;
                 }
             }
-            isFirstLoad = false;
+        } catch(e) {}
 
-            // Prevent empty server snapshots from hiding the data before sync finishes
-            if (items.length === 0 && recoveredItems) {
-                items.push(...recoveredItems);
-            }
+        return onSnapshot(
+            collection(db, 'users', cleanEmail, colName), 
+            (snapshot) => {
+                const items = [];
+                snapshot.forEach(doc => items.push(doc.data()));
+                
+                // Trigger background sync if Firebase is empty but we have local data
+                if (isFirstLoad && items.length === 0 && recoveredItems) {
+                    console.log(`Recovering ${colName} from LocalStorage...`);
+                    syncArrayToSubcollection(cleanEmail, colName, recoveredItems);
+                }
+                isFirstLoad = false;
 
-            // Sort items descending by ID or timestamp if possible
-            if (stateKey === 'trades' || stateKey === 'feedPosts') {
-                 items.sort((a, b) => {
-                    const idA = a.id ? a.id.toString() : '';
-                    const idB = b.id ? b.id.toString() : '';
-                    return idB.localeCompare(idA);
-                 });
+                // Prevent empty server snapshots from hiding the data before sync finishes
+                if (items.length === 0 && recoveredItems) {
+                    items.push(...recoveredItems);
+                }
+
+                // Sort items descending by ID or timestamp if possible
+                if (stateKey === 'trades' || stateKey === 'feedPosts') {
+                     items.sort((a, b) => {
+                        const idA = a.id ? a.id.toString() : '';
+                        const idB = b.id ? b.id.toString() : '';
+                        return idB.localeCompare(idA);
+                     });
+                }
+                state[stateKey] = items;
+                notify();
+            },
+            (error) => {
+                console.error(`Error listening to ${colName}:`, error);
+                // Even on error, we keep recoveredItems
+                if (recoveredItems) {
+                    state[stateKey] = recoveredItems;
+                    notify();
+                }
             }
-            state[stateKey] = items;
-            notify();
-        });
+        );
     };
 
     const unsubTrades = listenCol('trades', 'trades', 'phudit_trades');

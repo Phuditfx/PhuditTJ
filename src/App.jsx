@@ -247,11 +247,11 @@ export default function App() {
     tp3: ''
   });
 
-  const initialBalance = initialBalances[accountId] || 10000;
+  const initialBalance = initialBalances[accountId] ?? 10000;
 
   // บันทึกและซิงค์เงินตั้งต้นลง LocalStorage
   const setInitialBalance = (newBalance) => {
-    const updatedBalances = { ...initialBalances, [accountId]: parseFloat(newBalance) || 0 };
+    const updatedBalances = { ...initialBalances, [accountId]: parseFloat(newBalance) ?? 0 };
     setInitialBalances(updatedBalances);
     saveInitialBalance(currentUser, updatedBalances);
   };
@@ -1048,7 +1048,7 @@ export default function App() {
               {accounts.map(acc => {
                 const accTrades = trades.filter(t => (t.accountId || 'default') === acc.id && t.status === 'Closed');
                 const accPnL = accTrades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
-                const accBalance = (initialBalances[acc.id] || 10000);
+                const accBalance = (initialBalances[acc.id] ?? 10000);
                 const isEditing = editingAccountId === acc.id;
                 const isEditingBal = editingBalanceId === acc.id;
                 const isActive = accountId === acc.id;
