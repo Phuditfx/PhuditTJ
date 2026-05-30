@@ -406,6 +406,7 @@ export default function App() {
 
   // จัดการ Feed Posts (Global)
   const handleSaveFeedPost = (newPost) => {
+    setFeedPosts(prev => [newPost, ...prev]); // Optimistic update
     addGlobalFeedPost(newPost);
   };
 
