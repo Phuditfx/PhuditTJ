@@ -393,7 +393,9 @@ export const getAllUsersData = async () => {
                 if (f.type === 'withdraw') fundingTotal -= amt;
             });
             
-            const initialBal = user.initialBalances?.['default'] || 10000;
+            const initialBal = user.initialBalances?.['default'] !== undefined 
+                ? Number(user.initialBalances['default']) 
+                : 10000;
             const currentBal = initialBal + fundingTotal + netPnL;
 
             return {
