@@ -1391,7 +1391,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               )}
             </div>
             {/* 🖥️ Desktop Cards Grid View (visible >= md) */}
-            <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
               {filteredTrades.length === 0 ? (
                 <div className="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 font-semibold italic bg-white dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-800/80">
                   {t('journal.noTradesFilter')}
