@@ -283,7 +283,16 @@ export const subscribeToUserData = (email, callback) => {
             return () => {}; // empty unsubscribe
         }
     };
+    // Trigger Migration if needed
+    migrateDataToSubcollections(cleanEmail);
 
+    return () => {
+        unsubUser();
+        if (unsubTrades) unsubTrades();
+        if (unsubPlans) unsubPlans();
+        if (unsubFeed) unsubFeed();
+        if (unsubDivs) unsubDivs();
+        if (unsubFunding) unsubFunding();
     };
 };
 
