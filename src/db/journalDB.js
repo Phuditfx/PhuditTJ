@@ -196,6 +196,8 @@ export const subscribeToUserData = (email, callback) => {
     // 2. Listen to Subcollections
     const listenCol = (colName, stateKey, oldLocalKey) => {
         let isFirstLoad = true;
+        let recoveredItems = null;
+
         return onSnapshot(collection(db, 'users', cleanEmail, colName), (snapshot) => {
             const items = [];
             snapshot.forEach(doc => items.push(doc.data()));
@@ -209,7 +211,8 @@ export const subscribeToUserData = (email, callback) => {
                         const parsed = JSON.parse(localData);
                         if (parsed && Array.isArray(parsed) && parsed.length > 0) {
                             console.log(`Recovering ${colName} from LocalStorage...`);
-                            // Write to the new Subcollection. This will trigger onSnapshot again.
+                            recoveredItems = parsed;
+                            // Write to the new Subcollection in the background
                             syncArrayToSubcollection(cleanEmail, colName, parsed);
                         }
                     }
@@ -218,6 +221,11 @@ export const subscribeToUserData = (email, callback) => {
                 }
             }
             isFirstLoad = false;
+
+            // Prevent empty server snapshots from hiding the data before sync finishes
+            if (items.length === 0 && recoveredItems) {
+                items.push(...recoveredItems);
+            }
 
             // Sort items descending by ID or timestamp if possible
             if (stateKey === 'trades' || stateKey === 'feedPosts') {
