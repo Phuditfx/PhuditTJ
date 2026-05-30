@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { ImagePlus, X, Plus, Send, Clock, UserCircle2, Loader2 } from 'lucide-react';
-import { storage } from '../firebaseConfig';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
   const [postTitle, setPostTitle] = useState('');
@@ -92,30 +90,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
         for (const b of blocks) {
             let uploadedUrl = null;
             
-            if (b.base64 && currentUser) {
-                try {
-                  const cleanEmail = currentUser.trim().toLowerCase();
-                  const imagePath = `users/${cleanEmail}/feed_images/${Date.now()}_${b.id}.jpg`;
-                  const storageRef = ref(storage, imagePath);
-                  
-                  // สร้าง Timeout Promise เพื่อป้องกันการโหลดค้าง (Spinning endlessly)
-                  const uploadTask = async () => {
-                    await uploadString(storageRef, b.base64, 'data_url');
-                    return await getDownloadURL(storageRef);
-                  };
-                  
-                  const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Upload timeout')), 10000) // 10 วินาที Timeout
-                  );
-                  
-                  uploadedUrl = await Promise.race([uploadTask(), timeoutPromise]);
-                } catch (uploadError) {
-                  console.warn("Firebase Storage upload failed or timed out, falling back to base64 saving:", uploadError);
-                  // ถ้า Upload รูปขึ้น Storage ไม่สำเร็จ ให้ใช้ Base64 (ที่ถูกบีบอัดแล้ว) เซฟลง Firestore แทน
-                  uploadedUrl = b.base64; 
-                }
-            } else if (b.base64) {
-                // กรณีไม่มี currentUser หรือ error อื่นๆ
+            if (b.base64) {
                 uploadedUrl = b.base64;
             }
             

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { auth } from './firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
+import { supabase } from './supabaseClient';
 import { 
   saveTrades, 
   saveInitialBalance, 
@@ -40,15 +39,25 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user.email);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser(session.user.email);
       } else {
         setCurrentUser(null);
       }
       setAuthReady(true);
     });
-    return () => unsubscribe();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user.email);
+      } else {
+        setCurrentUser(null);
+      }
+      setAuthReady(true);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogin = (email, rememberMe) => {

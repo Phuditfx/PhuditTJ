@@ -1,8 +1,5 @@
-import { db, auth } from '../firebaseConfig';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc, onSnapshot, writeBatch, deleteField } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { supabase } from '../supabaseClient';
 
-// ตารางยศและข้อจำกัดของพอร์ต
 export const RANK_SYSTEM = [
     { level: 1, name: "🌱 Novice", minPort: 100, risk1: 1, maxRisk: 2, maxAlloc: 100 },
     { level: 2, name: "🌿 Rookie", minPort: 300, risk1: 3, maxRisk: 6, maxAlloc: 100 },
@@ -21,168 +18,81 @@ export const RANK_SYSTEM = [
     { level: 15, name: "♾️ Immortal", minPort: 2000000, risk1: 10000, maxRisk: 20000, maxAlloc: 5 }
 ];
 
-// ==========================================
-// MIGRATION SCRIPT (Runs once on login)
-// ==========================================
-export const migrateDataToSubcollections = async (email) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) return;
-        
-        const data = snap.data();
-        const arraysToMigrate = ['trades', 'plans', 'feedPosts', 'dividends', 'fundingHistory'];
-        let needsMigration = false;
-        
-        for (const key of arraysToMigrate) {
-            if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
-                needsMigration = true;
-                break;
-            }
-        }
-        
-        if (!needsMigration) return;
-        
-        console.log("Migrating legacy array data to Subcollections...");
-        let batch = writeBatch(db);
-        let opCount = 0;
-        
-        for (const key of arraysToMigrate) {
-            if (data[key] && Array.isArray(data[key])) {
-                for (const item of data[key]) {
-                    const itemId = item.id ? String(item.id) : Date.now().toString() + Math.random().toString();
-                    const itemRef = doc(db, 'users', cleanEmail, key, itemId);
-                    batch.set(itemRef, { ...item, id: itemId });
-                    opCount++;
-                    
-                    if (opCount >= 450) {
-                        await batch.commit();
-                        batch = writeBatch(db);
-                        opCount = 0;
-                    }
-                }
-            }
-        }
-        
-        if (opCount > 0) await batch.commit();
-        
-        // Delete old arrays from the main document to free up the 1MB limit
-        const updates = {};
-        arraysToMigrate.forEach(key => {
-            if (data[key] !== undefined) updates[key] = deleteField();
-        });
-        
-        if (Object.keys(updates).length > 0) {
-            await updateDoc(userRef, updates);
-        }
-        console.log("Migration Complete.");
-    } catch (error) {
-        console.error("Migration Failed:", error);
-    }
-};
+// No longer needed in Supabase as data is structured properly, but kept for compatibility
+export const migrateDataToSubcollections = async () => {};
 
 // ==========================================
-// SUBCOLLECTION SYNC LOGIC
+// DB SYNC LOGIC
 // ==========================================
-const syncArrayToSubcollection = async (email, colName, itemsArray) => {
+const syncArrayToTable = async (email, tableName, itemsArray) => {
     if (!email) return;
     const cleanEmail = email.trim().toLowerCase();
     
     // Fallback Local Storage
     try {
-        localStorage.setItem(`phudit_${colName}_${cleanEmail}`, JSON.stringify(itemsArray));
+        localStorage.setItem(`phudit_${tableName}_${cleanEmail}`, JSON.stringify(itemsArray));
     } catch (e) {}
 
     try {
-        const colRef = collection(db, 'users', cleanEmail, colName);
-        const snapshot = await getDocs(colRef);
-        
-        const existingIds = new Set();
-        snapshot.forEach(doc => existingIds.add(doc.id));
-        
+        const { data: existingData } = await supabase.from(tableName).select('id').eq('email', cleanEmail);
+        const existingIds = new Set(existingData?.map(d => d.id) || []);
         const newIds = new Set();
         
-        let batch = writeBatch(db);
-        let opCount = 0;
-        
-        const commitBatch = async () => {
-            if (opCount > 0) {
-                await batch.commit();
-                batch = writeBatch(db);
-                opCount = 0;
-            }
-        };
-
-        for (const item of itemsArray) {
+        const upsertPromises = itemsArray.map(item => {
             const itemId = item.id ? String(item.id) : Date.now().toString() + Math.random().toString();
             newIds.add(itemId);
             
             const cleanItem = { ...item };
-            
-            // Clean up huge base64 from old feed posts to prevent Firestore payload size limit errors
-            if (colName === 'feedPosts' && cleanItem.blocks) {
+            if (tableName === 'feed_posts' && cleanItem.blocks) {
                 cleanItem.blocks = cleanItem.blocks.map(b => {
                     const nb = { ...b };
-                    if (nb.base64 && nb.base64.length > 800000) { // Strip out massive base64
-                        delete nb.base64;
-                    }
+                    if (nb.base64 && nb.base64.length > 800000) delete nb.base64;
                     return nb;
                 });
             }
-            
-            const docRef = doc(db, 'users', cleanEmail, colName, itemId);
-            batch.set(docRef, { ...cleanItem, id: itemId });
-            opCount++;
-            if (opCount >= 450) await commitBatch();
-        }
+            return supabase.from(tableName).upsert({ id: itemId, email: cleanEmail, data: cleanItem });
+        });
+
+        await Promise.all(upsertPromises);
         
-        for (const id of existingIds) {
-            if (!newIds.has(id)) {
-                const docRef = doc(db, 'users', cleanEmail, colName, id);
-                batch.delete(docRef);
-                opCount++;
-                if (opCount >= 450) await commitBatch();
-            }
+        // Delete items removed from array
+        const idsToDelete = [...existingIds].filter(id => !newIds.has(id));
+        if (idsToDelete.length > 0) {
+            await supabase.from(tableName).delete().in('id', idsToDelete);
         }
-        
-        await commitBatch();
     } catch (e) {
-        console.error(`Error syncing ${colName}:`, e);
+        console.error(`Error syncing ${tableName}:`, e);
     }
 };
 
-export const saveTrades = (email, items) => syncArrayToSubcollection(email, 'trades', items);
-export const savePlans = (email, items) => syncArrayToSubcollection(email, 'plans', items);
-export const saveFeedPosts = (email, items) => syncArrayToSubcollection(email, 'feedPosts', items);
-export const saveDividends = (email, items) => syncArrayToSubcollection(email, 'dividends', items);
-export const saveFundingHistory = (email, items) => syncArrayToSubcollection(email, 'fundingHistory', items);
+export const saveTrades = (email, items) => syncArrayToTable(email, 'trades', items);
+export const savePlans = (email, items) => syncArrayToTable(email, 'plans', items);
+export const saveFeedPosts = (email, items) => syncArrayToTable(email, 'feed_posts', items);
+export const saveDividends = (email, items) => syncArrayToTable(email, 'dividends', items);
+export const saveFundingHistory = (email, items) => syncArrayToTable(email, 'funding_history', items);
 
 // ==========================================
 // GLOBAL FEED POSTS
 // ==========================================
 export const subscribeToGlobalFeed = (callback) => {
-    return onSnapshot(
-        collection(db, 'globalFeedPosts'),
-        (snapshot) => {
-            const items = [];
-            snapshot.forEach(doc => items.push(doc.data()));
-            items.sort((a, b) => {
-                const idA = a.id ? a.id.toString() : '';
-                const idB = b.id ? b.id.toString() : '';
-                return idB.localeCompare(idA);
-            });
-            callback(items);
-        },
-        (error) => console.error("Error subscribing to global feed:", error)
-    );
+    const fetchPosts = async () => {
+        const { data } = await supabase.from('global_feed_posts').select('data').order('created_at', { ascending: false });
+        if (data) callback(data.map(d => d.data));
+    };
+    fetchPosts();
+
+    const channel = supabase.channel('global_feed_posts_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'global_feed_posts' }, payload => {
+            fetchPosts();
+        })
+        .subscribe();
+
+    return () => supabase.removeChannel(channel);
 };
 
 export const addGlobalFeedPost = async (post) => {
     try {
-        await setDoc(doc(db, 'globalFeedPosts', post.id), post);
+        await supabase.from('global_feed_posts').upsert({ id: post.id, data: post });
     } catch (e) {
         console.error("Error adding global feed post:", e);
     }
@@ -195,7 +105,6 @@ export const subscribeToUserData = (email, callback) => {
     if (!email) return () => {};
     const cleanEmail = email.trim().toLowerCase();
     
-    // Initial State
     const state = {
         trades: [],
         plans: [],
@@ -206,7 +115,7 @@ export const subscribeToUserData = (email, callback) => {
         profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal' },
         accounts: [{ id: 'default', name: 'Main Account' }],
         isVip: false,
-        status: 'approved'
+        status: 'approved' // default to approved for migration
     };
 
     let isNotifying = false;
@@ -216,137 +125,79 @@ export const subscribeToUserData = (email, callback) => {
         setTimeout(() => {
             callback({ ...state });
             isNotifying = false;
-        }, 100); // Debounce to prevent multiple re-renders
+        }, 100);
     };
 
-    let unsubTrades = null;
-    let unsubPlans = null;
-    let unsubDivs = null;
-    let unsubFunding = null;
-
-    let hasInitializedSubcollections = false;
-
-    // 1. Listen to Main Document (Configs)
-    const unsubUser = onSnapshot(doc(db, 'users', cleanEmail), (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+    const fetchConfig = async () => {
+        const { data } = await supabase.from('users').select('*').eq('email', cleanEmail).single();
+        if (data) {
             state.initialBalances = data.initialBalances || { 'default': 10000 };
             state.targetRR = data.targetRR !== undefined ? data.targetRR : 20;
             state.profile = { ...state.profile, ...data.profile };
             state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
             state.isVip = data.isVip || false;
             state.status = data.status || 'approved';
+            notify();
+        } else {
+             // User document might not exist if just signed up, let's create it
+             await supabase.from('users').upsert({
+                email: cleanEmail,
+                profile: state.profile,
+                initialBalances: state.initialBalances,
+                targetRR: state.targetRR,
+                accounts: state.accounts,
+                status: 'approved',
+                isVip: false
+            });
+            notify();
         }
-        
-        if (!hasInitializedSubcollections) {
-            hasInitializedSubcollections = true;
-            unsubTrades = listenCol('trades', 'trades', 'phudit_trades', state.isVip); // VIP = realtime, Non-VIP = one-time
-            unsubPlans = listenCol('plans', 'plans', 'phudit_plans', true);
-            unsubDivs = listenCol('dividends', 'dividends', 'phudit_dividends', true);
-            unsubFunding = listenCol('fundingHistory', 'fundingHistory', 'phudit_funding', true);
-        }
-        notify();
-    });
+    };
 
-    // 2. Listen to Subcollections (Realtime vs One-time)
-    const listenCol = (colName, stateKey, oldLocalKey, isRealtime) => {
-        let isFirstLoad = true;
-        let recoveredItems = null;
-
-        // PRE-LOAD LOCAL STORAGE SYNCHRONOUSLY
-        try {
-            let localData = localStorage.getItem(`phudit_${colName}_${cleanEmail}`);
-            if (!localData) {
-                localData = localStorage.getItem(`${oldLocalKey}_${cleanEmail}`);
-            }
-            if (localData) {
-                const parsed = JSON.parse(localData);
-                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                    recoveredItems = parsed;
-                    state[stateKey] = parsed; // Populate immediately
-                }
-            }
-        } catch(e) {}
-
-        const handleData = (items) => {
-            if (isFirstLoad && items.length === 0 && recoveredItems) {
-                console.log(`Recovering ${colName} from LocalStorage...`);
-                syncArrayToSubcollection(cleanEmail, colName, recoveredItems);
-            }
-            isFirstLoad = false;
-
-            if (items.length === 0 && recoveredItems) {
-                items.push(...recoveredItems);
-            }
-
+    const fetchSubData = async (tableName, stateKey) => {
+        const { data } = await supabase.from(tableName).select('data').eq('email', cleanEmail);
+        if (data) {
+            let items = data.map(d => d.data);
             if (stateKey === 'trades' || stateKey === 'feedPosts') {
-                 items.sort((a, b) => {
+                items.sort((a, b) => {
                     const idA = a.id ? a.id.toString() : '';
                     const idB = b.id ? b.id.toString() : '';
                     return idB.localeCompare(idA);
-                 });
+                });
             }
             state[stateKey] = items;
             notify();
-        };
-
-        if (isRealtime) {
-            return onSnapshot(
-                collection(db, 'users', cleanEmail, colName), 
-                (snapshot) => {
-                    const items = [];
-                    snapshot.forEach(doc => items.push(doc.data()));
-                    handleData(items);
-                },
-                (error) => {
-                    console.error(`Error listening to ${colName}:`, error);
-                    if (recoveredItems) {
-                        state[stateKey] = recoveredItems;
-                        notify();
-                    }
-                }
-            );
-        } else {
-            // ONE-TIME FETCH (For Non-VIPs)
-            import('firebase/firestore').then(({ getDocs, collection }) => {
-                getDocs(collection(db, 'users', cleanEmail, colName)).then(snapshot => {
-                    const items = [];
-                    snapshot.forEach(doc => items.push(doc.data()));
-                    handleData(items);
-                }).catch(error => {
-                    console.error(`Error fetching ${colName}:`, error);
-                    if (recoveredItems) {
-                        state[stateKey] = recoveredItems;
-                        notify();
-                    }
-                });
-            });
-            return () => {}; // empty unsubscribe
         }
     };
-    // Trigger Migration if needed
-    migrateDataToSubcollections(cleanEmail);
 
-    return () => {
-        unsubUser();
-        if (unsubTrades) unsubTrades();
-        if (unsubPlans) unsubPlans();
-        if (unsubFeed) unsubFeed();
-        if (unsubDivs) unsubDivs();
-        if (unsubFunding) unsubFunding();
+    const loadAll = async () => {
+        await fetchConfig();
+        await fetchSubData('trades', 'trades');
+        await fetchSubData('plans', 'plans');
+        await fetchSubData('dividends', 'dividends');
+        await fetchSubData('funding_history', 'fundingHistory');
     };
+
+    loadAll();
+
+    // Setup Realtime for this user's data
+    const channel = supabase.channel(`user_data_${cleanEmail}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users', filter: `email=eq.${cleanEmail}` }, () => fetchConfig())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trades', filter: `email=eq.${cleanEmail}` }, () => fetchSubData('trades', 'trades'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'plans', filter: `email=eq.${cleanEmail}` }, () => fetchSubData('plans', 'plans'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'dividends', filter: `email=eq.${cleanEmail}` }, () => fetchSubData('dividends', 'dividends'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'funding_history', filter: `email=eq.${cleanEmail}` }, () => fetchSubData('funding_history', 'fundingHistory'))
+        .subscribe();
+
+    return () => supabase.removeChannel(channel);
 };
 
-
 // ==========================================
-// CONFIGURATIONS (Saved to Main Document)
+// CONFIGURATIONS
 // ==========================================
 const updateMainDoc = async (email, data) => {
     if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
     try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, data, { merge: true });
+        await supabase.from('users').update(data).eq('email', email.trim().toLowerCase());
     } catch (e) {}
 };
 
@@ -370,12 +221,7 @@ export const saveAccounts = (email, accounts) => {
     try { localStorage.setItem(`phudit_accounts_${email.toLowerCase()}`, JSON.stringify(accounts)); } catch (e) {}
 };
 
-// ==========================================
-// STORAGE CALCULATION
-// ==========================================
 export const calculateStorageUsage = async (email) => {
-    // With Subcollections and Firebase Storage, the 1MB Firestore limit is no longer an issue!
-    // This function can now return 0 or calculate the local storage usage as a metric.
     if (!email) return 0;
     try {
         let total = 0;
@@ -396,59 +242,65 @@ export const calculateStorageUsage = async (email) => {
 // ==========================================
 export const checkUserExists = async (email) => {
     if (!email) return false;
-    try {
-        const cleanEmail = email.trim().toLowerCase();
-        const docRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(docRef);
-        return docSnap.exists();
-    } catch (e) {
-        console.error("Error checking user:", e);
-        return false;
-    }
+    const { data } = await supabase.from('users').select('email').eq('email', email.trim().toLowerCase()).single();
+    return !!data;
 };
 
 export const loginUser = async (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+    // Attempt login. If migrated user but no Auth account yet, fallback to signup.
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error && error.message.includes('Invalid login credentials')) {
+        // Try creating account on the fly if it's a migrated user
+        const exists = await checkUserExists(email);
+        if (exists) {
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+            if (signUpError) throw signUpError;
+            return signUpData.user;
+        }
+        throw error;
+    }
+    return data.user;
 };
 
 export const verifyUser = async (email, password) => {
     if (!email || !password) return { success: false, error: 'Email and password are required' };
     try {
         const cleanEmail = email.trim().toLowerCase();
-        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
-        const user = userCredential.user;
+        let user;
+        const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         
-        // ตรวจสอบสถานะการอนุมัติจากแอดมินใน Firestore
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            const userData = docSnap.data();
-            if (userData.status === 'pending') {
-                alert('⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ (Admin) กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน');
-                await signOut(auth);
-                return {
-                    success: false,
-                    error: '⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ (Admin) กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน'
-                };
-            }
+        if (error) {
+             const exists = await checkUserExists(cleanEmail);
+             if (exists && error.message.includes('Invalid login credentials')) {
+                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: cleanEmail, password });
+                 if (signUpError) return { success: false, error: signUpError.message };
+                 user = signUpData.user;
+             } else {
+                 return { success: false, error: error.message };
+             }
+        } else {
+            user = data.user;
+        }
+        
+        const { data: userData } = await supabase.from('users').select('status').eq('email', cleanEmail).single();
+        if (userData && userData.status === 'pending') {
+            await supabase.auth.signOut();
+            return { success: false, error: '⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ' };
         }
         
         return { success: true, user: user };
     } catch (error) {
-        let msg = error.message;
-        if (error.code === 'auth/invalid-credential') msg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-        return { success: false, error: msg };
+        return { success: false, error: error.message };
     }
 };
 
 export const registerUser = async (email, password, displayName) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
     
     const finalDisplayName = displayName || email.split('@')[0];
-    
-    // Default initial data structure
-    await setDoc(doc(db, 'users', email.trim().toLowerCase()), {
+    await supabase.from('users').upsert({
+        email: email.trim().toLowerCase(),
         profile: { name: finalDisplayName, photo: '', fontSize: 'normal' },
         initialBalances: { 'default': 10000 },
         targetRR: 20,
@@ -457,97 +309,61 @@ export const registerUser = async (email, password, displayName) => {
         isVip: false
     });
     
-    await signOut(auth);
-    return user;
+    await supabase.auth.signOut();
+    return data.user;
 };
 
-export const logoutUser = () => signOut(auth);
-export const resetPassword = (email) => sendPasswordResetEmail(auth, email);
+export const logoutUser = () => supabase.auth.signOut();
+export const resetPassword = (email) => supabase.auth.resetPasswordForEmail(email);
 
 export const getUserStatus = async (email) => {
     if (!email) return 'unauthorized';
-    if (email === 'phudit.mahawongsanan@gmail.com') return 'approved'; // Owner
-    
-    try {
-        const userRef = doc(db, 'users', email.trim().toLowerCase());
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-            return snap.data().status || 'pending';
-        }
-    } catch (e) {}
-    return 'pending';
+    if (email === 'phudit.mahawongsanan@gmail.com') return 'approved';
+    const { data } = await supabase.from('users').select('status').eq('email', email.trim().toLowerCase()).single();
+    return data?.status || 'pending';
 };
 
 export const getUserVipStatus = async (email) => {
     if (!email) return false;
-    if (email === 'phudit.mahawongsanan@gmail.com') return true; // Owner is always VIP
-    
-    try {
-        const userRef = doc(db, 'users', email.trim().toLowerCase());
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-            return snap.data().isVip || false;
-        }
-    } catch (e) {}
-    return false;
+    if (email === 'phudit.mahawongsanan@gmail.com') return true;
+    const { data } = await supabase.from('users').select('isVip').eq('email', email.trim().toLowerCase()).single();
+    return data?.isVip || false;
 };
 
 export const approveUser = async (email) => {
-    const userRef = doc(db, 'users', email.toLowerCase());
-    await updateDoc(userRef, { status: 'approved' });
+    await supabase.from('users').update({ status: 'approved' }).eq('email', email.toLowerCase());
 };
 
 export const deleteUser = async (email) => {
     if (!email) return;
-    try {
-        const cleanEmail = email.trim().toLowerCase();
-        await deleteDoc(doc(db, 'users', cleanEmail));
-    } catch (e) {
-        console.error("Error deleting user:", e);
-    }
+    await supabase.from('users').delete().eq('email', email.trim().toLowerCase());
 };
 
 export const toggleUserVip = async (email, isVip) => {
     if (!email) return;
-    try {
-        const cleanEmail = email.trim().toLowerCase();
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { isVip }, { merge: true });
-    } catch (e) {
-        console.error("Error toggling VIP:", e);
-    }
+    await supabase.from('users').update({ isVip }).eq('email', email.trim().toLowerCase());
 };
 
 export const getAllUsersData = async () => {
     try {
-        const usersCol = collection(db, 'users');
-        const userSnapshot = await getDocs(usersCol);
-        const users = [];
+        const { data: users } = await supabase.from('users').select('*');
+        if (!users) return [];
         
-        userSnapshot.forEach((doc) => {
-            const data = doc.data();
-            // Fallbacks for data that might have moved to subcollections
-            const initBal = data.initialBalance || 10000;
-            
-            users.push({
-                email: data.email || doc.id,
-                status: data.status || 'approved',
-                isVip: data.isVip || false,
-                createdAt: data.createdAt || new Date().toISOString(),
-                tradesCount: data.trades ? data.trades.length : 0, // Migrated users will show 0 here unfortunately unless we fetch subcollections
-                currentBal: initBal, // Can't accurately calc without fetching trades subcollection
-                netPnL: 0
-            });
-        });
-        
-        return users;
+        return users.map(data => ({
+            email: data.email,
+            status: data.status || 'approved',
+            isVip: data.isVip || false,
+            createdAt: data.created_at,
+            tradesCount: 0, 
+            currentBal: 10000, 
+            netPnL: 0
+        }));
     } catch (e) {
-        console.error("Error fetching all users:", e);
         return [];
     }
 };
 
-// ฟังก์ชันจำลอง AI ในการวิเคราะห์คุณภาพการเทรด (⚡ AI Assess)
+// AI Assessment (Logic remains unchanged)
 export const simulateAIAssessment = (trade) => {
     const entry = parseFloat(trade.entryPrice);
     const sl = parseFloat(trade.stopLoss);
@@ -559,7 +375,6 @@ export const simulateAIAssessment = (trade) => {
     const setup = trade.setupName || 'ไม่ได้ระบุท่าเทรด';
     const mood = trade.entryMood || 'ไม่ได้ระบุอารมณ์';
 
-    // คำนวณความเบี่ยงเบนและประสิทธิภาพ
     let isWin = false;
     if (dir === 'Long') {
         isWin = exit > entry;
@@ -573,7 +388,6 @@ export const simulateAIAssessment = (trade) => {
         calculatedRR = dir === 'Long' ? (exit - entry) / gap : (entry - exit) / gap;
     }
 
-    // คิดคะแนน AI Score (1-10) จากปัจจัยต่างๆ
     let aiScore = 5;
     let feedback = "";
 
@@ -593,12 +407,10 @@ export const simulateAIAssessment = (trade) => {
         aiScore += 1;
         if (calculatedRR >= 2) aiScore += 1;
     } else {
-        if (Math.abs(calculatedRR) > 1.2) aiScore -= 1; // ขาดทุนเกินจุด SL
+        if (Math.abs(calculatedRR) > 1.2) aiScore -= 1;
     }
 
-    // จำกัดขอบเขตคะแนน 1-10
     aiScore = Math.max(1, Math.min(10, aiScore));
-    // สร้าง Feedback ภาษาไทยตามเงื่อนไขใหม่ที่ผูกกับ Mood และ Setup
     let contextStr = `\n[ ท่าเทรด: ${setup} | อารมณ์: ${mood} ]\n`;
 
     if (scorePlan === 100) {
