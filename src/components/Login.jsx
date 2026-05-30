@@ -76,10 +76,11 @@ export default function Login({ onLogin }) {
         style={{ backgroundImage: "url('/PDTJ.jpg')" }}
       />
       {/* Dark/Light Overlay to ensure text readability */}
-      <div className="absolute inset-0 z-0 bg-white/70 dark:bg-slate-950/80 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 z-0 bg-white/70 dark:bg-slate-950/80 backdrop-blur-md" />
 
-      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 p-8 rounded-2xl shadow-2xl max-w-sm w-full glow-card-indigo animate-fade-in relative z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-white/50 dark:border-slate-800/50 p-8 rounded-3xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden ring-1 ring-indigo-500/10">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="text-center mb-8 relative z-10">
           <div className="mx-auto flex items-center justify-center mb-4">
@@ -101,18 +102,18 @@ export default function Login({ onLogin }) {
           <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-1">Phudit Trade Journal</p>
         </div>
 
-        <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl mb-6 relative z-10">
+        <div className="flex bg-slate-200/50 dark:bg-slate-950/50 p-1 rounded-xl mb-6 relative z-10 backdrop-blur-sm border border-white/20 dark:border-slate-800/30">
           <button
             type="button"
             onClick={() => { setActiveTab('login'); setIsResettingPassword(false); setError(''); setSuccessMsg(''); }}
-            className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${activeTab === 'login' && !isResettingPassword ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer'}`}
+            className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${activeTab === 'login' && !isResettingPassword ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400 scale-100' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer scale-95'}`}
           >
             Login
           </button>
           <button
             type="button"
             onClick={() => { setActiveTab('register'); setIsResettingPassword(false); setError(''); setSuccessMsg(''); }}
-            className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${activeTab === 'register' && !isResettingPassword ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer'}`}
+            className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${activeTab === 'register' && !isResettingPassword ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400 scale-100' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer scale-95'}`}
           >
             Register
           </button>
@@ -121,14 +122,14 @@ export default function Login({ onLogin }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 relative z-10">
           <div>
             <label className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase mb-1.5 block">Email Address</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={handleEmailChange}
-              placeholder="your@email.com"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              required
-            />
+              <input 
+                type="email" 
+                value={email}
+                onChange={handleEmailChange}
+                placeholder="your@email.com"
+                className="w-full bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800/80 rounded-xl p-3.5 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                required
+              />
           </div>
           
           {!isResettingPassword && (
@@ -149,7 +150,7 @@ export default function Login({ onLogin }) {
                   setError('');
                 }}
                 placeholder={isRegistering ? "ตั้งรหัสผ่านใหม่ (สำหรับใช้ครั้งแรก)" : "••••••••"}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800/80 rounded-xl p-3.5 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 required={!isResettingPassword}
               />
               {isRegistering && email.includes('@') && (
@@ -189,7 +190,7 @@ export default function Login({ onLogin }) {
 
           <button 
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3.5 rounded-lg transition-all shadow-lg shadow-indigo-950/40 text-sm mt-2 cursor-pointer"
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/30 text-sm mt-4 tracking-wider uppercase hover:scale-[1.02] active:scale-95 cursor-pointer"
           >
             {isResettingPassword ? "ส่งลิงก์รีเซ็ตรหัสผ่าน" : (isRegistering ? "CREATE ACCOUNT" : "LOGIN TO STATION")}
           </button>

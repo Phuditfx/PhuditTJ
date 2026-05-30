@@ -57,18 +57,25 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
 
   const handleSave = () => {
     if (!symbol) {
-      alert("กรุณากรอก SYMBOL หุ้น");
+      if (requestAlert) requestAlert("ข้อมูลไม่ครบ", "กรุณากรอก SYMBOL หุ้น");
+      else alert("กรุณากรอก SYMBOL หุ้น");
       return;
     }
     if (pEntry <= 0 || pSl <= 0) {
-      alert("กรุณากรอก Entry Price และ Stop Loss ให้ถูกต้อง");
+      if (requestAlert) requestAlert("ข้อมูลไม่ครบ", "กรุณากรอก Entry Price และ Stop Loss ให้ถูกต้อง");
+      else alert("กรุณากรอก Entry Price และ Stop Loss ให้ถูกต้อง");
       return;
     }
     if (!isDirectionValid) {
-      alert(direction === 'Long' 
-        ? "สำหรับ Long: Stop Loss ต้องอยู่ต่ำกว่าราคาเข้าซื้อ (Entry Price)" 
-        : "สำหรับ Short: Stop Loss ต้องอยู่สูงกว่าราคาเข้าซื้อ (Entry Price)"
-      );
+      if (requestAlert) {
+        requestAlert("ข้อผิดพลาดของราคา", direction === 'Long' 
+          ? "สำหรับหน้า Long: Entry Price ต้องมากกว่า Stop Loss" 
+          : "สำหรับหน้า Short: Entry Price ต้องน้อยกว่า Stop Loss");
+      } else {
+        alert(direction === 'Long' 
+          ? "สำหรับหน้า Long: Entry Price ต้องมากกว่า Stop Loss" 
+          : "สำหรับหน้า Short: Entry Price ต้องน้อยกว่า Stop Loss");
+      }
       return;
     }
     if (isOverBudget) {
@@ -76,7 +83,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       return;
     }
     if (actualShares <= 0) {
-      alert("กรุณาระบุจำนวนหุ้นให้มากกว่า 0");
+      if (requestAlert) requestAlert("ข้อผิดพลาด", "กรุณาระบุจำนวนหุ้นให้มากกว่า 0");
+      else alert("กรุณาระบุจำนวนหุ้นให้มากกว่า 0");
       return;
     }
 

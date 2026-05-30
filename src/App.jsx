@@ -79,6 +79,18 @@ export default function App() {
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editingBalanceValue, setEditingBalanceValue] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [promptDialog, setPromptDialog] = useState({ isOpen: false, title: '', message: '', placeholder: '', onConfirm: null });
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '' });
+
+  const requestPrompt = (title, message, placeholder, onConfirm) => {
+    setPromptDialog({ isOpen: true, title, message, placeholder, onConfirm });
+  };
+  const closePrompt = () => setPromptDialog({ isOpen: false, title: '', message: '', placeholder: '', onConfirm: null });
+
+  const requestAlert = (title, message) => {
+    setAlertDialog({ isOpen: true, title, message });
+  };
+  const closeAlert = () => setAlertDialog({ isOpen: false, title: '', message: '' });
   
   useEffect(() => {
     let isMounted = true;
@@ -96,7 +108,7 @@ export default function App() {
         }
 
         if (data.status === 'pending') {
-          alert("⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
+          requestAlert("รอการอนุมัติ", "⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณาติดต่อคุณ Phudit เพื่ออนุมัติการใช้งาน");
           logoutUser();
           return;
         }
@@ -206,7 +218,7 @@ export default function App() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 1024 * 1024) {
-        alert("⚠️ ขนาดรูปภาพเกิน 1MB! กรุณาเลือกรูปขนาดเล็กเพื่อความเร็วในการโหลดข้อมูล");
+        requestAlert("ขนาดไฟล์ใหญ่เกินไป", "⚠️ ขนาดรูปภาพเกิน 1MB! กรุณาเลือกรูปขนาดเล็กเพื่อความเร็วในการโหลดข้อมูล");
         return;
       }
       const reader = new FileReader();
@@ -484,7 +496,7 @@ export default function App() {
 
   const handleDeleteAccount = (idToDelete) => {
     if (accounts.length <= 1) {
-      alert(t('common.cannotDeleteLastAccount', 'Cannot delete the last remaining account.'));
+      requestAlert("ไม่สามารถลบได้", t('common.cannotDeleteLastAccount', 'Cannot delete the last remaining account.'));
       return;
     }
     if (window.confirm(t('common.confirmDeleteAccount', 'Are you sure you want to delete this account? All trades inside it will be permanently deleted!'))) {
@@ -582,14 +594,17 @@ export default function App() {
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 ml-2">
-            <button onClick={toggleLanguage} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm" title={language === 'en' ? 'Switch to Thai' : 'Switch to English'}>
-              {language === 'en' ? '🇹🇭' : '🇬🇧'}
+            <button onClick={toggleLanguage} className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm text-xs font-black text-slate-700 dark:text-slate-300" title={language === 'en' ? 'Switch to Thai' : 'Switch to English'}>
+              {language === 'en' ? 'TH' : 'EN'}
             </button>
             <button onClick={toggleTheme} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm" title="Toggle Theme">
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <button onClick={handleLogout} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/40 text-rose-500 transition-colors shadow-sm" title="Logout">
-              🚪
+            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-800/80 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all shadow-sm text-xs font-bold" title="Logout">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+              </svg>
+              Logout
             </button>
           </div>
         </div>
@@ -661,6 +676,8 @@ export default function App() {
                   saveFundingHistory(currentUser, newHistory);
                 }}
                 onLoadSampleData={handleLoadSampleData}
+                requestPrompt={requestPrompt}
+                requestAlert={requestAlert}
               />
             )}
             
@@ -674,6 +691,8 @@ export default function App() {
                 onDeleteTradesByMonth={handleDeleteTradesByMonth}
                 onImportTrades={handleImportTrades}
                 requestConfirm={requestConfirm}
+                requestPrompt={requestPrompt}
+                requestAlert={requestAlert}
                 plans={plans}
                 isVip={isVip}
               />
@@ -686,6 +705,7 @@ export default function App() {
                 sharedOrder={sharedOrder}
                 setSharedOrder={setSharedOrder}
                 isVip={isVip}
+                requestAlert={requestAlert}
               />
             </div>
             {activeTab === 'calendar' && <CalendarView trades={trades} />}
@@ -694,6 +714,8 @@ export default function App() {
                 plans={plans}
                 onSavePlan={handleSavePlan}
                 onDeletePlan={handleDeletePlan}
+                requestConfirm={requestConfirm}
+                requestAlert={requestAlert}
               />
             )}
             {activeTab === 'dividends' && (
@@ -701,10 +723,16 @@ export default function App() {
                 dividends={dividends}
                 onSaveDividend={handleSaveDividend}
                 onDeleteDividend={handleDeleteDividend}
+                requestConfirm={requestConfirm}
+                requestAlert={requestAlert}
               />
             )}
             {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
-              <OwnerDashboard currentUser={currentUser} />
+              <OwnerDashboard 
+                currentUser={currentUser} 
+                requestConfirm={requestConfirm}
+                requestAlert={requestAlert}
+              />
             )}
           </div>
         </div>
@@ -719,6 +747,7 @@ export default function App() {
             setSharedOrder={setSharedOrder}
             activeTab={activeTab}
             plans={plans}
+            requestAlert={requestAlert}
           />
           
           {/* ข้อมูลคำเตือนเล็กๆ ท้ายบอร์ด */}
@@ -1047,20 +1076,32 @@ export default function App() {
                             <div className="flex gap-1">
                               <button 
                                 onClick={() => {
-                                  const amount = window.prompt(`Enter deposit amount for ${acc.name}:`);
-                                  if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                                    handleUpdateInitialBalance(acc.id, accBalance + parseFloat(amount));
-                                  }
+                                  requestPrompt(
+                                    "ฝากเงิน (Deposit)", 
+                                    `กรุณาระบุจำนวนเงินที่ต้องการฝากเข้าบัญชี ${acc.name}`,
+                                    "เช่น 1000",
+                                    (amount) => {
+                                      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                                        handleUpdateInitialBalance(acc.id, accBalance + parseFloat(amount));
+                                      }
+                                    }
+                                  );
                                 }}
                                 className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer"
                                 title="Deposit"
                               >+</button>
                               <button 
                                 onClick={() => {
-                                  const amount = window.prompt(`Enter withdrawal amount for ${acc.name}:`);
-                                  if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                                    handleUpdateInitialBalance(acc.id, accBalance - parseFloat(amount));
-                                  }
+                                  requestPrompt(
+                                    "ถอนเงิน (Withdraw)", 
+                                    `กรุณาระบุจำนวนเงินที่ต้องการถอนจากบัญชี ${acc.name}`,
+                                    "เช่น 500",
+                                    (amount) => {
+                                      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                                        handleUpdateInitialBalance(acc.id, accBalance - parseFloat(amount));
+                                      }
+                                    }
+                                  );
                                 }}
                                 className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900 px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer"
                                 title="Withdraw"
@@ -1166,6 +1207,93 @@ export default function App() {
                 className="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-red-900/20 cursor-pointer"
               >
                 ยืนยัน (Confirm)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    {/* 💬 Global Prompt Modal */}
+      {promptDialog.isOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl flex-shrink-0 border border-indigo-200 dark:border-indigo-500/30">
+                💬
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{promptDialog.title}</h2>
+              </div>
+            </div>
+            
+            <p className="text-sm text-slate-600 dark:text-slate-400 relative z-10">
+              {promptDialog.message}
+            </p>
+            
+            <form 
+              className="relative z-10 mt-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const val = formData.get('promptValue');
+                if (promptDialog.onConfirm) promptDialog.onConfirm(val);
+                closePrompt();
+              }}
+            >
+              <input 
+                name="promptValue"
+                type="text" 
+                placeholder={promptDialog.placeholder}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                autoFocus
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <button 
+                  type="button"
+                  onClick={closePrompt}
+                  className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer"
+                >
+                  ยกเลิก (Cancel)
+                </button>
+                <button 
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-indigo-900/20 cursor-pointer"
+                >
+                  ตกลง (OK)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    {/* ℹ️ Global Alert Modal */}
+      {alertDialog.isOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl flex-shrink-0 border border-amber-200 dark:border-amber-500/30">
+                ℹ️
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{alertDialog.title || "Information"}</h2>
+              </div>
+            </div>
+            
+            <p className="text-sm text-slate-600 dark:text-slate-400 relative z-10">
+              {alertDialog.message}
+            </p>
+            
+            <div className="flex justify-end gap-3 mt-4 relative z-10">
+              <button 
+                onClick={closeAlert}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-indigo-900/20 cursor-pointer w-full"
+              >
+                รับทราบ (OK)
               </button>
             </div>
           </div>

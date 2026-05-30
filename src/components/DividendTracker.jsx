@@ -138,7 +138,9 @@ export default function DividendTracker({ dividends = [], onSaveDividend, onDele
                     <td className="py-3 px-4 text-right">
                       <button 
                         onClick={() => {
-                          if (window.confirm('Delete this dividend record?')) onDeleteDividend(div.id);
+                          if (requestConfirm) {
+                            requestConfirm("ลบข้อมูลปันผล", "Delete this dividend record?", () => onDeleteDividend(div.id));
+                          } else if (window.confirm('Delete this dividend record?')) onDeleteDividend(div.id);
                         }}
                         className="text-xs font-bold text-slate-400 hover:text-rose-500 cursor-pointer"
                       >

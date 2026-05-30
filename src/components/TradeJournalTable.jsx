@@ -808,12 +808,19 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, plans = [], isVip }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportTrades, requestConfirm, requestPrompt, requestAlert, plans = [], isVip }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
   const [livePrices, setLivePrices] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterMonth, searchSymbol, trades]);
 
   // โหลดราคาปัจจุบันของออเดอร์ที่ยังเปิดอยู่
   useEffect(() => {
@@ -955,28 +962,28 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     const file = e.target.files[0];
     if (!file) return;
 
-    if (window.confirm("⚠️ ยืนยันการอัปโหลด? ข้อมูลการเทรดปัจจุบันจะถูก 'เขียนทับ' ด้วยข้อมูลจากไฟล์ทั้งหมด!")) {
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const content = evt.target.result;
-        try {
-          if (file.name.endsWith('.json')) {
-            const importedTrades = JSON.parse(content);
-            if (Array.isArray(importedTrades)) {
-               if (onImportTrades) {
-                 onImportTrades(importedTrades);
-               }
-            } else {
-               alert("รูปแบบไฟล์ JSON ไม่ถูกต้อง");
+    if (requestConfirm) {
+      requestConfirm(
+        "ยืนยันการอัปโหลด",
+        "⚠️ ยืนยันการอัปโหลด? ข้อมูลการเทรดปัจจุบันจะถูก 'เขียนทับ' ด้วยข้อมูลจากไฟล์ทั้งหมด!",
+        () => {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              if (file.name.endsWith('.json')) {
+                const importedTrades = JSON.parse(evt.target.result);
+                if (Array.isArray(importedTrades)) {
+                  if (onImportTrades) onImportTrades(importedTrades);
+                  if (requestAlert) requestAlert("สำเร็จ", "✅ นำเข้าข้อมูลการเทรดเรียบร้อยแล้ว");
+                } else {
+                  if (requestAlert) requestAlert("ข้อผิดพลาด", "รูปแบบไฟล์ JSON ไม่ถูกต้อง");
+                }
+              } else {
+                if (requestAlert) requestAlert("ข้อผิดพลาด", "กรุณาเลือกไฟล์ Backup ที่เป็นนามสกุล .json เท่านั้นครับ");
+              }
+            } catch (err) {
+              if (requestAlert) requestAlert("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการอ่านไฟล์: " + err.message);
             }
-          } else {
-            alert("กรุณาเลือกไฟล์ Backup ที่เป็นนามสกุล .json เท่านั้นครับ");
-          }
-        } catch (err) {
-          alert("เกิดข้อผิดพลาดในการอ่านไฟล์: " + err.message);
-          console.error(err);
-        }
-      };
       reader.readAsText(file);
     }
     // reset input
@@ -997,7 +1004,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
   const handleConfirmEditOpen = () => {
     if (!editEntry || !editSL || !editTP || !editShares) {
-      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      if (requestAlert) requestAlert("ข้อมูลไม่ครบถ้วน", "กรุณากรอกข้อมูลให้ครบถ้วน");
+      else alert("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
     const updated = {
@@ -1071,7 +1079,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const handleAIAssess = () => {
     const pExit = parseFloat(exitPrice) || 0;
     if (pExit <= 0) {
-      alert("กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อนรัน AI");
+      if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อนรัน AI");
+      else alert("กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อนรัน AI");
       return;
     }
 
@@ -1108,7 +1117,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const handleConfirmClose = () => {
     const pExit = parseFloat(exitPrice) || 0;
     if (pExit <= 0) {
-      alert("กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อน");
+      if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อน");
+      else alert("กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อน");
       return;
     }
 
@@ -1124,7 +1134,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     const originalShares = parseFloat(selectedTrade.shares);
     
     if (sharesToClose <= 0 || sharesToClose > originalShares) {
-      alert("กรุณากรอกจำนวนหุ้นที่ต้องการปิดให้ถูกต้อง (ต้องไม่เกินจำนวนหุ้นที่มีอยู่)");
+      if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณากรอกจำนวนหุ้นที่ต้องการปิดให้ถูกต้อง (ต้องไม่เกินจำนวนหุ้นที่มีอยู่)");
+      else alert("กรุณากรอกจำนวนหุ้นที่ต้องการปิดให้ถูกต้อง (ต้องไม่เกินจำนวนหุ้นที่มีอยู่)");
       return;
     }
 
@@ -1337,61 +1348,130 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
         </div>
       </div>
 
-      {/* 📱 Mobile Card View (visible < md) */}
-      <div className="md:hidden flex flex-col gap-3">
-        {filteredTrades.length === 0 ? (
-          <div className="py-8 text-center text-slate-400 dark:text-slate-500 font-semibold italic">
-            {t('journal.noTradesFilter')}
-          </div>
-        ) : (
-          filteredTrades.map((trade) => {
-            const isFeedbackActive = activeFeedbackTradeId === trade.id;
-            return (
-              <TradeCard
-                key={trade.id}
-                trade={trade}
-                livePrice={livePrices[trade.symbol]}
-                isVip={isVip}
-                isFeedbackActive={isFeedbackActive}
-                setActiveFeedbackTradeId={setActiveFeedbackTradeId}
-                setChartModalTrade={setChartModalTrade}
-                handleOpenEditModal={handleOpenEditModal}
-                handleOpenCloseModal={handleOpenCloseModal}
-                requestConfirm={requestConfirm}
-                onDeleteTrade={onDeleteTrade}
-              />
-            );
-          })
-        )}
-      </div>
-      {/* 🖥️ Desktop Cards Grid View (visible >= md) */}
-      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredTrades.length === 0 ? (
-          <div className="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 font-semibold italic bg-white dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-800/80">
-            {t('journal.noTradesFilter')}
-          </div>
-        ) : (
-          filteredTrades.map((trade) => {
-            const isFeedbackActive = activeFeedbackTradeId === trade.id;
-            
-            return (
-              <DesktopTradeCard
-                key={trade.id}
-                trade={trade}
-                livePrice={livePrices[trade.symbol]}
-                isVip={isVip}
-                isFeedbackActive={isFeedbackActive}
-                setActiveFeedbackTradeId={setActiveFeedbackTradeId}
-                setChartModalTrade={setChartModalTrade}
-                handleOpenEditModal={handleOpenEditModal}
-                handleOpenCloseModal={handleOpenCloseModal}
-                requestConfirm={requestConfirm}
-                onDeleteTrade={onDeleteTrade}
-              />
-            );
-          })
-        )}
-      </div>
+      {(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        const currentTrades = filteredTrades.slice(indexOfFirstItem, indexOfLastItem);
+        const totalPages = Math.ceil(filteredTrades.length / itemsPerPage);
+
+        return (
+          <>
+            {/* 📱 Mobile Card View (visible < md) */}
+            <div className="md:hidden flex flex-col gap-3">
+              {filteredTrades.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 dark:text-slate-500 font-semibold italic">
+                  {t('journal.noTradesFilter')}
+                </div>
+              ) : (
+                currentTrades.map((trade) => {
+                  const isFeedbackActive = activeFeedbackTradeId === trade.id;
+                  return (
+                    <TradeCard
+                      key={trade.id}
+                      trade={trade}
+                      livePrice={livePrices[trade.symbol]}
+                      isVip={isVip}
+                      isFeedbackActive={isFeedbackActive}
+                      setActiveFeedbackTradeId={setActiveFeedbackTradeId}
+                      setChartModalTrade={setChartModalTrade}
+                      handleOpenEditModal={handleOpenEditModal}
+                      handleOpenCloseModal={handleOpenCloseModal}
+                      requestConfirm={requestConfirm}
+                      onDeleteTrade={onDeleteTrade}
+                    />
+                  );
+                })
+              )}
+            </div>
+            {/* 🖥️ Desktop Cards Grid View (visible >= md) */}
+            <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredTrades.length === 0 ? (
+                <div className="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 font-semibold italic bg-white dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-800/80">
+                  {t('journal.noTradesFilter')}
+                </div>
+              ) : (
+                currentTrades.map((trade) => {
+                  const isFeedbackActive = activeFeedbackTradeId === trade.id;
+                  
+                  return (
+                    <DesktopTradeCard
+                      key={trade.id}
+                      trade={trade}
+                      livePrice={livePrices[trade.symbol]}
+                      isVip={isVip}
+                      isFeedbackActive={isFeedbackActive}
+                      setActiveFeedbackTradeId={setActiveFeedbackTradeId}
+                      setChartModalTrade={setChartModalTrade}
+                      handleOpenEditModal={handleOpenEditModal}
+                      handleOpenCloseModal={handleOpenCloseModal}
+                      requestConfirm={requestConfirm}
+                      onDeleteTrade={onDeleteTrade}
+                    />
+                  );
+                })
+              )}
+            </div>
+
+            {/* Pagination Controls */}
+            {filteredTrades.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm gap-4">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
+                  <span>แสดง</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value={12}>12</option>
+                    <option value={24}>24</option>
+                    <option value={48}>48</option>
+                  </select>
+                  <span>รายการต่อหน้า</span>
+                  <span className="ml-2 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px]">
+                    ทั้งหมด {filteredTrades.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  >
+                    Prev
+                  </button>
+                  <div className="flex items-center gap-1 mx-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1).map((p, idx, arr) => {
+                      if (idx > 0 && p - arr[idx - 1] > 1) {
+                        return <span key={`ellipsis-${p}`} className="text-slate-400">...</span>;
+                      }
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-7 h-7 rounded-md text-[11px] font-bold transition-all flex items-center justify-center ${
+                            currentPage === p
+                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20'
+                              : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (

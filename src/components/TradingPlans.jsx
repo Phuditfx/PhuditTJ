@@ -84,7 +84,9 @@ export default function TradingPlans({ plans = [], onSavePlan, onDeletePlan }) {
                   <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{plan.name}</h3>
                   <button 
                     onClick={() => {
-                      if(window.confirm('Are you sure you want to delete this plan?')) {
+                      if(requestConfirm) {
+                        requestConfirm("ลบแผนการเทรด", "Are you sure you want to delete this plan?", () => onDeletePlan(plan.id));
+                      } else if(window.confirm('Are you sure you want to delete this plan?')) {
                         onDeletePlan(plan.id);
                       }
                     }}

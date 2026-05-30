@@ -22,10 +22,31 @@ export default function OwnerDashboard({ currentUser }) {
     await fetchUsers();
   };
 
-  const handleDelete = async (email) => {
-    if (window.confirm(`⚠️ คุณต้องการลบผู้ใช้ ${email} และเคลียร์ข้อมูลการเทรดทั้งหมดใน LocalStorage หรือไม่?\n(การกระทำนี้จะถูกล้างข้อมูลประวัติและข้อมูลเงินทุนทั้งหมดอย่างถาวร!)`)) {
-      await deleteUser(email);
-      await fetchUsers();
+  const handleDelete = (email) => {
+    if (requestConfirm) {
+      requestConfirm(
+        "ยืนยันการลบ",
+        `⚠️ คุณต้องการลบผู้ใช้ ${email} และเคลียร์ข้อมูลการเทรดทั้งหมดใน LocalStorage หรือไม่?\n(การกระทำนี้จะถูกล้างข้อมูลประวัติและข้อมูลเงินทุนทั้งหมดอย่างถาวร!)`,
+        async () => {
+          await deleteUser(email);
+          localStorage.removeItem(`trades_${email}`);
+          localStorage.removeItem(`initial_balance_${email}`);
+          localStorage.removeItem(`target_rr_${email}`);
+          localStorage.removeItem(`accounts_${email}`);
+          await fetchUsers();
+          if (requestAlert) requestAlert("สำเร็จ", `ลบข้อมูลของผู้ใช้ ${email} เรียบร้อยแล้ว`);
+        }
+      );
+    } else if (window.confirm(`⚠️ คุณต้องการลบผู้ใช้ ${email} และเคลียร์ข้อมูลการเทรดทั้งหมดใน LocalStorage หรือไม่?\n(การกระทำนี้จะถูกล้างข้อมูลประวัติและข้อมูลเงินทุนทั้งหมดอย่างถาวร!)`)) {
+      (async () => {
+        await deleteUser(email);
+        localStorage.removeItem(`trades_${email}`);
+        localStorage.removeItem(`initial_balance_${email}`);
+        localStorage.removeItem(`target_rr_${email}`);
+        localStorage.removeItem(`accounts_${email}`);
+        await fetchUsers();
+        alert(`ลบข้อมูลของผู้ใช้ ${email} เรียบร้อยแล้ว`);
+      })();
     }
   };
 
