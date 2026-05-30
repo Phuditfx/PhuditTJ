@@ -217,13 +217,32 @@ export default function App() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 1024 * 1024) {
-        requestAlert("ขนาดไฟล์ใหญ่เกินไป", "⚠️ ขนาดรูปภาพเกิน 1MB! กรุณาเลือกรูปขนาดเล็กเพื่อความเร็วในการโหลดข้อมูล");
-        return;
-      }
+      // เราจะทำการบีบอัดรูปโปรไฟล์อัตโนมัติ ไม่ต้องกังวลเรื่องขนาดเกิน
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setTempProfilePhoto(reader.result);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 250; // บีบอัดขนาดสำหรับโปรไฟล์ให้เล็กมากๆ
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.5 quality
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+          setTempProfilePhoto(dataUrl);
+        };
       };
       reader.readAsDataURL(file);
     }

@@ -22,7 +22,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
   };
 
   const compressImage = (file) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
@@ -30,7 +30,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
         img.src = event.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
+          const MAX_WIDTH = 600; // ลดขนาดลงเพื่อประหยัดพื้นที่ให้มากที่สุด
           let width = img.width;
           let height = img.height;
 
@@ -45,20 +45,26 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Compress to JPEG with 0.6 quality to save storage space and bandwidth
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          // Compress to JPEG with 0.4 quality to keep it very small (often < 50KB)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
           resolve(dataUrl);
         };
+        img.onerror = (err) => reject(err);
       };
+      reader.onerror = (err) => reject(err);
     });
   };
 
   const handleBlockImageChange = async (id, e) => {
     const file = e.target.files[0];
     if (file) {
-      const previewUrl = URL.createObjectURL(file);
-      const base64 = await compressImage(file);
-      setBlocks(blocks.map(b => b.id === id ? { ...b, image: file, previewUrl, base64 } : b));
+      try {
+        const previewUrl = URL.createObjectURL(file);
+        const base64 = await compressImage(file);
+        setBlocks(blocks.map(b => b.id === id ? { ...b, image: file, previewUrl, base64 } : b));
+      } catch (err) {
+        alert("ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่อีกครั้ง");
+      }
     }
   };
 
@@ -86,23 +92,37 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
         for (const b of blocks) {
             let uploadedUrl = null;
             
-            // Upload to Firebase Storage instead of saving base64 directly to database
             if (b.base64 && currentUser) {
-                const cleanEmail = currentUser.trim().toLowerCase();
-                const imagePath = `users/${cleanEmail}/feed_images/${Date.now()}_${b.id}.jpg`;
-                const storageRef = ref(storage, imagePath);
-                
-                // Upload the base64 string
-                await uploadString(storageRef, b.base64, 'data_url');
-                
-                // Get the public download URL
-                uploadedUrl = await getDownloadURL(storageRef);
+                try {
+                  const cleanEmail = currentUser.trim().toLowerCase();
+                  const imagePath = `users/${cleanEmail}/feed_images/${Date.now()}_${b.id}.jpg`;
+                  const storageRef = ref(storage, imagePath);
+                  
+                  // สร้าง Timeout Promise เพื่อป้องกันการโหลดค้าง (Spinning endlessly)
+                  const uploadTask = async () => {
+                    await uploadString(storageRef, b.base64, 'data_url');
+                    return await getDownloadURL(storageRef);
+                  };
+                  
+                  const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Upload timeout')), 10000) // 10 วินาที Timeout
+                  );
+                  
+                  uploadedUrl = await Promise.race([uploadTask(), timeoutPromise]);
+                } catch (uploadError) {
+                  console.warn("Firebase Storage upload failed or timed out, falling back to base64 saving:", uploadError);
+                  // ถ้า Upload รูปขึ้น Storage ไม่สำเร็จ ให้ใช้ Base64 (ที่ถูกบีบอัดแล้ว) เซฟลง Firestore แทน
+                  uploadedUrl = b.base64; 
+                }
+            } else if (b.base64) {
+                // กรณีไม่มี currentUser หรือ error อื่นๆ
+                uploadedUrl = b.base64;
             }
             
             processedBlocks.push({
                 id: 'b' + Date.now() + Math.random(),
                 text: b.text,
-                imageUrl: uploadedUrl // Firebase Storage URL
+                imageUrl: uploadedUrl // อาจจะเป็น Firebase Storage URL หรือ Base64 string ขนาดเล็ก
             });
         }
 
