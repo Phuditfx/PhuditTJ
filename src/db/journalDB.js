@@ -161,6 +161,34 @@ export const saveDividends = (email, items) => syncArrayToSubcollection(email, '
 export const saveFundingHistory = (email, items) => syncArrayToSubcollection(email, 'fundingHistory', items);
 
 // ==========================================
+// GLOBAL FEED POSTS
+// ==========================================
+export const subscribeToGlobalFeed = (callback) => {
+    return onSnapshot(
+        collection(db, 'globalFeedPosts'),
+        (snapshot) => {
+            const items = [];
+            snapshot.forEach(doc => items.push(doc.data()));
+            items.sort((a, b) => {
+                const idA = a.id ? a.id.toString() : '';
+                const idB = b.id ? b.id.toString() : '';
+                return idB.localeCompare(idA);
+            });
+            callback(items);
+        },
+        (error) => console.error("Error subscribing to global feed:", error)
+    );
+};
+
+export const addGlobalFeedPost = async (post) => {
+    try {
+        await setDoc(doc(db, 'globalFeedPosts', post.id), post);
+    } catch (e) {
+        console.error("Error adding global feed post:", e);
+    }
+};
+
+// ==========================================
 // REAL-TIME DATA SUBSCRIPTION
 // ==========================================
 export const subscribeToUserData = (email, callback) => {
@@ -171,7 +199,6 @@ export const subscribeToUserData = (email, callback) => {
     const state = {
         trades: [],
         plans: [],
-        feedPosts: [],
         dividends: [],
         fundingHistory: [],
         initialBalances: { 'default': 10000 },
@@ -194,7 +221,6 @@ export const subscribeToUserData = (email, callback) => {
 
     let unsubTrades = null;
     let unsubPlans = null;
-    let unsubFeed = null;
     let unsubDivs = null;
     let unsubFunding = null;
 
@@ -216,7 +242,6 @@ export const subscribeToUserData = (email, callback) => {
             hasInitializedSubcollections = true;
             unsubTrades = listenCol('trades', 'trades', 'phudit_trades', state.isVip); // VIP = realtime, Non-VIP = one-time
             unsubPlans = listenCol('plans', 'plans', 'phudit_plans', true);
-            unsubFeed = listenCol('feedPosts', 'feedPosts', 'phudit_feed', true);
             unsubDivs = listenCol('dividends', 'dividends', 'phudit_dividends', true);
             unsubFunding = listenCol('fundingHistory', 'fundingHistory', 'phudit_funding', true);
         }

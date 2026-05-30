@@ -15,7 +15,8 @@ import {
   getUserVipStatus,
   subscribeToUserData,
   saveAccounts,
-  saveFeedPosts
+  subscribeToGlobalFeed,
+  addGlobalFeedPost
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -66,7 +67,12 @@ export default function App() {
   const [feedPosts, setFeedPosts] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isVip, setIsVip] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('phudit_active_tab') || 'dashboard');
+
+  useEffect(() => {
+    localStorage.setItem('phudit_active_tab', activeTab);
+  }, [activeTab]);
+
   const [accountId, setAccountId] = useState('default');
   const [globalDateRange, setGlobalDateRange] = useState('1M');
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -90,6 +96,16 @@ export default function App() {
   };
   const closeAlert = () => setAlertDialog({ isOpen: false, title: '', message: '' });
   
+  // 🌍 Global Feed Subscription (Anyone can see all posts)
+  useEffect(() => {
+    const unsubFeed = subscribeToGlobalFeed((posts) => {
+      setFeedPosts(posts);
+    });
+    return () => {
+      if (unsubFeed) unsubFeed();
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     let unsubscribeSnapshot = null;
@@ -131,7 +147,6 @@ export default function App() {
         setDividends(data.dividends || []);
         setFundingHistory(data.fundingHistory || []);
         setAccounts(data.accounts || [{ id: 'default', name: 'Main Account' }]);
-        setFeedPosts(data.feedPosts || []);
         setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
         
         setDataLoading(false);
@@ -141,7 +156,6 @@ export default function App() {
       setPlans([]);
       setDividends([]);
       setFundingHistory([]);
-      setFeedPosts([]);
       setIsVip(false);
       setDataLoading(false);
     }
@@ -390,11 +404,9 @@ export default function App() {
     saveDividends(currentUser, updatedDivs);
   };
 
-  // จัดการ Feed Posts
+  // จัดการ Feed Posts (Global)
   const handleSaveFeedPost = (newPost) => {
-    const updated = [newPost, ...feedPosts];
-    setFeedPosts(updated);
-    saveFeedPosts(currentUser, updated);
+    addGlobalFeedPost(newPost);
   };
 
   // ระบบ Global Confirm Modal
@@ -455,10 +467,6 @@ export default function App() {
         setPlans(importedData.plans);
         savePlans(currentUser, importedData.plans);
       }
-      if (importedData.feedPosts) {
-        setFeedPosts(importedData.feedPosts);
-        saveFeedPosts(currentUser, importedData.feedPosts);
-      }
       if (importedData.dividends) {
         setDividends(importedData.dividends);
         saveDividends(currentUser, importedData.dividends);
@@ -485,7 +493,6 @@ export default function App() {
       exportDate: new Date().toISOString(),
       trades,
       plans,
-      feedPosts,
       dividends,
       fundingHistory,
       accounts,
