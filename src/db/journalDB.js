@@ -120,8 +120,21 @@ const syncArrayToSubcollection = async (email, colName, itemsArray) => {
             const itemId = item.id ? String(item.id) : Date.now().toString() + Math.random().toString();
             newIds.add(itemId);
             
+            const cleanItem = { ...item };
+            
+            // Clean up huge base64 from old feed posts to prevent Firestore payload size limit errors
+            if (colName === 'feedPosts' && cleanItem.blocks) {
+                cleanItem.blocks = cleanItem.blocks.map(b => {
+                    const nb = { ...b };
+                    if (nb.base64 && nb.base64.length > 800000) { // Strip out massive base64
+                        delete nb.base64;
+                    }
+                    return nb;
+                });
+            }
+            
             const docRef = doc(db, 'users', cleanEmail, colName, itemId);
-            batch.set(docRef, { ...item, id: itemId });
+            batch.set(docRef, { ...cleanItem, id: itemId });
             opCount++;
             if (opCount >= 450) await commitBatch();
         }
@@ -217,7 +230,10 @@ export const subscribeToUserData = (email, callback) => {
 
         // PRE-LOAD LOCAL STORAGE SYNCHRONOUSLY
         try {
-            const localData = localStorage.getItem(`${oldLocalKey}_${cleanEmail}`);
+            let localData = localStorage.getItem(`phudit_${colName}_${cleanEmail}`);
+            if (!localData) {
+                localData = localStorage.getItem(`${oldLocalKey}_${cleanEmail}`);
+            }
             if (localData) {
                 const parsed = JSON.parse(localData);
                 if (parsed && Array.isArray(parsed) && parsed.length > 0) {
