@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ImagePlus, X, Plus, Send, Clock, UserCircle2, Loader2 } from 'lucide-react';
 
-export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
+export default function FeedComponent({ posts = [], onSavePost, currentUser, profile }) {
   const [postTitle, setPostTitle] = useState('');
   const [blocks, setBlocks] = useState([{ id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -104,8 +104,8 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser }) {
         const newPost = {
             id: 'p' + Date.now(),
             author: {
-                name: currentUser ? currentUser.split('@')[0] : 'Trader',
-                avatar: null
+                name: profile?.name || (currentUser ? currentUser.split('@')[0] : 'Trader'),
+                avatar: profile?.photo || null
             },
             timestamp: new Date().toLocaleString(),
             title: postTitle,

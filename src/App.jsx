@@ -863,6 +863,7 @@ export default function App() {
                 posts={feedPosts} 
                 onSavePost={handleSaveFeedPost} 
                 currentUser={currentUser} 
+                profile={profile}
               />
             )}
             {activeTab === 'data' && (
