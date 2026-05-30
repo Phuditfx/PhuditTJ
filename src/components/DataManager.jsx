@@ -6,7 +6,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
   const [firebaseSize, setFirebaseSize] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  const MAX_FIREBASE_SIZE = 1048576; // 1MB in bytes
+  const MAX_LOCAL_SIZE = 5 * 1024 * 1024; // 5MB local storage limit
 
   const refreshStorageSize = async () => {
     if (!currentUser) return;
@@ -20,7 +20,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
     refreshStorageSize();
   }, [currentUser, trades, feedPosts, plans, dividends]);
 
-  const usagePercent = Math.min((firebaseSize / MAX_FIREBASE_SIZE) * 100, 100);
+  const usagePercent = Math.min((firebaseSize / MAX_LOCAL_SIZE) * 100, 100);
   
   const getStatusColor = () => {
     if (usagePercent > 90) return 'text-rose-500 bg-rose-500';
@@ -74,7 +74,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
               Data Management
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Manage your storage and delete old data to prevent reaching the 1MB Firebase limit.
+              Manage your offline backup cache and view your synchronized Subcollections.
             </p>
           </div>
           <button 
@@ -91,11 +91,11 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-xl">
           <div className="flex justify-between items-end mb-2">
             <div>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Total Cloud Storage Used</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Local Offline Cache Used</span>
               <span className={`text-2xl font-black ${getStatusColor().split(' ')[0]}`}>
                 {formatBytes(firebaseSize)}
               </span>
-              <span className="text-sm text-slate-500 dark:text-slate-400 font-medium"> / 1 MB Max Limit</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 font-medium"> / 5 MB</span>
             </div>
             <span className={`text-xl font-black ${getStatusColor().split(' ')[0]}`}>
               {usagePercent.toFixed(1)}%
@@ -108,13 +108,6 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
               style={{ width: `${usagePercent}%` }}
             ></div>
           </div>
-          
-          {usagePercent > 80 && (
-            <div className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 mt-3 bg-rose-50 dark:bg-rose-900/20 p-2 rounded-lg">
-              <AlertTriangle size={14} />
-              <span>Warning: Your storage is almost full. Please delete some posts with images or old trades.</span>
-            </div>
-          )}
         </div>
       </div>
 

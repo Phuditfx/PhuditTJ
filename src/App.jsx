@@ -2,22 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
-  getStoredTrades, 
   saveTrades, 
-  getStoredInitialBalance, 
   saveInitialBalance, 
-  getStoredTargetRR, 
   saveTargetRR, 
   RANK_SYSTEM,
-  getStoredProfile,
   saveProfile,
   logoutUser,
   getUserStatus,
-  getStoredPlans,
   savePlans,
-  getStoredDividends,
   saveDividends,
-  getStoredFundingHistory,
   saveFundingHistory,
   getUserVipStatus,
   subscribeToUserData,

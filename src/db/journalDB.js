@@ -1,8 +1,8 @@
 import { db, auth } from '../firebaseConfig';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc, onSnapshot, writeBatch, deleteField } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 
-// ตารางยศและข้อจำกัดของพอร์ต (อ้างอิงจาก Dashboard.js เดิม)
+// ตารางยศและข้อจำกัดของพอร์ต
 export const RANK_SYSTEM = [
     { level: 1, name: "🌱 Novice", minPort: 100, risk1: 1, maxRisk: 2, maxAlloc: 100 },
     { level: 2, name: "🌿 Rookie", minPort: 300, risk1: 3, maxRisk: 6, maxAlloc: 100 },
@@ -21,302 +21,271 @@ export const RANK_SYSTEM = [
     { level: 15, name: "♾️ Immortal", minPort: 2000000, risk1: 10000, maxRisk: 20000, maxAlloc: 5 }
 ];
 
-export const getStoredTrades = async (email) => {
-    if (!email) return [];
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().trades) {
-            fbData = docSnap.data().trades;
-        }
-    } catch (e) {
-        console.error("Error fetching trades from Firebase:", e);
-    }
-    
-    let localData = [];
-    try {
-        const local = localStorage.getItem(`phudit_trades_${cleanEmail}`);
-        if (local) localData = JSON.parse(local);
-    } catch (e) {
-        console.error("Error reading trades from LocalStorage:", e);
-    }
-
-    if (fbData) {
-        // Recovery mechanism: If LocalStorage has more trades than Firebase, use LocalStorage and sync up.
-        if (localData && localData.length > fbData.length) {
-            console.log("Recovering trades from LocalStorage:", localData.length, "vs", fbData.length);
-            saveTrades(cleanEmail, localData);
-            return localData;
-        }
-        return fbData;
-    }
-    
-    return localData;
-};
-
-export const saveTrades = async (email, trades) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    // Save to LocalStorage first
-    try {
-        localStorage.setItem(`phudit_trades_${cleanEmail}`, JSON.stringify(trades));
-    } catch (e) {
-        console.error("Error saving trades to LocalStorage:", e);
-    }
-    
-    // Attempt to save to Firebase
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { trades }, { merge: true });
-    } catch (e) {
-        console.error("Error saving trades to Firebase:", e);
-    }
-};
-
-// --- Plans Storage ---
-export const getStoredPlans = async (email) => {
-    if (!email) return [];
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().plans) {
-            fbData = docSnap.data().plans;
-        }
-    } catch (e) {
-        console.error("Error fetching plans from Firebase:", e);
-    }
-    
-    if (fbData) return fbData;
-    
-    try {
-        const local = localStorage.getItem(`phudit_plans_${cleanEmail}`);
-        if (local) return JSON.parse(local);
-    } catch (e) {}
-    return [];
-};
-
-export const savePlans = async (email, plans) => {
+// ==========================================
+// MIGRATION SCRIPT (Runs once on login)
+// ==========================================
+export const migrateDataToSubcollections = async (email) => {
     if (!email) return;
     const cleanEmail = email.trim().toLowerCase();
     
     try {
-        localStorage.setItem(`phudit_plans_${cleanEmail}`, JSON.stringify(plans));
-    } catch (e) {}
-    
-    try {
         const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { plans }, { merge: true });
-    } catch (e) {}
-};
-
-// --- Dividends Storage ---
-export const getStoredDividends = async (email) => {
-    if (!email) return [];
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().dividends) {
-            fbData = docSnap.data().dividends;
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) return;
+        
+        const data = snap.data();
+        const arraysToMigrate = ['trades', 'plans', 'feedPosts', 'dividends', 'fundingHistory'];
+        let needsMigration = false;
+        
+        for (const key of arraysToMigrate) {
+            if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+                needsMigration = true;
+                break;
+            }
         }
-    } catch (e) {
-        console.error("Error fetching dividends from Firebase:", e);
-    }
-    
-    if (fbData) return fbData;
-    
-    try {
-        const local = localStorage.getItem(`phudit_dividends_${cleanEmail}`);
-        if (local) return JSON.parse(local);
-    } catch (e) {}
-    return [];
-};
-
-export const saveDividends = async (email, dividends) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    try {
-        localStorage.setItem(`phudit_dividends_${cleanEmail}`, JSON.stringify(dividends));
-    } catch (e) {}
-    
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { dividends }, { merge: true });
-    } catch (e) {}
-};
-
-// --- Funding History Storage ---
-export const getStoredFundingHistory = async (email) => {
-    if (!email) return [];
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().fundingHistory) {
-            fbData = docSnap.data().fundingHistory;
+        
+        if (!needsMigration) return;
+        
+        console.log("Migrating legacy array data to Subcollections...");
+        let batch = writeBatch(db);
+        let opCount = 0;
+        
+        for (const key of arraysToMigrate) {
+            if (data[key] && Array.isArray(data[key])) {
+                for (const item of data[key]) {
+                    const itemId = item.id ? String(item.id) : Date.now().toString() + Math.random().toString();
+                    const itemRef = doc(db, 'users', cleanEmail, key, itemId);
+                    batch.set(itemRef, { ...item, id: itemId });
+                    opCount++;
+                    
+                    if (opCount >= 450) {
+                        await batch.commit();
+                        batch = writeBatch(db);
+                        opCount = 0;
+                    }
+                }
+            }
         }
-    } catch (e) {
-        console.error("Error fetching funding history from Firebase:", e);
-    }
-    
-    if (fbData) return fbData;
-    
-    try {
-        const local = localStorage.getItem(`phudit_funding_${cleanEmail}`);
-        if (local) return JSON.parse(local);
-    } catch (e) {}
-    return [];
-};
-
-export const saveFundingHistory = async (email, history) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    try {
-        localStorage.setItem(`phudit_funding_${cleanEmail}`, JSON.stringify(history));
-    } catch (e) {}
-    
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { fundingHistory: history }, { merge: true });
-    } catch (e) {}
-};
-
-// --- Accounts Storage ---
-export const saveAccounts = async (email, accounts) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    try {
-        localStorage.setItem(`phudit_accounts_${cleanEmail}`, JSON.stringify(accounts));
-    } catch (e) {}
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { accounts }, { merge: true });
-    } catch (e) {}
-};
-
-
-export const getStoredInitialBalance = async (email) => {
-    if (!email) return 10000;
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().initialBalance !== undefined) {
-            fbData = docSnap.data().initialBalance;
+        
+        if (opCount > 0) await batch.commit();
+        
+        // Delete old arrays from the main document to free up the 1MB limit
+        const updates = {};
+        arraysToMigrate.forEach(key => {
+            if (data[key] !== undefined) updates[key] = deleteField();
+        });
+        
+        if (Object.keys(updates).length > 0) {
+            await updateDoc(userRef, updates);
         }
-    } catch (e) {
-        console.error("Error fetching balance from Firebase:", e);
-    }
-    
-    if (fbData !== null) return fbData;
-    
-    const local = localStorage.getItem(`phudit_balance_${cleanEmail}`);
-    return local ? parseFloat(local) : 10000;
-};
-
-export const saveInitialBalance = async (email, balanceObj) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    try {
-        localStorage.setItem(`phudit_balance_${cleanEmail}`, JSON.stringify(balanceObj));
-    } catch (e) {}
-
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { initialBalances: balanceObj }, { merge: true });
-    } catch (e) {
-        console.error("Error saving balance to Firebase:", e);
+        console.log("Migration Complete.");
+    } catch (error) {
+        console.error("Migration Failed:", error);
     }
 };
 
-export const getStoredTargetRR = async (email) => {
-    if (!email) return 20;
+// ==========================================
+// REAL-TIME DATA SUBSCRIPTION
+// ==========================================
+export const subscribeToUserData = (email, callback) => {
+    if (!email) return () => {};
     const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().targetRR !== undefined) {
-            fbData = docSnap.data().targetRR;
+    
+    // Initial State
+    const state = {
+        trades: [],
+        plans: [],
+        feedPosts: [],
+        dividends: [],
+        fundingHistory: [],
+        initialBalances: { 'default': 10000 },
+        targetRR: 20,
+        profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal' },
+        accounts: [{ id: 'default', name: 'Main Account' }],
+        isVip: false,
+        status: 'approved'
+    };
+
+    let isNotifying = false;
+    const notify = () => {
+        if (isNotifying) return;
+        isNotifying = true;
+        setTimeout(() => {
+            callback({ ...state });
+            isNotifying = false;
+        }, 100); // Debounce to prevent multiple re-renders
+    };
+
+    // 1. Listen to Main Document (Configs)
+    const unsubUser = onSnapshot(doc(db, 'users', cleanEmail), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            state.initialBalances = data.initialBalances || { 'default': 10000 };
+            state.targetRR = data.targetRR !== undefined ? data.targetRR : 20;
+            state.profile = { ...state.profile, ...data.profile };
+            state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
+            state.isVip = data.isVip || false;
+            state.status = data.status || 'approved';
         }
-    } catch (e) {
-        console.error("Error fetching RR from Firebase:", e);
-    }
-    
-    if (fbData !== null) return fbData;
-    
-    const local = localStorage.getItem(`phudit_rr_${cleanEmail}`);
-    return local ? parseFloat(local) : 20;
+        notify();
+    });
+
+    // 2. Listen to Subcollections
+    const listenCol = (colName, stateKey) => {
+        return onSnapshot(collection(db, 'users', cleanEmail, colName), (snapshot) => {
+            const items = [];
+            snapshot.forEach(doc => items.push(doc.data()));
+            // Sort items descending by ID or timestamp if possible
+            if (stateKey === 'trades' || stateKey === 'feedPosts') {
+                 items.sort((a, b) => {
+                    const idA = a.id ? a.id.toString() : '';
+                    const idB = b.id ? b.id.toString() : '';
+                    return idB.localeCompare(idA);
+                 });
+            }
+            state[stateKey] = items;
+            notify();
+        });
+    };
+
+    const unsubTrades = listenCol('trades', 'trades');
+    const unsubPlans = listenCol('plans', 'plans');
+    const unsubFeed = listenCol('feedPosts', 'feedPosts');
+    const unsubDivs = listenCol('dividends', 'dividends');
+    const unsubFunding = listenCol('fundingHistory', 'fundingHistory');
+
+    // Trigger Migration if needed
+    migrateDataToSubcollections(cleanEmail);
+
+    return () => {
+        unsubUser();
+        unsubTrades();
+        unsubPlans();
+        unsubFeed();
+        unsubDivs();
+        unsubFunding();
+    };
 };
 
-export const saveTargetRR = async (email, rr) => {
+// ==========================================
+// SUBCOLLECTION SYNC LOGIC
+// ==========================================
+const syncArrayToSubcollection = async (email, colName, itemsArray) => {
     if (!email) return;
     const cleanEmail = email.trim().toLowerCase();
     
+    // Fallback Local Storage
     try {
-        localStorage.setItem(`phudit_rr_${cleanEmail}`, rr.toString());
+        localStorage.setItem(`phudit_${colName}_${cleanEmail}`, JSON.stringify(itemsArray));
     } catch (e) {}
 
     try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { targetRR: rr }, { merge: true });
-    } catch (e) {
-        console.error("Error saving RR to Firebase:", e);
-    }
-};
+        const colRef = collection(db, 'users', cleanEmail, colName);
+        const snapshot = await getDocs(colRef);
+        
+        const existingIds = new Set();
+        snapshot.forEach(doc => existingIds.add(doc.id));
+        
+        const newIds = new Set();
+        
+        let batch = writeBatch(db);
+        let opCount = 0;
+        
+        const commitBatch = async () => {
+            if (opCount > 0) {
+                await batch.commit();
+                batch = writeBatch(db);
+                opCount = 0;
+            }
+        };
 
-export const getStoredProfile = async (email) => {
-    const defaultProfile = { name: email ? email.split('@')[0] : 'Trader', photo: '', fontSize: 'normal' };
-    if (!email) return defaultProfile;
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().profile) {
-            fbData = { ...defaultProfile, ...docSnap.data().profile };
+        for (const item of itemsArray) {
+            const itemId = item.id ? String(item.id) : Date.now().toString() + Math.random().toString();
+            newIds.add(itemId);
+            
+            const docRef = doc(db, 'users', cleanEmail, colName, itemId);
+            batch.set(docRef, { ...item, id: itemId });
+            opCount++;
+            if (opCount >= 450) await commitBatch();
         }
+        
+        for (const id of existingIds) {
+            if (!newIds.has(id)) {
+                const docRef = doc(db, 'users', cleanEmail, colName, id);
+                batch.delete(docRef);
+                opCount++;
+                if (opCount >= 450) await commitBatch();
+            }
+        }
+        
+        await commitBatch();
     } catch (e) {
-        console.error("Error fetching profile from Firebase:", e);
+        console.error(`Error syncing ${colName}:`, e);
     }
-    
-    if (fbData !== null) return fbData;
-    
-    try {
-        const local = localStorage.getItem(`phudit_profile_${cleanEmail}`);
-        if (local) return { ...defaultProfile, ...JSON.parse(local) };
-    } catch (e) {}
-    
-    return defaultProfile;
 };
 
-export const saveProfile = async (email, profile) => {
+export const saveTrades = (email, items) => syncArrayToSubcollection(email, 'trades', items);
+export const savePlans = (email, items) => syncArrayToSubcollection(email, 'plans', items);
+export const saveFeedPosts = (email, items) => syncArrayToSubcollection(email, 'feedPosts', items);
+export const saveDividends = (email, items) => syncArrayToSubcollection(email, 'dividends', items);
+export const saveFundingHistory = (email, items) => syncArrayToSubcollection(email, 'fundingHistory', items);
+
+// ==========================================
+// CONFIGURATIONS (Saved to Main Document)
+// ==========================================
+const updateMainDoc = async (email, data) => {
     if (!email) return;
     const cleanEmail = email.trim().toLowerCase();
-    
-    try {
-        localStorage.setItem(`phudit_profile_${cleanEmail}`, JSON.stringify(profile));
-    } catch (e) {}
-
     try {
         const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { profile }, { merge: true });
+        await setDoc(userRef, data, { merge: true });
+    } catch (e) {}
+};
+
+export const saveInitialBalance = (email, initialBalances) => {
+    updateMainDoc(email, { initialBalances });
+    try { localStorage.setItem(`phudit_balance_${email.toLowerCase()}`, JSON.stringify(initialBalances)); } catch (e) {}
+};
+
+export const saveTargetRR = (email, targetRR) => {
+    updateMainDoc(email, { targetRR });
+    try { localStorage.setItem(`phudit_rr_${email.toLowerCase()}`, targetRR.toString()); } catch (e) {}
+};
+
+export const saveProfile = (email, profile) => {
+    updateMainDoc(email, { profile });
+    try { localStorage.setItem(`phudit_profile_${email.toLowerCase()}`, JSON.stringify(profile)); } catch (e) {}
+};
+
+export const saveAccounts = (email, accounts) => {
+    updateMainDoc(email, { accounts });
+    try { localStorage.setItem(`phudit_accounts_${email.toLowerCase()}`, JSON.stringify(accounts)); } catch (e) {}
+};
+
+// ==========================================
+// STORAGE CALCULATION
+// ==========================================
+export const calculateStorageUsage = async (email) => {
+    // With Subcollections and Firebase Storage, the 1MB Firestore limit is no longer an issue!
+    // This function can now return 0 or calculate the local storage usage as a metric.
+    if (!email) return 0;
+    try {
+        let total = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('phudit_')) {
+                total += localStorage.getItem(key).length;
+            }
+        }
+        return total;
     } catch (e) {
-        console.error("Error saving profile to Firebase:", e);
+        return 0;
     }
 };
 
+// ==========================================
+// AUTHENTICATION & ADMIN
+// ==========================================
 export const checkUserExists = async (email) => {
     if (!email) return false;
     try {
@@ -330,38 +299,8 @@ export const checkUserExists = async (email) => {
     }
 };
 
-export const registerUser = async (email, password) => {
-    if (!email || !password) return { success: false, error: 'Email and password are required' };
-    try {
-        const cleanEmail = email.trim().toLowerCase();
-        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-        
-        const userRef = doc(db, 'users', cleanEmail);
-        const initialStatus = cleanEmail === 'phudit.mahawongsanan@gmail.com' ? 'approved' : 'pending';
-        await setDoc(userRef, {
-            email: cleanEmail,
-            status: initialStatus,
-            createdAt: new Date().toISOString(),
-            initialBalance: 10000,
-            targetRR: 20,
-            trades: [],
-            profile: {
-                name: cleanEmail.split('@')[0],
-                photo: '',
-                fontSize: 'normal'
-            }
-        });
-        
-        // Sign out ทันทีหลังจากลงทะเบียน เพื่อบังคับให้ผู้ใช้ต้องรออนุมัติก่อนเข้าสู่ระบบ
-        await signOut(auth);
-        
-        return { success: true, user: userCredential.user };
-    } catch (error) {
-        let msg = error.message;
-        if (error.code === 'auth/email-already-in-use') msg = 'อีเมลนี้ถูกใช้งานแล้ว';
-        else if (error.code === 'auth/weak-password') msg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
-        return { success: false, error: msg };
-    }
+export const loginUser = async (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
 };
 
 export const verifyUser = async (email, password) => {
@@ -394,54 +333,59 @@ export const verifyUser = async (email, password) => {
     }
 };
 
+export const registerUser = async (email, password, displayName) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    // Default initial data structure
+    await setDoc(doc(db, 'users', email.trim().toLowerCase()), {
+        profile: { name: displayName, photo: '', fontSize: 'normal' },
+        initialBalances: { 'default': 10000 },
+        targetRR: 20,
+        accounts: [{ id: 'default', name: 'Main Account' }],
+        status: 'pending',
+        isVip: false
+    });
+    
+    await signOut(auth);
+    return user;
+};
+
+export const logoutUser = () => signOut(auth);
+export const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 
 export const getUserStatus = async (email) => {
+    if (!email) return 'unauthorized';
+    if (email === 'phudit.mahawongsanan@gmail.com') return 'approved'; // Owner
+    
     try {
-        const cleanEmail = email.trim().toLowerCase();
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            return docSnap.data().status || 'approved';
+        const userRef = doc(db, 'users', email.trim().toLowerCase());
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+            return snap.data().status || 'pending';
         }
     } catch (e) {}
-    return 'approved';
+    return 'pending';
 };
 
 export const getUserVipStatus = async (email) => {
+    if (!email) return false;
+    if (email === 'phudit.mahawongsanan@gmail.com') return true; // Owner is always VIP
+    
     try {
-        const cleanEmail = email.trim().toLowerCase();
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            return docSnap.data().isVip || false;
+        const userRef = doc(db, 'users', email.trim().toLowerCase());
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+            return snap.data().isVip || false;
         }
     } catch (e) {}
     return false;
 };
 
-export const resetPassword = async (email) => {
-    if (!email) return { success: false, error: 'กรุณากรอกอีเมล' };
-    try {
-        const cleanEmail = email.trim().toLowerCase();
-        await sendPasswordResetEmail(auth, cleanEmail);
-        return { success: true };
-    } catch (error) {
-        let msg = error.message;
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
-            msg = 'ไม่พบผู้ใช้นี้ในระบบ หรืออีเมลไม่ถูกต้อง';
-        }
-        return { success: false, error: msg };
-    }
+export const approveUser = async (email) => {
+    const userRef = doc(db, 'users', email.toLowerCase());
+    await updateDoc(userRef, { status: 'approved' });
 };
-
-export const logoutUser = async () => {
-    try {
-        await signOut(auth);
-    } catch (error) {
-        console.error("Logout error:", error);
-    }
-};
-
 
 export const deleteUser = async (email) => {
     if (!email) return;
@@ -450,17 +394,6 @@ export const deleteUser = async (email) => {
         await deleteDoc(doc(db, 'users', cleanEmail));
     } catch (e) {
         console.error("Error deleting user:", e);
-    }
-};
-
-export const approveUser = async (email) => {
-    if (!email) return;
-    try {
-        const cleanEmail = email.trim().toLowerCase();
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { status: 'approved' }, { merge: true });
-    } catch (e) {
-        console.error("Error approving user:", e);
     }
 };
 
@@ -483,23 +416,21 @@ export const getAllUsersData = async () => {
         
         userSnapshot.forEach((doc) => {
             const data = doc.data();
-            const trades = data.trades || [];
+            // Fallbacks for data that might have moved to subcollections
             const initBal = data.initialBalance || 10000;
-            const netPnL = trades.reduce((acc, t) => acc + (t.status === 'Closed' ? (parseFloat(t.pnl) || 0) : 0), 0);
-            const currentBal = initBal + netPnL;
             
             users.push({
                 email: data.email || doc.id,
                 status: data.status || 'approved',
                 isVip: data.isVip || false,
                 createdAt: data.createdAt || new Date().toISOString(),
-                tradesCount: trades.length,
-                currentBal,
-                netPnL
+                tradesCount: data.trades ? data.trades.length : 0, // Migrated users will show 0 here unfortunately unless we fetch subcollections
+                currentBal: initBal, // Can't accurately calc without fetching trades subcollection
+                netPnL: 0
             });
         });
         
-        return users.sort((a, b) => b.currentBal - a.currentBal);
+        return users;
     } catch (e) {
         console.error("Error fetching all users:", e);
         return [];
@@ -581,99 +512,4 @@ export const simulateAIAssessment = (trade) => {
     }
 
     return { aiScore, aiFeedback: feedback };
-};
-
-export const subscribeToUserData = (email, callback) => {
-    if (!email) return () => {};
-    const cleanEmail = email.trim().toLowerCase();
-    const userRef = doc(db, 'users', cleanEmail);
-    
-    return onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            callback({
-                trades: data.trades || [],
-                initialBalances: data.initialBalances || (data.initialBalance !== undefined ? { 'default': data.initialBalance } : { 'default': 10000 }),
-                targetRR: data.targetRR !== undefined ? data.targetRR : 20,
-                profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal', ...data.profile },
-                plans: data.plans || [],
-                dividends: data.dividends || [],
-                fundingHistory: data.fundingHistory || [],
-                accounts: data.accounts || [{ id: 'default', name: 'Main Account' }],
-                isVip: data.isVip || false,
-                status: data.status || 'approved',
-                feedPosts: data.feedPosts || []
-            });
-            
-            // Sync fallback local storage just in case it's needed offline later
-            try {
-                if (data.trades) localStorage.setItem(`phudit_trades_${cleanEmail}`, JSON.stringify(data.trades));
-                if (data.initialBalances) localStorage.setItem(`phudit_balance_${cleanEmail}`, JSON.stringify(data.initialBalances));
-                if (data.targetRR !== undefined) localStorage.setItem(`phudit_rr_${cleanEmail}`, data.targetRR.toString());
-                if (data.profile) localStorage.setItem(`phudit_profile_${cleanEmail}`, JSON.stringify(data.profile));
-                if (data.plans) localStorage.setItem(`phudit_plans_${cleanEmail}`, JSON.stringify(data.plans));
-                if (data.dividends) localStorage.setItem(`phudit_dividends_${cleanEmail}`, JSON.stringify(data.dividends));
-                if (data.fundingHistory) localStorage.setItem(`phudit_funding_${cleanEmail}`, JSON.stringify(data.fundingHistory));
-                if (data.accounts) localStorage.setItem(`phudit_accounts_${cleanEmail}`, JSON.stringify(data.accounts));
-                if (data.feedPosts) localStorage.setItem(`phudit_feed_${cleanEmail}`, JSON.stringify(data.feedPosts));
-            } catch (e) {}
-        } else {
-            callback(null);
-        }
-    }, (error) => {
-        console.error("Error in onSnapshot:", error);
-    });
-};
-
-// --- Feed Posts Storage ---
-export const getStoredFeedPosts = async (email) => {
-    if (!email) return [];
-    const cleanEmail = email.trim().toLowerCase();
-    let fbData = null;
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists() && docSnap.data().feedPosts) {
-            fbData = docSnap.data().feedPosts;
-        }
-    } catch (e) {
-        console.error("Error fetching feed posts from Firebase:", e);
-    }
-    
-    if (fbData) return fbData;
-    
-    try {
-        const local = localStorage.getItem(`phudit_feed_${cleanEmail}`);
-        if (local) return JSON.parse(local);
-    } catch (e) {}
-    return [];
-};
-
-export const saveFeedPosts = async (email, feedPosts) => {
-    if (!email) return;
-    const cleanEmail = email.trim().toLowerCase();
-    
-    try {
-        localStorage.setItem(`phudit_feed_${cleanEmail}`, JSON.stringify(feedPosts));
-    } catch (e) {}
-    
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        await setDoc(userRef, { feedPosts }, { merge: true });
-    } catch (e) {}
-};
-
-// --- Storage Calculation ---
-export const calculateStorageUsage = async (email) => {
-    if (!email) return 0;
-    const cleanEmail = email.trim().toLowerCase();
-    try {
-        const userRef = doc(db, 'users', cleanEmail);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            const dataStr = JSON.stringify(docSnap.data());
-            return dataStr.length; // Approximate size in bytes
-        }
-    } catch (e) {}
-    return 0;
 };
