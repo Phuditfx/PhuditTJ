@@ -124,7 +124,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       let pctOfPortFromPct = null;
 
       if (riskDollarFromPct && riskPerShare && riskPerShare > 0) {
-        sharesFromPct = Math.floor(riskDollarFromPct / riskPerShare);
+        sharesFromPct = riskDollarFromPct / riskPerShare;
         capitalFromPct = sharesFromPct * entryPrice;
         pctOfPortFromPct = (capitalFromPct / cap) * 100;
       }
@@ -135,7 +135,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       let pctOfPortFromFixed = null;
 
       if (riskDollarFromFixed && riskPerShare && riskPerShare > 0) {
-        sharesFromFixed = Math.floor(riskDollarFromFixed / riskPerShare);
+        sharesFromFixed = riskDollarFromFixed / riskPerShare;
         capitalFromFixed = sharesFromFixed * entryPrice;
         pctOfPortFromFixed = (capitalFromFixed / cap) * 100;
       }
@@ -534,7 +534,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                       </td>
                       {hasPct && (
                         <td className="px-4 py-3 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {r.sharesFromPct != null ? r.sharesFromPct.toLocaleString() : '—'}
+                          {r.sharesFromPct != null ? r.sharesFromPct.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '—'}
                         </td>
                       )}
                       {hasPct && (
@@ -544,7 +544,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                       )}
                       {hasFixed && (
                         <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {r.sharesFromFixed != null ? r.sharesFromFixed.toLocaleString() : '—'}
+                          {r.sharesFromFixed != null ? r.sharesFromFixed.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '—'}
                         </td>
                       )}
                       {hasFixed && (
