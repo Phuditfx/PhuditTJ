@@ -97,7 +97,18 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       const slPrice = parseFloat(s.slPrice);
 
       if (!entryPrice || entryPrice <= 0) {
-        return { ...s, entryPrice: null, slPrice: null, riskPerShare: null };
+        return { 
+          ...s, 
+          entryPrice: null, 
+          slPrice: null, 
+          riskPerShare: null,
+          sharesFromPct: null,
+          capitalFromPct: null,
+          pctOfPortFromPct: null,
+          sharesFromFixed: null,
+          capitalFromFixed: null,
+          pctOfPortFromFixed: null,
+        };
       }
 
       // Risk per share = Entry Price - Stop Loss Price
@@ -519,28 +530,28 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                       </td>
                       {hasPct && (
                         <td className="px-4 py-3 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {r.sharesFromPct !== null ? r.sharesFromPct.toLocaleString() : '—'}
+                          {r.sharesFromPct != null ? r.sharesFromPct.toLocaleString() : '—'}
                         </td>
                       )}
                       {hasPct && (
                         <td className="px-4 py-3 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {r.capitalFromPct !== null ? `$${fmt(r.capitalFromPct)}` : '—'}
+                          {r.capitalFromPct != null ? `$${fmt(r.capitalFromPct)}` : '—'}
                         </td>
                       )}
                       {hasFixed && (
                         <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {r.sharesFromFixed !== null ? r.sharesFromFixed.toLocaleString() : '—'}
+                          {r.sharesFromFixed != null ? r.sharesFromFixed.toLocaleString() : '—'}
                         </td>
                       )}
                       {hasFixed && (
                         <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {r.capitalFromFixed !== null ? `$${fmt(r.capitalFromFixed)}` : '—'}
+                          {r.capitalFromFixed != null ? `$${fmt(r.capitalFromFixed)}` : '—'}
                         </td>
                       )}
                       <td className="px-4 py-3 text-right font-mono text-slate-500">
-                        {hasPct && r.pctOfPortFromPct !== null
+                        {hasPct && r.pctOfPortFromPct != null
                           ? <span className="text-indigo-500">{r.pctOfPortFromPct.toFixed(2)}%</span>
-                          : hasFixed && r.pctOfPortFromFixed !== null
+                          : hasFixed && r.pctOfPortFromFixed != null
                             ? <span className="text-emerald-500">{r.pctOfPortFromFixed.toFixed(2)}%</span>
                             : '—'}
                       </td>
