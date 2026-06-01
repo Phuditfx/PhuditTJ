@@ -13,6 +13,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   ];
 
   const VIP_ITEMS = [
+    { id: 'swing', icon: '📐', label: 'Swing Calculator' },
     { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'dividends', icon: '💰', label: t('app.dividends', 'Dividends').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -88,27 +89,32 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           </button>
         ))}
 
-        {isVip && (
-          <>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 px-3">
-              Pro Features
-            </div>
-            {VIP_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-                  activeTab === item.id
-                    ? 'bg-amber-500 text-white shadow-md shadow-amber-900/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </>
-        )}
+        {/* VIP Items — always visible, locked for non-VIP */}
+        <div className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-widest mt-4 mb-2 px-3 flex items-center gap-1.5">
+          <span>👑</span>
+          <span>Pro Features</span>
+        </div>
+        {VIP_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+              activeTab === item.id
+                ? isVip
+                  ? 'bg-amber-500 text-white shadow-md shadow-amber-900/20'
+                  : 'bg-indigo-950/80 text-indigo-300 shadow-md'
+                : isVip
+                  ? 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+                  : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-600 dark:hover:text-slate-400'
+            }`}
+          >
+            <span className="text-lg">{item.icon}</span>
+            <span className="flex-1 text-left">{item.label}</span>
+            {!isVip && (
+              <span className="text-[10px] ml-auto opacity-60 text-amber-500">🔒</span>
+            )}
+          </button>
+        ))}
 
         {isOwner && (
           <button

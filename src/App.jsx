@@ -31,6 +31,9 @@ import Analytics from './components/Analytics';
 import Sidebar from './components/Sidebar';
 import FeedComponent from './components/FeedComponent';
 import DataManager from './components/DataManager';
+import VipLockScreen from './components/VipLockScreen';
+import SwingPickCalculator from './components/SwingPickCalculator';
+import UserProfile from './components/UserProfile';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -76,7 +79,14 @@ export default function App() {
   const [feedPosts, setFeedPosts] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isVip, setIsVip] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('phudit_active_tab') || 'dashboard');
+  const [activeTab, setActiveTabRaw] = useState(() => localStorage.getItem('phudit_active_tab') || 'dashboard');
+  const [profileTab, setProfileTab] = useState(null); // email of user being viewed
+
+  // Wrapper: กดเมนูใดก็ตามให้ออกจากหน้า Profile ทันที
+  const setActiveTab = (tab) => {
+    setProfileTab(null);
+    setActiveTabRaw(tab);
+  };
 
   useEffect(() => {
     localStorage.setItem('phudit_active_tab', activeTab);
@@ -415,8 +425,13 @@ export default function App() {
 
   // จัดการ Feed Posts (Global)
   const handleSaveFeedPost = (newPost) => {
-    setFeedPosts(prev => [newPost, ...prev]); // Optimistic update
-    addGlobalFeedPost(newPost);
+    // Ensure author.email is always stored for profile linking
+    const postWithEmail = {
+      ...newPost,
+      author: { ...newPost.author, email: newPost.author?.email || currentUser }
+    };
+    setFeedPosts(prev => [postWithEmail, ...prev]); // Optimistic update
+    addGlobalFeedPost(postWithEmail);
   };
 
   // ระบบ Global Confirm Modal
@@ -829,58 +844,104 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'analytics' && <Analytics trades={filteredGlobalTrades} />}
-            <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
-              <FighterComponent 
-                accountBalance={accountBalance}
-                sharedOrder={sharedOrder}
-                setSharedOrder={setSharedOrder}
-                isVip={isVip}
-                requestAlert={requestAlert}
-              />
-            </div>
-            {activeTab === 'calendar' && <CalendarView trades={trades} />}
-            {activeTab === 'plans' && (
-              <TradingPlans 
-                plans={plans}
-                onSavePlan={handleSavePlan}
-                onDeletePlan={handleDeletePlan}
-                requestConfirm={requestConfirm}
-                requestAlert={requestAlert}
-              />
-            )}
-            {activeTab === 'dividends' && (
-              <DividendTracker 
-                dividends={dividends}
-                onSaveDividend={handleSaveDividend}
-                onDeleteDividend={handleDeleteDividend}
-                requestConfirm={requestConfirm}
-                requestAlert={requestAlert}
-              />
-            )}
-            {activeTab === 'feed' && (
-              <FeedComponent 
-                posts={feedPosts} 
-                onSavePost={handleSaveFeedPost} 
-                currentUser={currentUser} 
-                profile={profile}
-              />
-            )}
-            {activeTab === 'data' && (
-              <DataManager 
+            {/* ✅ Task 5: User Profile Tab */}
+            {profileTab ? (
+              <UserProfile
+                userEmail={profileTab}
+                allPosts={feedPosts}
+                onBack={() => { setProfileTab(null); setActiveTab('feed'); }}
                 currentUser={currentUser}
-                trades={trades} setTrades={setTrades}
-                feedPosts={feedPosts} setFeedPosts={setFeedPosts}
-                plans={plans} setPlans={setPlans}
-                dividends={dividends} setDividends={setDividends}
+                isVip={isVip}
               />
-            )}
-            {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
-              <OwnerDashboard 
-                currentUser={currentUser} 
-                requestConfirm={requestConfirm}
-                requestAlert={requestAlert}
-              />
+            ) : (
+              <>
+                {/* ✅ Task 3: VIP-gated tabs */}
+                {activeTab === 'analytics' && (
+                  isVip
+                    ? <Analytics trades={filteredGlobalTrades} />
+                    : <VipLockScreen featureName="Analytics & Stats" onBack={() => setActiveTab('dashboard')} />
+                )}
+                <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
+                  {isVip ? (
+                    <FighterComponent
+                      accountBalance={accountBalance}
+                      sharedOrder={sharedOrder}
+                      setSharedOrder={setSharedOrder}
+                      isVip={isVip}
+                      requestAlert={requestAlert}
+                    />
+                  ) : activeTab === 'fighter' ? (
+                    <VipLockScreen featureName="Trade Simulator" onBack={() => setActiveTab('dashboard')} />
+                  ) : null}
+                </div>
+                {activeTab === 'calendar' && (
+                  isVip
+                    ? <CalendarView trades={trades} />
+                    : <VipLockScreen featureName="Calendar" onBack={() => setActiveTab('dashboard')} />
+                )}
+                {activeTab === 'plans' && (
+                  isVip ? (
+                    <TradingPlans
+                      plans={plans}
+                      onSavePlan={handleSavePlan}
+                      onDeletePlan={handleDeletePlan}
+                      requestConfirm={requestConfirm}
+                      requestAlert={requestAlert}
+                    />
+                  ) : (
+                    <VipLockScreen featureName="Plans & Playbooks" onBack={() => setActiveTab('dashboard')} />
+                  )
+                )}
+                {activeTab === 'dividends' && (
+                  isVip ? (
+                    <DividendTracker
+                      dividends={dividends}
+                      onSaveDividend={handleSaveDividend}
+                      onDeleteDividend={handleDeleteDividend}
+                      requestConfirm={requestConfirm}
+                      requestAlert={requestAlert}
+                    />
+                  ) : (
+                    <VipLockScreen featureName="Dividend Tracker" onBack={() => setActiveTab('dashboard')} />
+                  )
+                )}
+                {/* ✅ Task 4 & 5: Feed with Lightbox + Profile navigation */}
+                {activeTab === 'feed' && (
+                  isVip ? (
+                    <FeedComponent
+                      posts={feedPosts}
+                      onSavePost={handleSaveFeedPost}
+                      currentUser={currentUser}
+                      profile={profile}
+                      onViewProfile={(email) => { setProfileTab(email); }}
+                    />
+                  ) : (
+                    <VipLockScreen featureName="Trading Bulletin (Feed)" onBack={() => setActiveTab('dashboard')} />
+                  )
+                )}
+                {activeTab === 'data' && (
+                  <DataManager
+                    currentUser={currentUser}
+                    trades={trades} setTrades={setTrades}
+                    feedPosts={feedPosts} setFeedPosts={setFeedPosts}
+                    plans={plans} setPlans={setPlans}
+                    dividends={dividends} setDividends={setDividends}
+                  />
+                )}
+                {/* ✅ Task 2: TI Swing Pick Calculator (VIP only) */}
+                {activeTab === 'swing' && (
+                  isVip
+                    ? <SwingPickCalculator accountBalance={accountBalance} />
+                    : <VipLockScreen featureName="TI Swing Pick Calculator" onBack={() => setActiveTab('dashboard')} />
+                )}
+                {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
+                  <OwnerDashboard
+                    currentUser={currentUser}
+                    requestConfirm={requestConfirm}
+                    requestAlert={requestAlert}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
