@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { fetchRealTimePrice } from '../api/priceApi';
+import { fetchRealTimePrice, fetchATR60m } from '../api/priceApi';
 
 const DEFAULT_STOCKS = [
   { id: 1, symbol: 'AAPL', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false },
@@ -58,25 +58,29 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
   };
 
   // ---- AI Stop Loss Generator Placeholder ----
-  const handleAICalculateSL = (id) => {
+  const handleAICalculateSL = async (id) => {
     const stock = stocks.find(s => s.id === id);
-    if (!stock || !stock.entryPrice) return;
+    if (!stock || !stock.entryPrice || !stock.symbol) return;
 
     updateStock(id, 'aiLoading', true);
 
-    setTimeout(() => {
-      setStocks(prev => prev.map(s => {
-        if (s.id === id) {
-          const entry = parseFloat(s.entryPrice) || 0;
-          // MOCK: simulates AI suggesting a Stop Loss of 5% drop
-          // To inject your real AI API call later:
-          // const res = await fetchAIStopLoss(s.symbol, entry);
+    const atr = await fetchATR60m(stock.symbol);
+
+    setStocks(prev => prev.map(s => {
+      if (s.id === id) {
+        const entry = parseFloat(s.entryPrice) || 0;
+        if (atr) {
+          const atrMultiplier = 1.5;
+          const calculatedSL = (entry - (atr * atrMultiplier)).toFixed(2);
+          return { ...s, aiLoading: false, slPrice: String(calculatedSL) };
+        } else {
+          // Fallback: simulates AI suggesting a Stop Loss of 5% drop
           const calculatedSL = (entry * 0.95).toFixed(2);
           return { ...s, aiLoading: false, slPrice: String(calculatedSL) };
         }
-        return s;
-      }));
-    }, 600); // 600ms micro-loading for realistic UX
+      }
+      return s;
+    }));
   };
 
   // ---- Calculation ----
