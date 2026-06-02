@@ -969,7 +969,7 @@ export default function App() {
       </main>
 
       {/* 📱 Mobile Bottom Navigation Bar (Visible only on small screens) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-brand-surface dark:bg-slate-900 border-t border-brand-border flex justify-around items-center p-2 z-40 pb-safe shadow-[0_-4px_12px_rgba(5,15,26,0.08)] overflow-x-auto gap-2">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-brand-surface dark:bg-slate-900 border-t border-brand-border flex justify-around items-center p-2 z-40 pb-safe shadow-[0_-4px_12px_rgba(5,15,26,0.08)] overflow-x-auto gap-2">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
@@ -1014,6 +1014,15 @@ export default function App() {
         >
           <span className="text-xl">📰</span>
           <span className="text-[10px] font-bold mt-1">Feed</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('swing')}
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
+            activeTab === 'swing' ? 'text-amber-500' : 'text-brand-text-secondary'
+          }`}
+        >
+          <span className="text-xl">📐</span>
+          <span className="text-[10px] font-bold mt-1">TI Pick</span>
         </button>
         <button
           onClick={() => setActiveTab('plans')}
