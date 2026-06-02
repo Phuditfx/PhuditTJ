@@ -67,11 +67,11 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
 
     if (pEntry > 0 && gapDistance > 0) {
       if (sizingMode === 'Budget') {
-        calculatedShares = pVal / pEntry;
+        calculatedShares = Math.floor((pVal / pEntry) * 10000) / 10000;
       } else if (sizingMode === 'Risk($)') {
-        calculatedShares = pVal / gapDistance;
+        calculatedShares = Math.floor((pVal / gapDistance) * 10000) / 10000;
       } else if (sizingMode === 'Risk(%)') {
-        calculatedShares = (accountBalance * (pVal / 100)) / gapDistance;
+        calculatedShares = Math.floor(((accountBalance * (pVal / 100)) / gapDistance) * 10000) / 10000;
       }
     }
 

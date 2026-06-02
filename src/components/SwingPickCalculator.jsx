@@ -124,7 +124,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       let pctOfPortFromPct = null;
 
       if (riskDollarFromPct && riskPerShare && riskPerShare > 0) {
-        sharesFromPct = Math.floor(riskDollarFromPct / riskPerShare);
+        sharesFromPct = Math.floor((riskDollarFromPct / riskPerShare) * 10000) / 10000;
         capitalFromPct = sharesFromPct * entryPrice;
         pctOfPortFromPct = (capitalFromPct / cap) * 100;
       }
@@ -135,7 +135,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       let pctOfPortFromFixed = null;
 
       if (riskDollarFromFixed && riskPerShare && riskPerShare > 0) {
-        sharesFromFixed = Math.floor(riskDollarFromFixed / riskPerShare);
+        sharesFromFixed = Math.floor((riskDollarFromFixed / riskPerShare) * 10000) / 10000;
         capitalFromFixed = sharesFromFixed * entryPrice;
         pctOfPortFromFixed = (capitalFromFixed / cap) * 100;
       }
