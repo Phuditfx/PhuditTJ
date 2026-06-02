@@ -2,11 +2,11 @@ import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { fetchRealTimePrice, fetchATR60m } from '../api/priceApi';
 
 const DEFAULT_STOCKS = [
-  { id: 1, symbol: 'AAPL', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false },
-  { id: 2, symbol: 'MSFT', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false },
-  { id: 3, symbol: 'TSLA', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false },
-  { id: 4, symbol: 'NVDA', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false },
-  { id: 5, symbol: 'AMZN', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false },
+  { id: 1, symbol: 'AAPL', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false, atrValue: null },
+  { id: 2, symbol: 'MSFT', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false, atrValue: null },
+  { id: 3, symbol: 'TSLA', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false, atrValue: null },
+  { id: 4, symbol: 'NVDA', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false, atrValue: null },
+  { id: 5, symbol: 'AMZN', entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false, atrValue: null },
 ];
 
 let nextId = 6;
@@ -22,7 +22,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
   const addStock = () => {
     if (stocks.length >= 10) return;
     const letter = String.fromCharCode(65 + stocks.length);
-    setStocks([...stocks, { id: nextId++, symbol: `STOCK${letter}`, entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false }]);
+    setStocks([...stocks, { id: nextId++, symbol: `STOCK${letter}`, entryPrice: '', slPrice: '', fetchingPrice: false, aiLoading: false, atrValue: null }]);
   };
 
   const removeStock = (id) => {
@@ -71,12 +71,12 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
         const entry = parseFloat(s.entryPrice) || 0;
         if (atr) {
           const atrMultiplier = 1.5;
-          const calculatedSL = (entry - (atr * atrMultiplier)).toFixed(2);
-          return { ...s, aiLoading: false, slPrice: String(calculatedSL) };
+          const calculatedSL = Math.floor((entry - (atr * atrMultiplier)) * 100) / 100;
+          return { ...s, aiLoading: false, slPrice: calculatedSL.toFixed(2), atrValue: atr.toFixed(2) };
         } else {
           // Fallback: simulates AI suggesting a Stop Loss of 5% drop
-          const calculatedSL = (entry * 0.95).toFixed(2);
-          return { ...s, aiLoading: false, slPrice: String(calculatedSL) };
+          const calculatedSL = Math.floor((entry * 0.95) * 100) / 100;
+          return { ...s, aiLoading: false, slPrice: calculatedSL.toFixed(2), atrValue: null };
         }
       }
       return s;
@@ -124,7 +124,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       let pctOfPortFromPct = null;
 
       if (riskDollarFromPct && riskPerShare && riskPerShare > 0) {
-        sharesFromPct = riskDollarFromPct / riskPerShare;
+        sharesFromPct = Math.floor(riskDollarFromPct / riskPerShare);
         capitalFromPct = sharesFromPct * entryPrice;
         pctOfPortFromPct = (capitalFromPct / cap) * 100;
       }
@@ -135,7 +135,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
       let pctOfPortFromFixed = null;
 
       if (riskDollarFromFixed && riskPerShare && riskPerShare > 0) {
-        sharesFromFixed = riskDollarFromFixed / riskPerShare;
+        sharesFromFixed = Math.floor(riskDollarFromFixed / riskPerShare);
         capitalFromFixed = sharesFromFixed * entryPrice;
         pctOfPortFromFixed = (capitalFromFixed / cap) * 100;
       }
@@ -403,6 +403,11 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                         </>
                       )}
                     </button>
+                    {s.atrValue && (
+                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 ml-1">
+                        ATR(60m): ${s.atrValue}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

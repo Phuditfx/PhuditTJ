@@ -38,18 +38,18 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
   const handleAutoSL = async () => {
     const pEntry = parseFloat(entry) || 0;
     if (pEntry > 0 && symbol) {
-      setStatusMessage('🤖 AI กำลังคำนวณ ATR14 (TF60m)...');
+      setStatusMessage('🤖 AI กำลังคำนวณ SMA TR 14 (TF60m)...');
       setStatusColor('text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-500/50');
       
       const atr = await fetchATR60m(symbol);
       if (atr) {
         const atrMultiplier = 1.5;
-        const newSl = pEntry - (atr * atrMultiplier);
+        const newSl = Math.floor((pEntry - (atr * atrMultiplier)) * 100) / 100;
         updateShared('stopLoss', newSl.toFixed(2));
-        setStatusMessage(`🤖 AI แนะนำจุด SL ที่ $${newSl.toFixed(2)} (อิงจาก 1.5x ATR14 60m: $${atr.toFixed(2)})`);
+        setStatusMessage(`🤖 AI แนะนำจุด SL ที่ $${newSl.toFixed(2)} (อิงจาก 1.5x ATR 60m: $${atr.toFixed(2)})`);
         setStatusColor('text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-500/50');
       } else {
-        const newSl = pEntry * 0.975; // Heuristic: -2.5% for swing low proxy
+        const newSl = Math.floor((pEntry * 0.975) * 100) / 100; // Heuristic: -2.5% for swing low proxy
         updateShared('stopLoss', newSl.toFixed(2));
         setStatusMessage('⚠️ ดึงข้อมูล ATR ไม่สำเร็จ AI แนะนำจุด SL สำรองที่ -2.5%');
         setStatusColor('text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-500/50');

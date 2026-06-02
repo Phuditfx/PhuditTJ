@@ -51,7 +51,7 @@ export const fetchHistoricalData = async (symbol) => {
 
 export const fetchATR60m = async (symbol) => {
   try {
-    const url = `/api/yahoo?symbol=${encodeURIComponent(symbol)}&range=1mo&interval=60m`;
+    const url = `/api/yahoo?symbol=${encodeURIComponent(symbol)}&range=5d&interval=60m`;
     const response = await fetch(url, { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
@@ -74,10 +74,10 @@ export const fetchATR60m = async (symbol) => {
 
         if (trList.length < 14) return null;
 
-        let atr = trList.slice(0, 14).reduce((sum, val) => sum + val, 0) / 14;
-        for (let i = 14; i < trList.length; i++) {
-          atr = (atr * 13 + trList[i]) / 14;
-        }
+        // Calculate Simple Moving Average (SMA) of TR for the last 14 candles
+        const last14TR = trList.slice(-14);
+        const atr = last14TR.reduce((sum, val) => sum + val, 0) / 14;
+        
         return atr;
       }
     }
