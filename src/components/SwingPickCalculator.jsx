@@ -288,11 +288,11 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
             {stocks.map((s, idx) => (
               <div key={s.id} className="bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2 transition-all hover:border-indigo-300 dark:hover:border-indigo-850">
                 {/* Inputs Row */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-bold w-4 text-right flex-shrink-0">{idx + 1}.</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-xs text-slate-400 font-bold w-3 sm:w-4 text-right flex-shrink-0">{idx + 1}.</span>
 
                   {/* Ticker Input */}
-                  <div className="flex-1 min-w-[70px]">
+                  <div className="flex-1 min-w-[50px] sm:min-w-[70px]">
                     <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">Ticker</span>
                     <input
                       type="text"
@@ -307,8 +307,8 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                   </div>
 
                   {/* Entry Price Input */}
-                  <div className="relative w-28 flex-shrink-0">
-                    <span className="text-[9px] font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block mb-0.5">Entry Price ($)</span>
+                  <div className="relative w-20 sm:w-28 flex-shrink-0">
+                    <span className="text-[9px] font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Entry ($)</span>
                     {s.fetchingPrice ? (
                       <div className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-indigo-300 dark:border-indigo-605 rounded-lg flex items-center justify-center gap-1 text-[10px] text-indigo-500 font-bold h-[26px]">
                         <span className="animate-spin text-[9px]">⏳</span>
@@ -334,8 +334,8 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                   </div>
 
                   {/* Stop Loss Price Input */}
-                  <div className="relative w-28 flex-shrink-0">
-                    <span className="text-[9px] font-bold text-rose-500 dark:text-rose-450 uppercase tracking-wider block mb-0.5">SL Price ($)</span>
+                  <div className="relative w-20 sm:w-28 flex-shrink-0">
+                    <span className="text-[9px] font-bold text-rose-500 dark:text-rose-450 uppercase tracking-wider block mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">SL ($)</span>
                     <div className="relative">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
                       <input
