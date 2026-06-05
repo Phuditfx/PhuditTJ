@@ -33,18 +33,45 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [expandedGroups, setExpandedGroups] = useState({});
+
+  const toggleGroup = (key) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [key]: prev[key] === false ? true : false
+    }));
+  };
 
   const loadPicks = async () => {
     if (!userEmail) return;
     setLoading(true);
     const data = await getWeeklyPicks(userEmail);
     setPicks(data);
-    setCurrentPage(1);
     setLoading(false);
   };
+
+  const groupedPicks = useMemo(() => {
+    const groups = {};
+    picks.forEach(pick => {
+      const date = new Date(pick.week_start_date);
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      
+      const weekOfMonth = Math.ceil(date.getDate() / 7) || 1;
+      
+      const groupKey = `สัปดาห์ที่ ${weekOfMonth} / เดือน ${month} (${year})`;
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(pick);
+    });
+    
+    return Object.entries(groups).map(([key, items]) => ({
+      key,
+      items,
+      date: new Date(items[0].week_start_date)
+    })).sort((a, b) => b.date - a.date);
+  }, [picks]);
 
   const SECTOR_MAP = {
     'AAPL': 'Technology', 'MSFT': 'Technology', 'NVDA': 'Technology', 'TSLA': 'Consumer Cyclical', 
@@ -592,24 +619,40 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="overflow-x-auto overflow-y-auto max-h-[500px] rounded-xl border border-slate-200 dark:border-slate-800/80 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
-              <table className="w-full text-left border-collapse min-w-[900px]">
-                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950/95 backdrop-blur shadow-sm">
-                  <tr className="border-b border-slate-200 dark:border-slate-800/80 text-[11px] font-black uppercase text-slate-550 dark:text-slate-400 tracking-wider">
-                    <th className="px-4 py-3 whitespace-nowrap">Week Start</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Ticker</th>
-                    <th className="px-4 py-3 w-full">Sector</th>
-                    <th className="px-4 py-3 min-w-[120px]">Setup</th>
-                    <th className="px-4 py-3 font-mono whitespace-nowrap">Entry Alert</th>
-                    <th className="px-4 py-3 font-mono whitespace-nowrap">Stop Loss</th>
-                    <th className="px-4 py-3 text-center whitespace-nowrap">Tech Score</th>
-                    <th className="px-4 py-3 text-center w-[160px] whitespace-nowrap">Status / Result</th>
-                    <th className="px-4 py-3 text-center w-12">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-150 dark:divide-slate-850">
-                  {picks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((pick) => {
-                    return (
+            {groupedPicks.map((group) => {
+               const isExpanded = expandedGroups[group.key] !== false;
+               return (
+                 <div key={group.key} className="border border-slate-200 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-sm">
+                   <button 
+                     onClick={() => toggleGroup(group.key)}
+                     className="w-full flex items-center justify-between bg-slate-100 dark:bg-slate-900/60 p-4 font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                   >
+                     <div className="flex items-center gap-3">
+                       <span className="text-lg">📅</span>
+                       <span>{group.key}</span>
+                       <span className="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-2 py-0.5 rounded-full">{group.items.length} Picks</span>
+                     </div>
+                     <span className="text-slate-400">{isExpanded ? '▼' : '▶'}</span>
+                   </button>
+                   {isExpanded && (
+                     <div className="overflow-x-auto overflow-y-auto max-h-[400px] bg-white dark:bg-slate-950/30 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                       <table className="w-full text-left border-collapse min-w-[900px]">
+                          <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950/95 backdrop-blur shadow-sm">
+                            <tr className="border-b border-slate-200 dark:border-slate-800/80 text-[11px] font-black uppercase text-slate-550 dark:text-slate-400 tracking-wider">
+                              <th className="px-4 py-3 whitespace-nowrap">Week Start</th>
+                              <th className="px-4 py-3 whitespace-nowrap">Ticker</th>
+                              <th className="px-4 py-3 w-full">Sector</th>
+                              <th className="px-4 py-3 min-w-[120px]">Setup</th>
+                              <th className="px-4 py-3 font-mono whitespace-nowrap">Entry Alert</th>
+                              <th className="px-4 py-3 font-mono whitespace-nowrap">Stop Loss</th>
+                              <th className="px-4 py-3 text-center whitespace-nowrap">Tech Score</th>
+                              <th className="px-4 py-3 text-center w-[160px] whitespace-nowrap">Status / Result</th>
+                              <th className="px-4 py-3 text-center w-12">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-150 dark:divide-slate-850">
+                            {group.items.map((pick) => {
+                              return (
                     <React.Fragment key={pick.id}>
                     <tr className="transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-900/40">
                       <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">
@@ -691,39 +734,15 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                     )}
                     </React.Fragment>
                   );
-                })}
-              </tbody>
-            </table>
+                            })}
+                          </tbody>
+                       </table>
+                     </div>
+                   )}
+                 </div>
+               );
+            })}
           </div>
-          
-          {/* Pagination Controls */}
-          {picks.length > itemsPerPage && (
-            <div className="flex items-center justify-between px-2 pt-2 text-sm text-slate-500 dark:text-slate-400">
-              <div>
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, picks.length)} of {picks.length} picks
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold"
-                >
-                  Prev
-                </button>
-                <span className="font-mono text-xs px-2">
-                  {currentPage} / {Math.ceil(picks.length / itemsPerPage)}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(picks.length / itemsPerPage), p + 1))}
-                  disabled={currentPage === Math.ceil(picks.length / itemsPerPage)}
-                  className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
         )}
       </div>
 
