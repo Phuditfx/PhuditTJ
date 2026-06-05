@@ -596,15 +596,15 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
               <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950/95 backdrop-blur shadow-sm">
                   <tr className="border-b border-slate-200 dark:border-slate-800/80 text-[11px] font-black uppercase text-slate-550 dark:text-slate-400 tracking-wider">
-                    <th className="px-4 py-3">Week Start</th>
-                    <th className="px-4 py-3">Ticker</th>
-                    <th className="px-4 py-3">Sector</th>
-                    <th className="px-4 py-3">Setup</th>
-                    <th className="px-4 py-3 font-mono">Entry Alert</th>
-                    <th className="px-4 py-3 font-mono">Stop Loss</th>
-                    <th className="px-4 py-3 text-center">Tech Score</th>
-                    <th className="px-4 py-3 text-center w-[160px]">Status / Result</th>
-                    <th className="px-4 py-3 text-center w-20">Actions</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Week Start</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Ticker</th>
+                    <th className="px-4 py-3 w-full">Sector</th>
+                    <th className="px-4 py-3 min-w-[120px]">Setup</th>
+                    <th className="px-4 py-3 font-mono whitespace-nowrap">Entry Alert</th>
+                    <th className="px-4 py-3 font-mono whitespace-nowrap">Stop Loss</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">Tech Score</th>
+                    <th className="px-4 py-3 text-center w-[160px] whitespace-nowrap">Status / Result</th>
+                    <th className="px-4 py-3 text-center w-12">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150 dark:divide-slate-850">
