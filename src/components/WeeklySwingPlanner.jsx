@@ -108,9 +108,9 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert }) {
     } catch (err) {
       console.error(err);
       if (requestAlert) {
-        requestAlert("❌ บันทึกไม่สำเร็จ", "กรุณาตรวจสอบว่าคุณได้สร้างตาราง 'weekly_swing_picks' ใน Supabase SQL Editor หรือยังครับ (นำโค้ดในไฟล์ supabase_schema.sql ไปรัน)");
+        requestAlert("❌ บันทึกไม่สำเร็จ", `รายละเอียด: ${err.message || err.details || JSON.stringify(err)}`);
       } else {
-        alert("Failed to save pick. Have you run the SQL migration?");
+        alert("Failed to save pick: " + (err.message || "Unknown error"));
       }
     }
   };
