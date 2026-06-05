@@ -16,6 +16,10 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
   const [floatSize, setFloatSize] = useState('Medium');
   const [shortInterest, setShortInterest] = useState('Low');
   const [setupType, setSetupType] = useState('Breakout');
+  const [whyInteresting, setWhyInteresting] = useState('');
+  const [riskConsiderations, setRiskConsiderations] = useState('');
+  const [targetRrr, setTargetRrr] = useState('');
+  const [confidenceLevel, setConfidenceLevel] = useState('Medium');
   const [showManual, setShowManual] = useState(false);
   
   const getStartOfWeek = () => {
@@ -97,6 +101,10 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
         float_size: floatSize,
         short_interest_level: shortInterest,
         setup_type: setupType,
+        why_interesting: whyInteresting,
+        risk_considerations: riskConsiderations,
+        target_rrr: targetRrr ? parseFloat(targetRrr) : null,
+        confidence_level: confidenceLevel,
         technical_score: aiScore,
         status: 'Pending'
       });
@@ -107,6 +115,10 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       setEntryPrice('');
       setStopLoss('');
       setSetupType('Breakout');
+      setWhyInteresting('');
+      setRiskConsiderations('');
+      setTargetRrr('');
+      setConfidenceLevel('Medium');
       
       loadPicks();
     } catch (err) {
@@ -374,6 +386,53 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-1 md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Why It's Interesting (Catalyst)</label>
+                  <textarea 
+                    value={whyInteresting}
+                    onChange={(e) => setWhyInteresting(e.target.value)}
+                    placeholder="เหตุผลที่ TI แนะนำหุ้นตัวนี้..."
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-y min-h-[60px]"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Risk Considerations</label>
+                  <textarea 
+                    value={riskConsiderations}
+                    onChange={(e) => setRiskConsiderations(e.target.value)}
+                    placeholder="ความเสี่ยงที่ต้องระวังสำหรับหุ้นตัวนี้..."
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-y min-h-[60px]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Target RRR</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={targetRrr}
+                    onChange={(e) => setTargetRrr(e.target.value)}
+                    placeholder="e.g. 2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Confidence Level</label>
+                  <select 
+                    value={confidenceLevel}
+                    onChange={(e) => setConfidenceLevel(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="bg-slate-100 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-start gap-2">
                 <span className="text-lg">🤖</span>
                 <span>
@@ -545,7 +604,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
               <tbody className="divide-y divide-slate-150 dark:divide-slate-850">
                 {picks.map((pick) => {
                   return (
-                    <tr key={pick.id} className="transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                    <React.Fragment key={pick.id}>
+                    <tr className="transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-900/40">
                       <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">
                         {pick.week_start_date}
                       </td>
@@ -557,7 +617,9 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                       </td>
                       <td className="px-4 py-3 text-[10px] text-slate-500">
                         Float: <span className="font-bold text-slate-700 dark:text-slate-300">{pick.float_size}</span><br/>
-                        SI: <span className="font-bold text-slate-700 dark:text-slate-300">{pick.short_interest_level}</span>
+                        Short Interest: <span className="font-bold text-slate-700 dark:text-slate-300">{pick.short_interest_level}</span><br/>
+                        {pick.confidence_level && <>Conf: <span className="font-bold text-slate-700 dark:text-slate-300">{pick.confidence_level}</span><br/></>}
+                        {pick.target_rrr && <>RRR: <span className="font-bold text-slate-700 dark:text-slate-300">{pick.target_rrr}R</span></>}
                       </td>
                       <td className="px-4 py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
                         ${Number(pick.entry_alert_price).toFixed(2)}
@@ -579,6 +641,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                             pick.status === 'Loss' ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50' :
                             pick.status === 'Breakeven' ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' :
                             pick.status === 'Triggered-Active' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/50' :
+                            pick.status === 'Missed / Expired' ? 'bg-slate-200 text-slate-500 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' :
                             'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50'
                           }`}
                         >
@@ -587,6 +650,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                           <option value="Win" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Win (ถึง TP/กำไร)</option>
                           <option value="Loss" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Loss (ชน SL/ขาดทุน)</option>
                           <option value="Breakeven" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Breakeven (ปิดเท่าทุน)</option>
+                          <option value="Missed / Expired" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Missed / Expired (ตกรถ/ไม่ได้เข้า)</option>
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -599,6 +663,27 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                         </button>
                       </td>
                     </tr>
+                    {(pick.why_interesting || pick.risk_considerations) && (
+                      <tr className="bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-100 dark:border-slate-800/50">
+                        <td colSpan="9" className="px-4 py-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-indigo-200 dark:border-indigo-800/50">
+                            {pick.why_interesting && (
+                              <div className="flex gap-2">
+                                <span className="font-bold text-indigo-500 dark:text-indigo-400 whitespace-nowrap">💡 Catalyst:</span> 
+                                <span>{pick.why_interesting}</span>
+                              </div>
+                            )}
+                            {pick.risk_considerations && (
+                              <div className="flex gap-2">
+                                <span className="font-bold text-rose-500 dark:text-rose-400 whitespace-nowrap">⚠️ Risk:</span> 
+                                <span>{pick.risk_considerations}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

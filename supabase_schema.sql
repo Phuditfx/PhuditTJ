@@ -38,3 +38,9 @@ CREATE TABLE public.weekly_swing_picks (
 
 ALTER TABLE public.weekly_swing_picks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all operations" ON public.weekly_swing_picks FOR ALL USING (true) WITH CHECK (true);
+
+-- Run the below lines if you have already created the weekly_swing_picks table
+ALTER TABLE public.weekly_swing_picks ADD COLUMN IF NOT EXISTS why_interesting TEXT;
+ALTER TABLE public.weekly_swing_picks ADD COLUMN IF NOT EXISTS risk_considerations TEXT;
+ALTER TABLE public.weekly_swing_picks ADD COLUMN IF NOT EXISTS target_rrr NUMERIC;
+ALTER TABLE public.weekly_swing_picks ADD COLUMN IF NOT EXISTS confidence_level TEXT;
