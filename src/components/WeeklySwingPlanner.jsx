@@ -489,11 +489,11 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert }) {
                             'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50'
                           }`}
                         >
-                          <option value="Pending">Pending</option>
-                          <option value="Triggered-Active">Triggered-Active</option>
-                          <option value="Win">Win</option>
-                          <option value="Loss">Loss</option>
-                          <option value="Breakeven">Breakeven</option>
+                          <option value="Pending" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Pending</option>
+                          <option value="Triggered-Active" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Triggered-Active</option>
+                          <option value="Win" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Win</option>
+                          <option value="Loss" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Loss</option>
+                          <option value="Breakeven" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Breakeven</option>
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right">
