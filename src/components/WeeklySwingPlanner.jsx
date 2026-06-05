@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie } from 'recharts';
-import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick } from '../db/journalDB';
+import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick, updateWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
@@ -111,9 +111,41 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     return Math.max(1, Math.min(10, Math.floor(score)));
   };
 
+  const [editingPickId, setEditingPickId] = useState(null);
+
   useEffect(() => {
     loadPicks();
   }, [userEmail]);
+
+  const handleEdit = (pick) => {
+    setEditingPickId(pick.id);
+    setWeekStartDate(pick.week_start_date);
+    setTicker(pick.ticker);
+    setSector(pick.sector);
+    setEntryPrice(pick.entry_alert_price ? pick.entry_alert_price.toString() : '');
+    setStopLoss(pick.stop_loss_price ? pick.stop_loss_price.toString() : '');
+    setFloatSize(pick.float_size || 'Medium');
+    setShortInterest(pick.short_interest_level || 'Low');
+    setSetupType(pick.setup_type || 'Breakout');
+    setWhyInteresting(pick.why_interesting || '');
+    setRiskConsiderations(pick.risk_considerations || '');
+    setTargetRrr(pick.target_rrr ? pick.target_rrr.toString() : '');
+    setConfidenceLevel(pick.confidence_level || 'Medium');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingPickId(null);
+    setTicker('');
+    setSector('');
+    setEntryPrice('');
+    setStopLoss('');
+    setSetupType('Breakout');
+    setWhyInteresting('');
+    setRiskConsiderations('');
+    setTargetRrr('');
+    setConfidenceLevel('Medium');
+  };
 
   const handleAddPick = async (e) => {
     e.preventDefault();
@@ -123,34 +155,31 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     const stop = parseFloat(stopLoss);
     const aiScore = calculateAIScore(entry, stop, floatSize, shortInterest);
 
+    const pickData = {
+      week_start_date: weekStartDate,
+      ticker: ticker.toUpperCase(),
+      sector: sector || 'Other',
+      entry_alert_price: entry,
+      stop_loss_price: stop,
+      float_size: floatSize,
+      short_interest_level: shortInterest,
+      setup_type: setupType,
+      why_interesting: whyInteresting,
+      risk_considerations: riskConsiderations,
+      target_rrr: targetRrr ? parseFloat(targetRrr) : null,
+      confidence_level: confidenceLevel,
+      technical_score: aiScore,
+    };
+
     try {
-      await saveWeeklyPick(userEmail, {
-        week_start_date: weekStartDate,
-        ticker: ticker.toUpperCase(),
-        sector: sector || 'Other',
-        entry_alert_price: entry,
-        stop_loss_price: stop,
-        float_size: floatSize,
-        short_interest_level: shortInterest,
-        setup_type: setupType,
-        why_interesting: whyInteresting,
-        risk_considerations: riskConsiderations,
-        target_rrr: targetRrr ? parseFloat(targetRrr) : null,
-        confidence_level: confidenceLevel,
-        technical_score: aiScore,
-        status: 'Pending'
-      });
+      if (editingPickId) {
+        await updateWeeklyPick(editingPickId, userEmail, pickData);
+      } else {
+        await saveWeeklyPick(userEmail, { ...pickData, status: 'Pending' });
+      }
       
       // Reset form
-      setTicker('');
-      setSector('');
-      setEntryPrice('');
-      setStopLoss('');
-      setSetupType('Breakout');
-      setWhyInteresting('');
-      setRiskConsiderations('');
-      setTargetRrr('');
-      setConfidenceLevel('Medium');
+      cancelEdit();
       
       loadPicks();
     } catch (err) {
@@ -472,12 +501,31 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 </span>
               </div>
 
-              <button 
-                type="submit"
-                className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-95"
-              >
-                Save Pick
-              </button>
+              <div className="flex gap-2 pt-4">
+                <button 
+                  type="submit" 
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold flex flex-col items-center justify-center transition-all shadow-md active:scale-95 ${
+                    editingPickId 
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/30'
+                  }`}
+                >
+                  <span className="text-sm">{editingPickId ? 'UPDATE PICK' : 'SAVE PICK'}</span>
+                  <span className="text-[10px] font-normal opacity-80">
+                    {editingPickId ? 'อัปเดตข้อมูลหุ้น' : 'บันทึกเข้าแผนสัปดาห์'}
+                  </span>
+                </button>
+                {editingPickId && (
+                  <button 
+                    type="button"
+                    onClick={cancelEdit}
+                    className="py-3 px-4 rounded-xl font-bold flex flex-col items-center justify-center transition-all bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700"
+                  >
+                    <span className="text-sm">CANCEL</span>
+                    <span className="text-[10px] font-normal opacity-80">ยกเลิก</span>
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -703,13 +751,22 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                         </select>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <button 
-                          onClick={() => handleDelete(pick.id)}
-                          className="text-slate-400 hover:text-rose-500 transition-colors p-1 mx-auto block"
-                          title="Delete Pick"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => handleEdit(pick)}
+                            className="text-slate-400 hover:text-amber-500 transition-colors p-1"
+                            title="Edit Pick"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(pick.id)}
+                            className="text-slate-400 hover:text-rose-500 transition-colors p-1"
+                            title="Delete Pick"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {(pick.why_interesting || pick.risk_considerations) && (
