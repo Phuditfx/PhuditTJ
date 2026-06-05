@@ -33,11 +33,16 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const loadPicks = async () => {
     if (!userEmail) return;
     setLoading(true);
     const data = await getWeeklyPicks(userEmail);
     setPicks(data);
+    setCurrentPage(1);
     setLoading(false);
   };
 
@@ -586,24 +591,25 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
             No picks recorded yet. Add your first weekly pick above.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800/80">
-            <table className="w-full text-left border-collapse min-w-[900px]">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800/80 text-[11px] font-black uppercase text-slate-550 dark:text-slate-400 tracking-wider">
-                  <th className="px-4 py-3">Week Start</th>
-                  <th className="px-4 py-3">Ticker</th>
-                  <th className="px-4 py-3">Sector</th>
-                  <th className="px-4 py-3">Setup</th>
-                  <th className="px-4 py-3 font-mono">Entry Alert</th>
-                  <th className="px-4 py-3 font-mono">Stop Loss</th>
-                  <th className="px-4 py-3 text-center">Tech Score</th>
-                  <th className="px-4 py-3 text-center">Status / Result</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-150 dark:divide-slate-850">
-                {picks.map((pick) => {
-                  return (
+          <div className="flex flex-col gap-4">
+            <div className="overflow-x-auto overflow-y-auto max-h-[500px] rounded-xl border border-slate-200 dark:border-slate-800/80 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+              <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950/95 backdrop-blur shadow-sm">
+                  <tr className="border-b border-slate-200 dark:border-slate-800/80 text-[11px] font-black uppercase text-slate-550 dark:text-slate-400 tracking-wider">
+                    <th className="px-4 py-3">Week Start</th>
+                    <th className="px-4 py-3">Ticker</th>
+                    <th className="px-4 py-3">Sector</th>
+                    <th className="px-4 py-3">Setup</th>
+                    <th className="px-4 py-3 font-mono">Entry Alert</th>
+                    <th className="px-4 py-3 font-mono">Stop Loss</th>
+                    <th className="px-4 py-3 text-center">Tech Score</th>
+                    <th className="px-4 py-3 text-center w-[160px]">Status / Result</th>
+                    <th className="px-4 py-3 text-center w-20">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-150 dark:divide-slate-850">
+                  {picks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((pick) => {
+                    return (
                     <React.Fragment key={pick.id}>
                     <tr className="transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-900/40">
                       <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">
@@ -653,10 +659,10 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                           <option value="Missed / Expired" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Missed / Expired (ตกรถ/ไม่ได้เข้า)</option>
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center">
                         <button 
                           onClick={() => handleDelete(pick.id)}
-                          className="text-slate-400 hover:text-rose-500 transition-colors p-1"
+                          className="text-slate-400 hover:text-rose-500 transition-colors p-1 mx-auto block"
                           title="Delete Pick"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -689,6 +695,35 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {picks.length > itemsPerPage && (
+            <div className="flex items-center justify-between px-2 pt-2 text-sm text-slate-500 dark:text-slate-400">
+              <div>
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, picks.length)} of {picks.length} picks
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold"
+                >
+                  Prev
+                </button>
+                <span className="font-mono text-xs px-2">
+                  {currentPage} / {Math.ceil(picks.length / itemsPerPage)}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(picks.length / itemsPerPage), p + 1))}
+                  disabled={currentPage === Math.ceil(picks.length / itemsPerPage)}
+                  className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         )}
       </div>
 
