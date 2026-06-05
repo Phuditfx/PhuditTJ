@@ -29,6 +29,7 @@ CREATE TABLE public.weekly_swing_picks (
     stop_loss_price NUMERIC,
     float_size TEXT,
     short_interest_level TEXT,
+    setup_type TEXT,
     technical_score INTEGER,
     status TEXT DEFAULT 'Pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
