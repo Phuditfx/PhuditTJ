@@ -17,3 +17,23 @@ CREATE POLICY "Allow all operations" ON public.feed_posts FOR ALL USING (true) W
 CREATE POLICY "Allow all operations" ON public.dividends FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations" ON public.funding_history FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations" ON public.global_feed_posts FOR ALL USING (true) WITH CHECK (true);
+
+-- Weekly Swing Picks (VIP Feature)
+CREATE TABLE public.weekly_swing_picks (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    week_start_date DATE NOT NULL,
+    ticker TEXT NOT NULL,
+    sector TEXT NOT NULL,
+    entry_alert_price NUMERIC,
+    stop_loss_price NUMERIC,
+    float_size TEXT,
+    short_interest_level TEXT,
+    technical_score INTEGER,
+    status TEXT DEFAULT 'Pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.weekly_swing_picks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all operations" ON public.weekly_swing_picks FOR ALL USING (true) WITH CHECK (true);

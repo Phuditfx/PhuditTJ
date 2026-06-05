@@ -34,6 +34,7 @@ import DataManager from './components/DataManager';
 import VipLockScreen from './components/VipLockScreen';
 import SwingPickCalculator from './components/SwingPickCalculator';
 import UserProfile from './components/UserProfile';
+import WeeklySwingPlanner from './components/WeeklySwingPlanner';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -933,6 +934,11 @@ export default function App() {
                   isVip
                     ? <SwingPickCalculator accountBalance={accountBalance} />
                     : <VipLockScreen featureName="TI Swing Pick Calculator" onBack={() => setActiveTab('dashboard')} />
+                )}
+                {activeTab === 'weeklyPicks' && (
+                  isVip
+                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} />
+                    : <VipLockScreen featureName="TI Weekly Swing Planner" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
                   <OwnerDashboard

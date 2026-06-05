@@ -486,3 +486,86 @@ export const simulateAIAssessment = (trade) => {
 
     return { aiScore, aiFeedback: feedback };
 };
+
+// ==========================================
+// WEEKLY SWING PICKS (VIP)
+// ==========================================
+export const getWeeklyPicks = async (email) => {
+    if (!email) return [];
+    try {
+        const { data, error } = await supabase
+            .from('weekly_swing_picks')
+            .select('*')
+            .eq('user_email', email.trim().toLowerCase())
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+    } catch (e) {
+        console.error("Error fetching weekly picks:", e);
+        return [];
+    }
+};
+
+export const saveWeeklyPick = async (email, pickData) => {
+    if (!email) return null;
+    try {
+        const { data, error } = await supabase
+            .from('weekly_swing_picks')
+            .insert([{
+                user_email: email.trim().toLowerCase(),
+                ...pickData
+            }])
+            .select();
+        if (error) throw error;
+        return data?.[0];
+    } catch (e) {
+        console.error("Error saving weekly pick:", e);
+        throw e;
+    }
+};
+
+export const updateWeeklyPickStatus = async (id, email, newStatus) => {
+    if (!id || !email) return;
+    try {
+        const { error } = await supabase
+            .from('weekly_swing_picks')
+            .update({ status: newStatus, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_email', email.trim().toLowerCase());
+        if (error) throw error;
+    } catch (e) {
+        console.error("Error updating weekly pick status:", e);
+        throw e;
+    }
+};
+
+export const updateWeeklyPick = async (id, email, updates) => {
+    if (!id || !email) return;
+    try {
+        const { error } = await supabase
+            .from('weekly_swing_picks')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_email', email.trim().toLowerCase());
+        if (error) throw error;
+    } catch (e) {
+        console.error("Error updating weekly pick:", e);
+        throw e;
+    }
+};
+
+export const deleteWeeklyPick = async (id, email) => {
+    if (!id || !email) return;
+    try {
+        const { error } = await supabase
+            .from('weekly_swing_picks')
+            .delete()
+            .eq('id', id)
+            .eq('user_email', email.trim().toLowerCase());
+        if (error) throw error;
+    } catch (e) {
+        console.error("Error deleting weekly pick:", e);
+        throw e;
+    }
+};
+

@@ -13,6 +13,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   ];
 
   const VIP_ITEMS = [
+    { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
     { id: 'swing', icon: '📐', label: 'Swing Calculator' },
     { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
