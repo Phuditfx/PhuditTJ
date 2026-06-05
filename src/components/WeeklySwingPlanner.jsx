@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Cartes
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function WeeklySwingPlanner({ userEmail, isVip }) {
+export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert }) {
   const { t } = useLanguage();
   const [picks, setPicks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,6 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
   const [stopLoss, setStopLoss] = useState('');
   const [floatSize, setFloatSize] = useState('Medium');
   const [shortInterest, setShortInterest] = useState('Low');
-  const [technicalScore, setTechnicalScore] = useState(5);
   
   const getStartOfWeek = () => {
     const d = new Date();
@@ -36,6 +35,44 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
     setLoading(false);
   };
 
+  const SECTOR_MAP = {
+    'AAPL': 'Technology', 'MSFT': 'Technology', 'NVDA': 'Technology', 'TSLA': 'Consumer Cyclical', 
+    'AMZN': 'Consumer Cyclical', 'META': 'Communication', 'GOOGL': 'Communication', 'AMD': 'Technology', 
+    'JPM': 'Financial', 'V': 'Financial', 'JNJ': 'Healthcare', 'UNH': 'Healthcare', 'XOM': 'Energy', 
+    'PG': 'Consumer Defensive', 'HD': 'Consumer Cyclical', 'MA': 'Financial', 'CVX': 'Energy',
+    'ABBV': 'Healthcare', 'MRK': 'Healthcare', 'PEP': 'Consumer Defensive', 'KO': 'Consumer Defensive',
+    'AVGO': 'Technology', 'COST': 'Consumer Defensive', 'WMT': 'Consumer Defensive', 'TMO': 'Healthcare',
+    'CSCO': 'Technology', 'MCD': 'Consumer Cyclical', 'CRM': 'Technology', 'ABT': 'Healthcare',
+    'NFLX': 'Communication', 'ORCL': 'Technology', 'NKE': 'Consumer Cyclical', 'INTC': 'Technology',
+    'DIS': 'Communication', 'BA': 'Industrials', 'GE': 'Industrials', 'CAT': 'Industrials',
+    'QCOM': 'Technology', 'VZ': 'Communication', 'T': 'Communication', 'PFE': 'Healthcare',
+    'BAC': 'Financial', 'C': 'Financial', 'WFC': 'Financial', 'UBER': 'Technology',
+    'PLTR': 'Technology', 'ARM': 'Technology', 'SMCI': 'Technology', 'COIN': 'Financial'
+  };
+
+  useEffect(() => {
+    if (ticker && ticker.length > 0) {
+      const upperTicker = ticker.toUpperCase();
+      if (SECTOR_MAP[upperTicker]) {
+        setSector(SECTOR_MAP[upperTicker]);
+      }
+    }
+  }, [ticker]);
+
+  const calculateAIScore = (entry, sl, floatSz, si) => {
+    let score = 5; 
+    const risk = entry - sl;
+    if (risk > 0) {
+      const riskPct = (risk / entry) * 100;
+      if (riskPct < 5) score += 2; 
+      else if (riskPct > 15) score -= 2; 
+    }
+    if (floatSz === 'Small') score += 1; 
+    else if (floatSz === 'Large') score -= 1; 
+    if (si === 'High') score += 2; 
+    return Math.max(1, Math.min(10, Math.floor(score)));
+  };
+
   useEffect(() => {
     loadPicks();
   }, [userEmail]);
@@ -44,16 +81,20 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
     e.preventDefault();
     if (!ticker || !entryPrice || !stopLoss) return;
     
+    const entry = parseFloat(entryPrice);
+    const stop = parseFloat(stopLoss);
+    const aiScore = calculateAIScore(entry, stop, floatSize, shortInterest);
+
     try {
       await saveWeeklyPick(userEmail, {
         week_start_date: weekStartDate,
         ticker: ticker.toUpperCase(),
         sector: sector || 'Other',
-        entry_alert_price: parseFloat(entryPrice),
-        stop_loss_price: parseFloat(stopLoss),
+        entry_alert_price: entry,
+        stop_loss_price: stop,
         float_size: floatSize,
         short_interest_level: shortInterest,
-        technical_score: parseInt(technicalScore),
+        technical_score: aiScore,
         status: 'Pending'
       });
       
@@ -62,12 +103,15 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
       setSector('');
       setEntryPrice('');
       setStopLoss('');
-      setTechnicalScore(5);
       
       loadPicks();
     } catch (err) {
       console.error(err);
-      alert("Failed to save pick");
+      if (requestAlert) {
+        requestAlert("❌ บันทึกไม่สำเร็จ", "กรุณาตรวจสอบว่าคุณได้สร้างตาราง 'weekly_swing_picks' ใน Supabase SQL Editor หรือยังครับ (นำโค้ดในไฟล์ supabase_schema.sql ไปรัน)");
+      } else {
+        alert("Failed to save pick. Have you run the SQL migration?");
+      }
     }
   };
 
@@ -77,7 +121,9 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
       setPicks(picks.map(p => p.id === id ? { ...p, status: newStatus } : p));
     } catch (err) {
       console.error(err);
-      alert("Failed to update status");
+      if (requestAlert) {
+        requestAlert("❌ อัปเดตไม่สำเร็จ", "เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+      }
     }
   };
 
@@ -263,16 +309,11 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">My Tech Score (1-10): {technicalScore}</label>
-                <input 
-                  type="range" 
-                  min="1" 
-                  max="10" 
-                  value={technicalScore}
-                  onChange={(e) => setTechnicalScore(e.target.value)}
-                  className="w-full accent-indigo-600"
-                />
+              <div className="bg-slate-100 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-start gap-2">
+                <span className="text-lg">🤖</span>
+                <span>
+                  <strong>AI Tech Score</strong> จะถูกคำนวณให้อัตโนมัติ (1-10) จากความคุ้มค่าของระยะ Stop Loss, ขนาดหุ้น (Float) และแรงสะสมของ Short Interest
+                </span>
               </div>
 
               <button 
@@ -431,8 +472,10 @@ export default function WeeklySwingPlanner({ userEmail, isVip }) {
                       <td className="px-4 py-3 font-mono font-bold text-rose-500 dark:text-rose-400">
                         ${Number(pick.stop_loss_price).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-center font-bold text-amber-500">
-                        {pick.technical_score}/10
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800">
+                          {pick.technical_score}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <select 

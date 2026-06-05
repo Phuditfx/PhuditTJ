@@ -937,7 +937,7 @@ export default function App() {
                 )}
                 {activeTab === 'weeklyPicks' && (
                   isVip
-                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} />
+                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} />
                     : <VipLockScreen featureName="TI Weekly Swing Planner" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
