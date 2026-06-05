@@ -15,6 +15,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
   const [stopLoss, setStopLoss] = useState('');
   const [floatSize, setFloatSize] = useState('Medium');
   const [shortInterest, setShortInterest] = useState('Low');
+  const [setupType, setSetupType] = useState('Breakout');
+  const [showManual, setShowManual] = useState(false);
   
   const getStartOfWeek = () => {
     const d = new Date();
@@ -94,6 +96,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
         stop_loss_price: stop,
         float_size: floatSize,
         short_interest_level: shortInterest,
+        setup_type: setupType,
         technical_score: aiScore,
         status: 'Pending'
       });
@@ -103,6 +106,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       setSector('');
       setEntryPrice('');
       setStopLoss('');
+      setSetupType('Breakout');
       
       loadPicks();
     } catch (err) {
@@ -197,6 +201,23 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     }));
   }, [picks]);
 
+  // 5. Performance by Setup Type
+  const setupData = useMemo(() => {
+    const map = {};
+    picks.forEach(p => {
+      if (!completedStatuses.includes(p.status)) return;
+      const s = p.setup_type || 'Other';
+      if (!map[s]) map[s] = { total: 0, wins: 0 };
+      map[s].total += 1;
+      if (p.status === 'Win') map[s].wins += 1;
+    });
+    return Object.keys(map).map(setup => ({
+      name: setup,
+      winRate: map[setup].total > 0 ? (map[setup].wins / map[setup].total) * 100 : 0,
+      total: map[setup].total
+    })).sort((a, b) => b.winRate - a.winRate);
+  }, [picks]);
+
   if (!isVip) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center blur-md opacity-60 select-none pointer-events-none">
@@ -207,19 +228,41 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      
+      {/* Header & Stats Overview */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <span>📈 TI Weekly Swing Planner</span>
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            บันทึกการเทรดหุ้น TI Swing Picks ประจำสัปดาห์ และวิเคราะห์ประสิทธิภาพของระบบ
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">📐</span>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">TI Weekly Swing Planner</h2>
+            <div className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-[10px] font-black tracking-widest uppercase border border-amber-200 dark:border-amber-800/50">PRO</div>
+          </div>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Plan your swing trades logically</p>
         </div>
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-lg font-bold border border-indigo-100 dark:border-indigo-800/50">
-          Total Logs: {totalPicks} | Win Rate: {overallWinRate.toFixed(1)}%
-        </div>
+        <button
+          onClick={() => setShowManual(!showManual)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors border border-slate-200 dark:border-slate-700"
+        >
+          <span>📖</span> {showManual ? 'ซ่อนคู่มือ' : 'คู่มือการใช้งาน'}
+        </button>
       </div>
+
+      {/* Expandable Manual */}
+      {showManual && (
+        <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-sm animate-fade-in">
+          <h3 className="font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-2">
+            <span>💡</span> คู่มือการใช้งานระบบบันทึกหุ้น (Weekly TI Swing Pick)
+          </h3>
+          <ul className="list-disc pl-5 space-y-1.5 marker:text-indigo-400">
+            <li><strong>เป้าหมาย:</strong> ใช้สำหรับวางแผน Trade Setup หุ้นรายสัปดาห์ เพื่อเตรียมความพร้อมในการเข้าเทรด</li>
+            <li><strong>สถานะ Pending:</strong> รอจุดเข้าซื้อ เมื่อราคามาถึงระดับ Entry Alert ให้เปลี่ยนสถานะเป็น Triggered-Active</li>
+            <li><strong>สถานะ Triggered-Active:</strong> หุ้นได้เข้าซื้อแล้วและกำลังวิ่งอยู่ในรอบ</li>
+            <li><strong>สถานะ Win/Loss/Breakeven:</strong> เมื่อจบรอบ ให้บันทึกผลเพื่อใช้คำนวณ Win Rate ใน Analytics ด้านบน</li>
+            <li><strong>Setup Type:</strong> การระบุรูปแบบการเข้าเทรดจะช่วยให้ระบบวิเคราะห์ได้ว่า Setup แบบไหนที่คุณเทรดแล้วได้กำไรดีที่สุด (Win Rate by Setup Type)</li>
+            <li><strong>AI Tech Score:</strong> ระบบประเมินความเสี่ยงและโอกาสคร่าวๆ ตามหลักของ TI (Trade-Ideas) จาก R-Multiple เบื้องต้นและ Float Size</li>
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -313,6 +356,20 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                   >
                     <option value="Low">Low</option>
                     <option value="High">High</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Setup Type</label>
+                  <select 
+                    value={setupType}
+                    onChange={(e) => setSetupType(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                  >
+                    <option value="Breakout">Breakout</option>
+                    <option value="Pullback">Pullback</option>
+                    <option value="Reversal">Reversal</option>
+                    <option value="Trend Following">Trend Following</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
@@ -422,6 +479,34 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                )}
              </div>
           </div>
+
+          <div className="crypto-card p-5 md:col-span-3 relative overflow-hidden">
+             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Performance by Setup Type</h3>
+             <div className="h-36 w-full text-xs font-mono">
+               {setupData.some(d => d.total > 0) ? (
+                 <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={setupData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.1} horizontal={false} />
+                    <XAxis type="number" stroke="#64748b" tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+                    <YAxis dataKey="name" type="category" stroke="#64748b" tickLine={false} axisLine={false} width={100} />
+                    <Tooltip 
+                      cursor={{fill: '#1e293b', opacity: 0.1}}
+                      contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
+                      itemStyle={{fontWeight: 'bold', color: '#ffffff'}}
+                      formatter={(value) => [`${value.toFixed(1)}%`, 'Win Rate']}
+                    />
+                    <Bar dataKey="winRate" radius={[0, 4, 4, 0]} barSize={20}>
+                      {setupData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill="#8b5cf6" />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+               ) : (
+                 <div className="flex h-full items-center justify-center text-slate-400">No data</div>
+               )}
+             </div>
+          </div>
         </div>
       </div>
 
@@ -497,11 +582,11 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                             'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50'
                           }`}
                         >
-                          <option value="Pending" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Pending</option>
-                          <option value="Triggered-Active" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Triggered-Active</option>
-                          <option value="Win" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Win</option>
-                          <option value="Loss" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Loss</option>
-                          <option value="Breakeven" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Breakeven</option>
+                          <option value="Pending" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Pending (รอจุดเข้า)</option>
+                          <option value="Triggered-Active" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Triggered-Active (เข้าซื้อแล้ว)</option>
+                          <option value="Win" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Win (ถึง TP/กำไร)</option>
+                          <option value="Loss" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Loss (ชน SL/ขาดทุน)</option>
+                          <option value="Breakeven" className="text-slate-900 bg-white dark:text-white dark:bg-slate-800">Breakeven (ปิดเท่าทุน)</option>
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right">

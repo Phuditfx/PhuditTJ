@@ -29,7 +29,13 @@ export const fetchHistoricalData = async (symbol) => {
         
         const chartData = [];
         for (let i = 0; i < timestamps.length; i++) {
-          if (quote.open[i] !== null) {
+          if (
+            timestamps[i] !== null &&
+            quote.open[i] !== null && 
+            quote.high[i] !== null && 
+            quote.low[i] !== null && 
+            quote.close[i] !== null
+          ) {
             chartData.push({
               time: timestamps[i],
               open: quote.open[i],
