@@ -1356,9 +1356,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             onClick={() => {
               if (requestConfirm) {
                 requestConfirm(
+                  "ยืนยันการลบ",
                   "⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดอย่างถาวร? (ไม่สามารถกู้คืนได้)",
-                  () => { if (onClearAllTrades) onClearAllTrades(); },
-                  "danger"
+                  () => { if (onClearAllTrades) onClearAllTrades(); }
                 );
               } else if (window.confirm("⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดอย่างถาวร? (ไม่สามารถกู้คืนได้)")) {
                 if (onClearAllTrades) onClearAllTrades();

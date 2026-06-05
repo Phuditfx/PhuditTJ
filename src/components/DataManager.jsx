@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { calculateStorageUsage, saveFeedPosts, saveTrades, savePlans, saveDividends } from '../db/journalDB';
 import { Trash2, Download, AlertTriangle, Database, HardDrive, RefreshCw, CalendarDays } from 'lucide-react';
 
-export default function DataManager({ currentUser, trades, setTrades, feedPosts, setFeedPosts, plans, setPlans, dividends, setDividends }) {
+export default function DataManager({ currentUser, trades, setTrades, feedPosts, setFeedPosts, plans, setPlans, dividends, setDividends, requestConfirm, requestAlert }) {
   const [firebaseSize, setFirebaseSize] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
   const [selectedFeedMonth, setSelectedFeedMonth] = useState('All');
@@ -57,10 +57,15 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
   const tradeMonths = Array.from(new Set(trades.map(t => getMonthStr(t.dateTime)).filter(Boolean))).sort((a, b) => b.localeCompare(a));
 
   const handleDeleteFeedPost = (id) => {
-    if (window.confirm('Are you sure you want to delete this post? This cannot be undone.')) {
+    const doDelete = () => {
       const updated = feedPosts.filter(p => p.id !== id);
       setFeedPosts(updated);
       saveFeedPosts(currentUser, updated);
+    };
+    if (requestConfirm) {
+      requestConfirm('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', doDelete);
+    } else if (window.confirm('Are you sure you want to delete this post? This cannot be undone.')) {
+      doDelete();
     }
   };
 
@@ -68,7 +73,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
     let confirmMsg = 'Are you sure you want to delete ALL feed posts?';
     if (selectedFeedMonth !== 'All') confirmMsg = `Are you sure you want to delete all feed posts in ${selectedFeedMonth}?`;
     
-    if (window.confirm(confirmMsg)) {
+    const doClear = () => {
       if (selectedFeedMonth === 'All') {
         setFeedPosts([]);
         saveFeedPosts(currentUser, []);
@@ -78,6 +83,12 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
         saveFeedPosts(currentUser, updated);
       }
       setSelectedFeedMonth('All');
+    };
+    
+    if (requestConfirm) {
+      requestConfirm('Clear Posts', confirmMsg, doClear);
+    } else if (window.confirm(confirmMsg)) {
+      doClear();
     }
   };
 
@@ -85,7 +96,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
     let confirmMsg = 'Are you sure you want to delete ALL your trades history?';
     if (selectedTradeMonth !== 'All') confirmMsg = `Are you sure you want to delete all trades in ${selectedTradeMonth}?`;
     
-    if (window.confirm(confirmMsg)) {
+    const doClear = () => {
       if (selectedTradeMonth === 'All') {
         setTrades([]);
         saveTrades(currentUser, []);
@@ -95,11 +106,17 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
         saveTrades(currentUser, updated);
       }
       setSelectedTradeMonth('All');
+    };
+    
+    if (requestConfirm) {
+      requestConfirm('Clear Trades', confirmMsg, doClear);
+    } else if (window.confirm(confirmMsg)) {
+      doClear();
     }
   };
 
   const handleDownloadLogs = () => {
-    import('../utils/logger').then(m => m.downloadLogs && m.downloadLogs());
+    import('../utils/logger').then(m => m.downloadLogs && m.downloadLogs(requestAlert));
   };
 
   const formatMonthLabel = (ym) => {

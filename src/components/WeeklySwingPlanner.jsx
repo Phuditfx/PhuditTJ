@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Cartes
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert }) {
+export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
   const [picks, setPicks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,12 +128,20 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this pick?")) return;
-    try {
-      await deleteWeeklyPick(id, userEmail);
-      setPicks(picks.filter(p => p.id !== id));
-    } catch (err) {
-      console.error(err);
+    const doDelete = async () => {
+      try {
+        await deleteWeeklyPick(id, userEmail);
+        setPicks(picks.filter(p => p.id !== id));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    
+    if (requestConfirm) {
+      requestConfirm("Delete Pick", "Are you sure you want to delete this pick?", doDelete);
+    } else {
+      if (!window.confirm("Are you sure you want to delete this pick?")) return;
+      doDelete();
     }
   };
 

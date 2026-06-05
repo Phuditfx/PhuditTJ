@@ -43,7 +43,7 @@ function ImageLightbox({ src, onClose }) {
 // ============================
 // Main Feed Component
 // ============================
-export default function FeedComponent({ posts = [], onSavePost, currentUser, profile, onViewProfile }) {
+export default function FeedComponent({ posts = [], onSavePost, currentUser, profile, onViewProfile, requestAlert, requestConfirm }) {
   const [postTitle, setPostTitle] = useState('');
   const [blocks, setBlocks] = useState([{ id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -99,7 +99,8 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
         const base64 = await compressImage(file);
         setBlocks(blocks.map(b => b.id === id ? { ...b, image: file, previewUrl, base64 } : b));
       } catch (err) {
-        alert('ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่อีกครั้ง');
+        if (requestAlert) requestAlert('ข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่อีกครั้ง');
+        else alert('ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่อีกครั้ง');
       }
     }
   };
@@ -116,7 +117,8 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
 
   const handlePublish = async () => {
     if (!postTitle.trim() && blocks.every(b => !b.text.trim() && !b.image)) {
-      alert('Post cannot be empty.');
+      if (requestAlert) requestAlert('ข้อผิดพลาด', 'Post cannot be empty.');
+      else alert('Post cannot be empty.');
       return;
     }
     setIsPublishing(true);
@@ -147,7 +149,8 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
       setBlocks([{ id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
     } catch (e) {
       console.error('Error publishing post:', e);
-      alert('Failed to publish post. Please check your connection and try again.');
+      if (requestAlert) requestAlert('ข้อผิดพลาด', 'Failed to publish post. Please check your connection and try again.');
+      else alert('Failed to publish post. Please check your connection and try again.');
     } finally {
       setIsPublishing(false);
     }

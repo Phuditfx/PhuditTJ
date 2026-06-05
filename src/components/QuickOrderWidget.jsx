@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [] }) {
+export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [], requestAlert, requestConfirm }) {
   const { t } = useLanguage();
   const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
     symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: ''

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllUsersData, approveUser, deleteUser, toggleUserVip } from '../db/journalDB';
 
-export default function OwnerDashboard({ currentUser }) {
+export default function OwnerDashboard({ currentUser, requestConfirm, requestAlert }) {
   const [users, setUsers] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);

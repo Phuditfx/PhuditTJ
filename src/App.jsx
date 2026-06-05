@@ -915,6 +915,8 @@ export default function App() {
                       currentUser={currentUser}
                       profile={profile}
                       onViewProfile={(email) => { setProfileTab(email); }}
+                      requestAlert={requestAlert}
+                      requestConfirm={requestConfirm}
                     />
                   ) : (
                     <VipLockScreen featureName="Trading Bulletin (Feed)" onBack={() => setActiveTab('dashboard')} />
@@ -927,6 +929,8 @@ export default function App() {
                     feedPosts={feedPosts} setFeedPosts={setFeedPosts}
                     plans={plans} setPlans={setPlans}
                     dividends={dividends} setDividends={setDividends}
+                    requestAlert={requestAlert}
+                    requestConfirm={requestConfirm}
                   />
                 )}
                 {/* ✅ Task 2: TI Swing Pick Calculator (VIP only) */}
@@ -937,7 +941,7 @@ export default function App() {
                 )}
                 {activeTab === 'weeklyPicks' && (
                   isVip
-                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} />
+                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} requestConfirm={requestConfirm} />
                     : <VipLockScreen featureName="TI Weekly Swing Planner" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
@@ -963,6 +967,7 @@ export default function App() {
             activeTab={activeTab}
             plans={plans}
             requestAlert={requestAlert}
+            requestConfirm={requestConfirm}
           />
           
           {/* ข้อมูลคำเตือนเล็กๆ ท้ายบอร์ด */}

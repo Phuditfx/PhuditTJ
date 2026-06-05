@@ -80,9 +80,13 @@ export const clearLogs = () => {
   saveLogs();
 };
 
-export const downloadLogs = () => {
+export const downloadLogs = (requestAlert) => {
   if (logs.length === 0) {
-    alert("No logs to download");
+    if (requestAlert) {
+      requestAlert("No logs", "No logs to download");
+    } else {
+      alert("No logs to download");
+    }
     return;
   }
   
