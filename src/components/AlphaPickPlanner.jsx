@@ -234,8 +234,6 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           </div>
         </div>
 
-        </div>
-
         {/* Portfolio Table Section */}
         <div className="w-full">
            <div className="crypto-card p-0 overflow-hidden h-full">
