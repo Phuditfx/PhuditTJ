@@ -61,7 +61,7 @@ const parseToTimestamp = (dateStr) => {
   return Math.floor(timeMs / 1000);
 };
 
-export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status, actualExitPrice }) {
+export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status, actualExitPrice, customMarkers = [] }) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
@@ -220,6 +220,16 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
               color: direction === 'Short' ? '#10b981' : '#f59e0b',
               shape: direction === 'Short' ? 'arrowUp' : 'arrowDown',
               text: 'EXIT'
+            });
+          }
+
+          // Add custom markers passed as props
+          if (customMarkers && customMarkers.length > 0) {
+            customMarkers.forEach(cm => {
+              const exactTime = findClosestTime(cm.time, 'customMarker');
+              if (exactTime) {
+                markers.push({ ...cm, time: exactTime });
+              }
             });
           }
 

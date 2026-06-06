@@ -398,9 +398,9 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                                   <td colSpan="5" className="p-4">
                                     <div className="h-[400px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-inner">
                                       <LightweightChartComponent 
-                                        ticker={pos.ticker}
-                                        entryPrice={parseFloat(pos.average_cost)}
-                                        markers={chartMarkers}
+                                        symbol={pos.ticker}
+                                        entry={parseFloat(pos.average_cost)}
+                                        customMarkers={chartMarkers}
                                       />
                                     </div>
                                     <div className="mt-2 text-[10px] text-slate-500 text-center font-bold">
@@ -516,10 +516,10 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                               <td colSpan="7" className="p-4">
                                 <div className="h-[400px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-inner">
                                   <LightweightChartComponent 
-                                    ticker={pick.ticker}
-                                    entryPrice={pick.entry_alert_price ? parseFloat(pick.entry_alert_price) : null}
-                                    stopLossPrice={pick.stop_loss_price ? parseFloat(pick.stop_loss_price) : null}
-                                    markers={[{
+                                    symbol={pick.ticker}
+                                    entry={pick.entry_alert_price ? parseFloat(pick.entry_alert_price) : null}
+                                    stopLoss={pick.stop_loss_price ? parseFloat(pick.stop_loss_price) : null}
+                                    customMarkers={[{
                                       time: pick.pick_date,
                                       position: 'belowBar',
                                       color: '#3b82f6',
