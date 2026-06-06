@@ -122,3 +122,45 @@ export async function deleteInvestmentPosition(positionId) {
         .eq('id', positionId);
     if (error) throw error;
 }
+
+// ----------------------------------------------------
+// ALPHA PICKS JOURNAL (Plan & Stats)
+// ----------------------------------------------------
+
+export async function getAlphaPicksJournal(userEmail) {
+  if (!userEmail) return [];
+  const { data, error } = await supabase
+    .from('alpha_picks_journal')
+    .select('*')
+    .eq('user_email', userEmail)
+    .order('pick_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching alpha picks journal:', error);
+    return [];
+  }
+  return data;
+}
+
+export async function addAlphaPicksJournal(journalData) {
+  const { error } = await supabase
+    .from('alpha_picks_journal')
+    .insert([journalData]);
+  if (error) throw error;
+}
+
+export async function deleteAlphaPicksJournal(id) {
+  const { error } = await supabase
+    .from('alpha_picks_journal')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateAlphaPicksJournalStatus(id, newStatus) {
+  const { error } = await supabase
+    .from('alpha_picks_journal')
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
