@@ -1051,6 +1051,10 @@ export default function App() {
                 <span className="text-2xl mb-1">📈</span>
                 <span className="text-[10px] font-bold text-center leading-tight">Weekly<br/>Picks</span>
               </button>
+              <button onClick={() => setActiveTab('alphaPicks')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'alphaPicks' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                <span className="text-2xl mb-1">🏛️</span>
+                <span className="text-[10px] font-bold text-center leading-tight">Weekly<br/>Alpha Picks</span>
+              </button>
               <button onClick={() => setActiveTab('plans')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'plans' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">📝</span>
                 <span className="text-[10px] font-bold text-center">Plans</span>
