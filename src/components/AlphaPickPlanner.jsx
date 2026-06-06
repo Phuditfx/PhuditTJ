@@ -131,33 +131,32 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col gap-6">
         
         {/* Form Section */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          <div className="crypto-card p-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="crypto-card p-6 w-full lg:w-2/3">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
               ➕ Add Transaction
             </h3>
-            <form onSubmit={handleTransaction} className="flex flex-col gap-4">
+            <form onSubmit={handleTransaction} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              <div className="grid grid-cols-2 gap-4">
-                 <div>
+                 <div className="col-span-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
                   <select 
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className={`w-full border rounded-lg p-2.5 text-sm font-bold outline-none cursor-pointer ${
+                    className={`w-full bg-slate-50 dark:bg-slate-900 border rounded-lg p-2.5 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500 ${
                       type === 'BUY' 
-                        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' 
-                        : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400'
+                        ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' 
+                        : 'border-rose-500 text-rose-600 dark:text-rose-400'
                     }`}
                   >
-                    <option value="BUY">BUY (Add More)</option>
-                    <option value="SELL">SELL (Scale Out)</option>
+                    <option value="BUY" className="text-emerald-600 dark:text-emerald-400">BUY (Add More)</option>
+                    <option value="SELL" className="text-rose-600 dark:text-rose-400">SELL (Scale Out)</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
                   <input 
                     type="date" 
@@ -167,9 +166,8 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                     required
                   />
                 </div>
-              </div>
 
-              <div>
+              <div className="col-span-1 md:col-span-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ticker</label>
                 <input 
                   type="text" 
@@ -181,8 +179,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Shares</label>
                   <input 
                     type="number" 
@@ -193,7 +190,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                     required
                   />
                 </div>
-                <div>
+                <div className="col-span-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Price ($)</label>
                   <input 
                     type="number" 
@@ -204,9 +201,8 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                     required
                   />
                 </div>
-              </div>
 
-              <div>
+              <div className="col-span-1 md:col-span-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes (Optional)</label>
                 <input 
                   type="text" 
@@ -217,18 +213,20 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 />
               </div>
 
-              <button 
-                type="submit" 
-                className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center transition-all shadow-md active:scale-95 text-white ${
-                  type === 'BUY' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30' : 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/30'
-                }`}
-              >
-                {type === 'BUY' ? 'RECORD BUY' : 'RECORD SELL'}
-              </button>
+              <div className="col-span-1 md:col-span-2 pt-2">
+                <button 
+                  type="submit" 
+                  className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center transition-all shadow-md active:scale-95 text-white ${
+                    type === 'BUY' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30' : 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/30'
+                  }`}
+                >
+                  {type === 'BUY' ? 'RECORD BUY' : 'RECORD SELL'}
+                </button>
+              </div>
             </form>
           </div>
 
-          <div className="crypto-card p-6 flex flex-col gap-2">
+          <div className="crypto-card p-6 flex flex-col justify-center items-center gap-2 w-full lg:w-1/3">
              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Total Invested Capital</h3>
              <div className="text-3xl font-black text-slate-900 dark:text-white">
                ${totalInvested.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -236,8 +234,10 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           </div>
         </div>
 
+        </div>
+
         {/* Portfolio Table Section */}
-        <div className="lg:col-span-2">
+        <div className="w-full">
            <div className="crypto-card p-0 overflow-hidden h-full">
               <div className="p-6 border-b border-slate-200 dark:border-slate-800">
                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">💼 Current Holdings</h3>
