@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie } from 'recharts';
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick, updateWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
+import LightweightChartComponent from './LightweightChartComponent';
 
 export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
@@ -34,11 +35,19 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
 
   const [expandedGroups, setExpandedGroups] = useState({});
+  const [expandedCharts, setExpandedCharts] = useState({});
 
   const toggleGroup = (key) => {
     setExpandedGroups(prev => ({
       ...prev,
       [key]: prev[key] === false ? true : false
+    }));
+  };
+
+  const toggleChart = (id) => {
+    setExpandedCharts(prev => ({
+      ...prev,
+      [id]: !prev[id]
     }));
   };
 
@@ -766,6 +775,13 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                           </button>
+                          <button 
+                            onClick={() => toggleChart(pick.id)}
+                            className={`transition-colors p-1 ${expandedCharts[pick.id] ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'}`}
+                            title="View Chart"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -785,6 +801,21 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                                 <span>{pick.risk_considerations}</span>
                               </div>
                             )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {expandedCharts[pick.id] && (
+                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                        <td colSpan="9" className="p-0">
+                          <div className="w-full h-64 sm:h-80 p-2">
+                            <LightweightChartComponent 
+                              symbol={pick.ticker} 
+                              entry={pick.entry_alert_price} 
+                              stopLoss={pick.stop_loss_price} 
+                              entryTime={pick.week_start_date}
+                              direction="Long"
+                            />
                           </div>
                         </td>
                       </tr>

@@ -35,6 +35,7 @@ import VipLockScreen from './components/VipLockScreen';
 import SwingPickCalculator from './components/SwingPickCalculator';
 import UserProfile from './components/UserProfile';
 import WeeklySwingPlanner from './components/WeeklySwingPlanner';
+import AlphaPickPlanner from './components/AlphaPickPlanner';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -945,6 +946,11 @@ export default function App() {
                     ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} requestConfirm={requestConfirm} />
                     : <VipLockScreen featureName="TI Weekly Swing Planner" onBack={() => setActiveTab('dashboard')} />
                 )}
+                {activeTab === 'alphaPicks' && (
+                  isVip
+                    ? <AlphaPickPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} requestConfirm={requestConfirm} />
+                    : <VipLockScreen featureName="Alpha Picks Investment" onBack={() => setActiveTab('dashboard')} />
+                )}
                 {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
                   <OwnerDashboard
                     currentUser={currentUser}
@@ -1413,6 +1419,16 @@ export default function App() {
                     <div>
                       <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1">4. {t('manual.sampleData', 'Sample Data (Testing)')}</h4>
                       <p>{t('manual.sampleDataDesc', 'If your dashboard is empty, you can click "Add Sample Trades" to instantly populate it with dummy data so you can test out the charts and features.')}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-amber-500 dark:text-amber-400 text-base mb-1">5. {t('manual.alphaPicks', 'Alpha Picks Investment (PRO)')}</h4>
+                      <p>{t('manual.alphaPicksDesc', 'Use this module for Long-Term Investing. When you buy more shares of an existing position, the system automatically calculates your new Dollar-Cost Averaging (DCA). When you scale out (sell), it records the realized profit without altering your core average cost.')}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-amber-500 dark:text-amber-400 text-base mb-1">6. {t('manual.weeklyPlanner', 'TI Weekly Swing Planner (PRO)')}</h4>
+                      <p>{t('manual.weeklyPlannerDesc', 'Plan your swing trades logically. Log your Entry Alert and Stop Loss. You can now click the Chart Icon 📈 to view the historical OHLC chart with automated markers pointing precisely to the date you logged the pick.')}</p>
                     </div>
                   </div>
                 </div>
