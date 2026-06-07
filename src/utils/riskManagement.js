@@ -91,28 +91,40 @@ export const fetchLivePrices = async (tickersArray) => {
   if (!tickersArray || tickersArray.length === 0) return {};
   
   try {
-    const symbols = tickersArray.join(',');
-    const url = encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`);
-    const proxyUrl = `https://api.allorigins.win/get?url=${url}`;
-    
-    const response = await fetch(proxyUrl);
-    const proxyData = await response.json();
-    
-    if (!proxyData || !proxyData.contents) {
-      throw new Error('Failed to fetch data from proxy');
-    }
-    
-    const data = JSON.parse(proxyData.contents);
-    
-    if (!data.quoteResponse || !data.quoteResponse.result) {
-      throw new Error('Invalid data structure from Yahoo Finance');
-    }
-    
     const pricesMap = {};
-    data.quoteResponse.result.forEach(quote => {
-      pricesMap[quote.symbol] = quote.regularMarketPrice;
+    const fetchPromises = tickersArray.map(async (ticker) => {
+      try {
+        const url = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`);
+        const proxyUrl = `https://api.allorigins.win/get?url=${url}&disableCache=true`;
+        
+        const response = await fetch(proxyUrl);
+        const proxyData = await response.json();
+        
+        if (proxyData && proxyData.contents) {
+          const data = JSON.parse(proxyData.contents);
+          if (data.chart && data.chart.result && data.chart.result.length > 0) {
+            const result = data.chart.result[0];
+            const meta = result.meta;
+            if (meta && meta.regularMarketPrice) {
+              pricesMap[ticker] = meta.regularMarketPrice;
+            } else {
+              // fallback to close array
+              const quote = result.indicators.quote[0];
+              if (quote && quote.close) {
+                const closePrices = quote.close.filter(p => p !== null);
+                if (closePrices.length > 0) {
+                  pricesMap[ticker] = closePrices[closePrices.length - 1];
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch live price for ${ticker}`, err);
+      }
     });
-    
+
+    await Promise.all(fetchPromises);
     return pricesMap;
   } catch (error) {
     console.error('Error fetching live prices:', error);
