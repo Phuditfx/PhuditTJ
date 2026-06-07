@@ -580,30 +580,36 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           <div className="crypto-card p-5 flex flex-col items-center justify-center relative overflow-hidden">
             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 absolute top-4 left-5 uppercase tracking-wider">Trigger Rate</h3>
             <div className="h-32 w-full mt-6 flex justify-center items-center relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={triggerPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={30}
-                    outerRadius={50}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {triggerPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
-                    itemStyle={{fontWeight: 'bold', color: '#ffffff'}}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute flex items-center justify-center inset-0 pointer-events-none">
-                <span className="font-bold text-xl text-slate-900 dark:text-white">{triggerRate.toFixed(0)}%</span>
-              </div>
+              {totalPicks > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={triggerPieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={50}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {triggerPieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
+                        itemStyle={{fontWeight: 'bold', color: '#ffffff'}}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute flex items-center justify-center inset-0 pointer-events-none">
+                    <span className="font-bold text-xl text-slate-900 dark:text-white">{triggerRate.toFixed(0)}%</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full items-center justify-center text-slate-400">No data</div>
+              )}
             </div>
             <p className="text-xs text-slate-500 mt-2 text-center">หุ้นที่แตะ Entry Alert Price</p>
           </div>
