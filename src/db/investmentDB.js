@@ -164,3 +164,19 @@ export async function updateAlphaPicksJournalStatus(id, newStatus) {
     .eq('id', id);
   if (error) throw error;
 }
+
+export async function updateInvestmentPositionPnL(id, pnl, currentPrice) {
+  const { error } = await supabase
+    .from('investment_positions')
+    .update({ unrealized_pnl: pnl, current_price: currentPrice, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) console.error('Error updating position PnL:', error);
+}
+
+export async function updateAlphaPickJournalPnL(id, pnl) {
+  const { error } = await supabase
+    .from('alpha_picks_journal')
+    .update({ unrealized_pnl: pnl, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) console.error('Error updating journal PnL:', error);
+}

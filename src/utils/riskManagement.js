@@ -86,3 +86,36 @@ export const calculateTrailingStop = async (ticker, highestPriceReached) => {
     currentPrice: ohlc[ohlc.length - 1].close // return current price for convenience
   };
 };
+
+export const fetchLivePrices = async (tickersArray) => {
+  if (!tickersArray || tickersArray.length === 0) return {};
+  
+  try {
+    const symbols = tickersArray.join(',');
+    const url = encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`);
+    const proxyUrl = `https://api.allorigins.win/get?url=${url}`;
+    
+    const response = await fetch(proxyUrl);
+    const proxyData = await response.json();
+    
+    if (!proxyData || !proxyData.contents) {
+      throw new Error('Failed to fetch data from proxy');
+    }
+    
+    const data = JSON.parse(proxyData.contents);
+    
+    if (!data.quoteResponse || !data.quoteResponse.result) {
+      throw new Error('Invalid data structure from Yahoo Finance');
+    }
+    
+    const pricesMap = {};
+    data.quoteResponse.result.forEach(quote => {
+      pricesMap[quote.symbol] = quote.regularMarketPrice;
+    });
+    
+    return pricesMap;
+  } catch (error) {
+    console.error('Error fetching live prices:', error);
+    return {};
+  }
+};

@@ -49,13 +49,18 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
     return Object.values(grouped).reduce((sum, yr) => sum + yr.netDeposits, 0);
   }, [transactions, snapshots]);
 
+  const totalRealizedPnL = useMemo(() => {
+    return transactions.reduce((sum, t) => sum + (parseFloat(t.realized_pnl) || 0), 0);
+  }, [transactions]);
+
+  const totalUnrealizedPnL = useMemo(() => {
+    return positions.reduce((sum, p) => sum + (parseFloat(p.unrealized_pnl) || 0), 0);
+  }, [positions]);
+
   const currentPortfolioValue = useMemo(() => {
-    if (snapshots.length > 0) {
-      return snapshots[snapshots.length - 1].total_value;
-    }
-    // Calculate from positions (shares * current_price)
-    return positions.reduce((sum, p) => sum + (parseFloat(p.total_shares || 0) * parseFloat(p.current_price || p.average_cost || 0)), 0);
-  }, [positions, snapshots]);
+    // Current Value = Total Invested + Realized PnL + Unrealized PnL
+    return totalInvested + totalRealizedPnL + totalUnrealizedPnL;
+  }, [totalInvested, totalRealizedPnL, totalUnrealizedPnL]);
 
   const allTimeGrowth = calculateAllTimeReturn(totalInvested, currentPortfolioValue);
   
@@ -154,13 +159,23 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
         <h2 className="text-2xl font-black text-slate-800 dark:text-white">Alpha Picks Dashboard</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mb-1">Total Portfolio Value</p>
           <p className="text-3xl font-black text-slate-800 dark:text-white">
             ${currentPortfolioValue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
           </p>
-          <p className="text-xs text-slate-400 mt-2">Invested: ${totalInvested.toLocaleString()}</p>
+          <p className="text-xs text-slate-400 mt-2">Invested: ${totalInvested.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mb-1">Total Net PnL</p>
+          <p className={`text-3xl font-black ${(totalRealizedPnL + totalUnrealizedPnL) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+            {(totalRealizedPnL + totalUnrealizedPnL) > 0 ? '+' : ''}${(totalRealizedPnL + totalUnrealizedPnL).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+          </p>
+          <p className="text-[10px] text-slate-400 mt-2 font-mono">
+            R: ${totalRealizedPnL.toFixed(2)} | U: ${totalUnrealizedPnL.toFixed(2)}
+          </p>
         </div>
         
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">

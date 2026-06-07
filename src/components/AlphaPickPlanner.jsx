@@ -7,16 +7,20 @@ import {
   getAlphaPicksJournal,
   addAlphaPicksJournal,
   deleteAlphaPicksJournal,
-  updateAlphaPicksJournalStatus
+  updateAlphaPicksJournalStatus,
+  updateInvestmentPositionPnL,
+  updateAlphaPickJournalPnL
 } from '../db/investmentDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
 import InvestmentDashboard from './InvestmentDashboard';
+import { fetchLivePrices } from '../utils/riskManagement';
 
 export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'portfolio' | 'journal'
   const [showManual, setShowManual] = useState(false);
+  const [livePrices, setLivePrices] = useState({});
 
   // === PORTFOLIO STATE ===
   const [positions, setPositions] = useState([]);
@@ -50,6 +54,34 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
       setPositions(posData);
       const jData = await getAlphaPicksJournal(userEmail);
       setJournalEntries(jData);
+
+      // Fetch live prices
+      const tickers = new Set();
+      posData.forEach(p => { if (parseFloat(p.total_shares) > 0) tickers.add(p.ticker); });
+      jData.forEach(p => { if (p.status === 'Active' || p.status === 'Triggered-Active') tickers.add(p.ticker); });
+      
+      if (tickers.size > 0) {
+        const prices = await fetchLivePrices(Array.from(tickers));
+        setLivePrices(prices);
+        
+        // Background DB Update
+        posData.forEach(p => {
+          if (parseFloat(p.total_shares) > 0 && prices[p.ticker]) {
+            const currentPrice = prices[p.ticker];
+            const pnl = (currentPrice - parseFloat(p.average_cost)) * parseFloat(p.total_shares);
+            updateInvestmentPositionPnL(p.id, pnl, currentPrice);
+          }
+        });
+        
+        jData.forEach(p => {
+          if ((p.status === 'Active' || p.status === 'Triggered-Active') && p.entry_alert_price && prices[p.ticker]) {
+            const currentPrice = prices[p.ticker];
+            // Compute percentage PnL from entry since we don't have shares for Journal Picks
+            const pnl = currentPrice - parseFloat(p.entry_alert_price);
+            updateAlphaPickJournalPnL(p.id, pnl);
+          }
+        });
+      }
     } catch (err) {
       console.error(err);
     }
@@ -358,8 +390,10 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                         <th className="px-6 py-4 whitespace-nowrap">Ticker</th>
                         <th className="px-6 py-4 text-right whitespace-nowrap">Total Shares</th>
-                        <th className="px-6 py-4 text-right whitespace-nowrap">Average Cost</th>
+                        <th className="px-6 py-4 text-right whitespace-nowrap">Avg Cost</th>
+                        <th className="px-6 py-4 text-right whitespace-nowrap">Live Price</th>
                         <th className="px-6 py-4 text-right whitespace-nowrap">Invested Value</th>
+                        <th className="px-6 py-4 text-right whitespace-nowrap">Unrealized PnL</th>
                         <th className="px-6 py-4 text-center w-24">Actions</th>
                       </tr>
                     </thead>
@@ -371,6 +405,9 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                       ) : (
                         positions.filter(p => parseFloat(p.total_shares) > 0).map((pos) => {
                           const invested = parseFloat(pos.total_shares) * parseFloat(pos.average_cost);
+                          const currentPrice = livePrices[pos.ticker] || pos.current_price || pos.average_cost;
+                          const pnl = (currentPrice - parseFloat(pos.average_cost)) * parseFloat(pos.total_shares);
+                          const pnlPct = parseFloat(pos.average_cost) > 0 ? ((currentPrice - parseFloat(pos.average_cost)) / parseFloat(pos.average_cost)) * 100 : 0;
                           const isExpanded = expandedCharts[pos.id];
                           const txs = positionTransactions[pos.id] || [];
                           
@@ -392,11 +429,18 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                                 <td className="px-6 py-4 text-right font-mono text-slate-700 dark:text-slate-300">
                                   {parseFloat(pos.total_shares).toLocaleString(undefined, {maximumFractionDigits: 4})}
                                 </td>
-                                <td className="px-6 py-4 text-right font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                                <td className="px-6 py-4 text-right font-mono text-slate-500">
                                   ${parseFloat(pos.average_cost).toFixed(2)}
+                                </td>
+                                <td className="px-6 py-4 text-right font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                                  ${parseFloat(currentPrice).toFixed(2)}
                                 </td>
                                 <td className="px-6 py-4 text-right font-mono text-slate-700 dark:text-slate-300 font-bold">
                                   ${invested.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                </td>
+                                <td className={`px-6 py-4 text-right font-mono font-bold ${pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                  <div>{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                  <div className="text-[10px]">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</div>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   <div className="flex items-center justify-center gap-2">
@@ -482,6 +526,8 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                     <th className="px-4 py-3 whitespace-nowrap">Pick Date</th>
                     <th className="px-4 py-3">Ticker</th>
                     <th className="px-4 py-3 text-right">Entry Alert</th>
+                    <th className="px-4 py-3 text-right">Live Price</th>
+                    <th className="px-4 py-3 text-right">Unrealized PnL</th>
                     <th className="px-4 py-3 text-right">Stop Loss</th>
                     <th className="px-4 py-3 text-center">Status</th>
                     <th className="px-4 py-3">Notes</th>
@@ -496,12 +542,30 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                   ) : (
                     journalEntries.map(pick => {
                       const isExpanded = expandedJournalCharts[pick.id];
+                      const currentPrice = livePrices[pick.ticker] || null;
+                      const isActive = pick.status === 'Active' || pick.status === 'Triggered-Active';
+                      const pnl = isActive && currentPrice && pick.entry_alert_price 
+                        ? parseFloat(currentPrice) - parseFloat(pick.entry_alert_price) 
+                        : null;
+                      const pnlPct = isActive && pnl !== null && parseFloat(pick.entry_alert_price) > 0
+                        ? (pnl / parseFloat(pick.entry_alert_price)) * 100
+                        : null;
+
                       return (
                         <React.Fragment key={pick.id}>
                           <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors group">
                             <td className="px-4 py-3 text-xs font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">{pick.pick_date}</td>
                             <td className="px-4 py-3 font-black text-slate-900 dark:text-white text-base">{pick.ticker}</td>
                             <td className="px-4 py-3 text-right font-mono font-bold text-blue-600 dark:text-blue-400">{pick.entry_alert_price ? `$${parseFloat(pick.entry_alert_price).toFixed(2)}` : '-'}</td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{currentPrice ? `$${parseFloat(currentPrice).toFixed(2)}` : '-'}</td>
+                            <td className={`px-4 py-3 text-right font-mono font-bold ${pnl !== null ? (pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400') : 'text-slate-400'}`}>
+                              {pnl !== null ? (
+                                <>
+                                  <div>{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</div>
+                                  <div className="text-[10px]">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</div>
+                                </>
+                              ) : '-'}
+                            </td>
                             <td className="px-4 py-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{pick.stop_loss_price ? `$${parseFloat(pick.stop_loss_price).toFixed(2)}` : '-'}</td>
                             <td className="px-4 py-3 text-center">
                               <button 
