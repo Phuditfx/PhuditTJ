@@ -412,7 +412,6 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                           const currentPrice = livePrices[pos.ticker] || pos.current_price || pos.average_cost;
                           const pnl = (currentPrice - parseFloat(pos.average_cost)) * parseFloat(pos.total_shares);
                           const pnlPct = parseFloat(pos.average_cost) > 0 ? ((currentPrice - parseFloat(pos.average_cost)) / parseFloat(pos.average_cost)) * 100 : 0;
-                          const isExpanded = expandedCharts[pos.id];
                           const txs = positionTransactions[pos.id] || [];
                           
                           // Format markers from transactions
@@ -529,7 +528,6 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                     <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-500">No Alpha Picks logged yet.</td></tr>
                   ) : (
                     journalEntries.map(pick => {
-                      const isExpanded = expandedJournalCharts[pick.id];
                       const currentPrice = livePrices[pick.ticker] || null;
                       const isActive = pick.status === 'Active' || pick.status === 'Triggered-Active';
                       const pnl = isActive && currentPrice && pick.entry_alert_price 

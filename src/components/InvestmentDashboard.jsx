@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 import { calculateAllTimeReturn, calculateAnnualGrowth, groupTransactionsByYear } from '../utils/financialMath';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line
+  LineChart, Line, Cell
 } from 'recharts';
 
 export default function InvestmentDashboard({ currentUser, requestAlert }) {
@@ -204,7 +204,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
                 <Bar dataKey="return" name="Return %" radius={[4, 4, 0, 0]}>
                   {
                     annualPerformanceData.map((entry, index) => (
-                      <cell key={`cell-${index}`} fill={entry.return >= 0 ? '#10b981' : '#f43f5e'} />
+                      <Cell key={`cell-${index}`} fill={entry.return >= 0 ? '#10b981' : '#f43f5e'} />
                     ))
                   }
                 </Bar>
