@@ -3,7 +3,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Cartes
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick, updateWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
-import { calculateTrailingStop } from '../utils/riskManagement';
 
 export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
@@ -240,24 +239,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     }
   };
 
-  const handleTrailingSLClick = async (pick) => {
-    if (requestAlert) requestAlert("⏳ กำลังคำนวณ", "ระบบกำลังดึงข้อมูลราคาล่าสุด...");
-    const highestPrice = pick.highest_price_reached || pick.entry_alert_price;
-    const result = await calculateTrailingStop(pick.ticker, highestPrice);
-    if (!result) {
-      if (requestAlert) requestAlert("❌ ผิดพลาด", "ไม่สามารถดึงข้อมูลราคาเพื่อคำนวณ Trailing SL ได้");
-      return;
-    }
-    
-    if (requestAlert) {
-      requestAlert(
-        "🛡️ Auto Trailing SL",
-        `หุ้น: ${pick.ticker}\nHighest Price: $${highestPrice}\nATR (14): $${result.atr.toFixed(2)}\n\n📉 Trailing SL แนะนำ: $${result.trailingSL.toFixed(2)}\n💵 ราคาปัจจุบัน: $${result.currentPrice.toFixed(2)}`
-      );
-    } else {
-      alert(`Trailing SL for ${pick.ticker}: $${result.trailingSL.toFixed(2)}\n(ATR: ${result.atr.toFixed(2)})`);
-    }
-  };
+
 
   // Analytics Calculation
   const totalPicks = picks.length;
@@ -825,13 +807,6 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button 
-                            onClick={() => handleTrailingSLClick(pick)}
-                            className="text-slate-400 hover:text-emerald-500 transition-colors p-1"
-                            title="Auto Trailing SL"
-                          >
-                            🛡️
-                          </button>
                           <button 
                             onClick={() => handleEdit(pick)}
                             className="text-slate-400 hover:text-amber-500 transition-colors p-1"

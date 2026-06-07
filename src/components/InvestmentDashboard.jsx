@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import { calculateTrailingStop } from '../utils/riskManagement';
 import { calculateAllTimeReturn, calculateAnnualGrowth, groupTransactionsByYear } from '../utils/financialMath';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -124,31 +123,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
      });
   }
 
-  const handleAutoTrailingSL = async (position) => {
-    requestAlert("กำลังคำนวณ ATR...", `กำลังดึงข้อมูล OHLC ย้อนหลังสำหรับ ${position.ticker}`);
-    try {
-      const highestPrice = position.highest_price_reached || position.current_price || position.average_cost;
-      const result = await calculateTrailingStop(position.ticker, highestPrice);
-      
-      if (result) {
-        requestAlert(
-          `Trailing Stop สำหรับ ${position.ticker}`, 
-          `ราคาปัจจุบัน: $${result.currentPrice.toFixed(2)}\nATR (14 วัน): $${result.atr.toFixed(2)}\n\nคำแนะนำ Trailing SL: $${result.trailingSL.toFixed(2)}`
-        );
-        // Optionally update the position in the database here if we have a field for it
-        /*
-        await supabase.from('investment_positions')
-          .update({ current_sl: result.trailingSL })
-          .eq('id', position.id);
-        */
-      } else {
-        requestAlert("ข้อผิดพลาด", `ไม่สามารถคำนวณ ATR สำหรับ ${position.ticker} ได้ อาจเกิดจากปัญหาการดึงข้อมูล`);
-      }
-    } catch (err) {
-      console.error(err);
-      requestAlert("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการคำนวณ Trailing Stop");
-    }
-  };
+
 
   if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse">Loading Analytics...</div>;
 
@@ -252,7 +227,6 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
                 <th className="px-4 py-3">Avg Cost</th>
                 <th className="px-4 py-3">Current Price</th>
                 <th className="px-4 py-3">Unrealized PnL</th>
-                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
@@ -275,14 +249,6 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
                       <td className="px-4 py-3 font-mono">${parseFloat(pos.current_price || pos.average_cost).toFixed(2)}</td>
                       <td className={`px-4 py-3 font-mono font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {pnl > 0 ? '+' : ''}{pnl.toFixed(2)} ({pnlPct.toFixed(2)}%)
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button 
-                          onClick={() => handleAutoTrailingSL(pos)}
-                          className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                        >
-                          Auto Trailing SL
-                        </button>
                       </td>
                     </tr>
                   )

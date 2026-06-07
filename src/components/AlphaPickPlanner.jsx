@@ -31,7 +31,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   const [price, setPrice] = useState('');
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
-  const [expandedCharts, setExpandedCharts] = useState({});
+  const [chartModalPos, setChartModalPos] = useState(null);
   const [positionTransactions, setPositionTransactions] = useState({});
 
   // === JOURNAL STATE ===
@@ -43,7 +43,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   const [jStopLoss, setJStopLoss] = useState('');
   const [jTarget, setJTarget] = useState('');
   const [jNotes, setJNotes] = useState('');
-  const [expandedJournalCharts, setExpandedJournalCharts] = useState({});
+  const [chartModalJournal, setChartModalJournal] = useState(null);
 
   const loadData = async () => {
     if (!userEmail) return;
@@ -121,15 +121,15 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
     else { if (window.confirm("Are you sure?")) doDelete(); }
   };
 
-  const togglePortfolioChart = async (posId) => {
-    if (expandedCharts[posId]) {
-      setExpandedCharts(prev => ({ ...prev, [posId]: false }));
+  const togglePortfolioChart = async (pos) => {
+    if (chartModalPos && chartModalPos.id === pos.id) {
+      setChartModalPos(null);
       return;
     }
     try {
-      const txs = await getInvestmentTransactions(posId);
-      setPositionTransactions(prev => ({ ...prev, [posId]: txs }));
-      setExpandedCharts(prev => ({ ...prev, [posId]: true }));
+      const txs = await getInvestmentTransactions(pos.id);
+      setPositionTransactions(prev => ({ ...prev, [pos.id]: txs }));
+      setChartModalPos(pos);
     } catch (err) {
       console.error(err);
     }
@@ -176,8 +176,12 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
     } catch (err) { console.error(err); }
   };
 
-  const toggleJournalChart = (id) => {
-    setExpandedJournalCharts(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleJournalChart = (pick) => {
+    if (chartModalJournal && chartModalJournal.id === pick.id) {
+      setChartModalJournal(null);
+    } else {
+      setChartModalJournal(pick);
+    }
   };
 
   if (!isVip) {
@@ -444,8 +448,8 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   <div className="flex items-center justify-center gap-2">
-                                    <button onClick={() => togglePortfolioChart(pos.id)} className={`p-1.5 rounded-md transition-colors ${isExpanded ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="View Chart">
-                                      📈
+                                    <button onClick={() => togglePortfolioChart(pos)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold transition-colors shadow-sm" title="View Chart">
+                                      <span>📈</span> ดูกราฟ
                                     </button>
                                     <button onClick={() => handleDeletePosition(pos.id)} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="Delete Entire Position">
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -453,22 +457,6 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                                   </div>
                                 </td>
                               </tr>
-                              {isExpanded && (
-                                <tr className="bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-200 dark:border-slate-800/50">
-                                  <td colSpan="5" className="p-4">
-                                    <div className="h-[400px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-inner">
-                                      <LightweightChartComponent 
-                                        symbol={pos.ticker}
-                                        entry={parseFloat(pos.average_cost)}
-                                        customMarkers={chartMarkers}
-                                      />
-                                    </div>
-                                    <div className="mt-2 text-[10px] text-slate-500 text-center font-bold">
-                                      Line: Average Cost | Markers: Transaction History
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
                             </React.Fragment>
                           );
                         })
@@ -570,10 +558,10 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                             <td className="px-4 py-3 text-center">
                               <button 
                                 onClick={() => toggleJournalStatus(pick.id, pick.status)}
-                                className={`px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase transition-colors ${
-                                  pick.status === 'Active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                  pick.status === 'Closed' ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' :
-                                  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all shadow-sm hover:opacity-80 active:scale-95 ${
+                                  pick.status === 'Active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' :
+                                  pick.status === 'Closed' ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700' :
+                                  'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                                 }`}
                               >
                                 {pick.status || 'Pending'}
@@ -582,8 +570,8 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                             <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate" title={pick.notes}>{pick.notes || '-'}</td>
                             <td className="px-4 py-3 text-center">
                               <div className="flex items-center justify-center gap-2">
-                                <button onClick={() => toggleJournalChart(pick.id)} className={`p-1.5 rounded-md transition-colors ${isExpanded ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="View Chart">
-                                  📈
+                                <button onClick={() => toggleJournalChart(pick)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold transition-colors shadow-sm" title="View Chart">
+                                  <span>📈</span> ดูกราฟ
                                 </button>
                                 <button onClick={() => handleDeleteJournal(pick.id)} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="Delete">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -591,32 +579,82 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                               </div>
                             </td>
                           </tr>
-                          {isExpanded && (
-                            <tr className="bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-200 dark:border-slate-800/50">
-                              <td colSpan="7" className="p-4">
-                                <div className="h-[400px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-inner">
-                                  <LightweightChartComponent 
-                                    symbol={pick.ticker}
-                                    entry={pick.entry_alert_price ? parseFloat(pick.entry_alert_price) : null}
-                                    stopLoss={pick.stop_loss_price ? parseFloat(pick.stop_loss_price) : null}
-                                    customMarkers={[{
-                                      time: pick.pick_date,
-                                      position: 'belowBar',
-                                      color: '#3b82f6',
-                                      shape: 'arrowUp',
-                                      text: 'Pick Alert'
-                                    }]}
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          )}
                         </React.Fragment>
                       )
                     })
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📈 Chart View Modal for Portfolio */}
+      {chartModalPos && (
+        <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <div>
+                <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>📈 Portfolio Chart: {chartModalPos.ticker}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">
+                  Average Cost: ${parseFloat(chartModalPos.average_cost).toFixed(2)}
+                </p>
+              </div>
+              <button onClick={() => setChartModalPos(null)} className="text-slate-400 hover:text-rose-500 transition-colors p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-4 flex-1 h-[60vh] sm:h-[70vh]">
+              <LightweightChartComponent 
+                symbol={chartModalPos.ticker}
+                entry={parseFloat(chartModalPos.average_cost)}
+                customMarkers={positionTransactions[chartModalPos.id]?.map(tx => ({
+                  time: tx.transaction_date,
+                  position: tx.type === 'BUY' ? 'belowBar' : 'aboveBar',
+                  color: tx.type === 'BUY' ? '#10b981' : '#f43f5e',
+                  shape: tx.type === 'BUY' ? 'arrowUp' : 'arrowDown',
+                  text: `${tx.type} @ ${tx.price}`
+                })) || []}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📈 Chart View Modal for Journal */}
+      {chartModalJournal && (
+        <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <div>
+                <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>📈 Pick Chart: {chartModalJournal.ticker}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono flex items-center gap-4">
+                  <span>Entry: ${parseFloat(chartModalJournal.entry_alert_price).toFixed(2)}</span>
+                  {chartModalJournal.stop_loss_price && <span className="text-rose-500">SL: ${parseFloat(chartModalJournal.stop_loss_price).toFixed(2)}</span>}
+                </p>
+              </div>
+              <button onClick={() => setChartModalJournal(null)} className="text-slate-400 hover:text-rose-500 transition-colors p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-4 flex-1 h-[60vh] sm:h-[70vh]">
+              <LightweightChartComponent 
+                symbol={chartModalJournal.ticker}
+                entry={chartModalJournal.entry_alert_price ? parseFloat(chartModalJournal.entry_alert_price) : null}
+                stopLoss={chartModalJournal.stop_loss_price ? parseFloat(chartModalJournal.stop_loss_price) : null}
+                customMarkers={[{
+                  time: chartModalJournal.pick_date,
+                  position: 'belowBar',
+                  color: '#3b82f6',
+                  shape: 'arrowUp',
+                  text: 'Pick Alert'
+                }]}
+              />
             </div>
           </div>
         </div>
