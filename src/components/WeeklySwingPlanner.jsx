@@ -185,7 +185,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       confidence_level: confidenceLevel,
       technical_score: aiScore,
       trade_type: tradeType,
-      campaign_id: campaignId,
+      // campaign_id: campaignId, // ปิดไว้ชั่วคราวเนื่องจากยังไม่มีคอลัมน์นี้ในฐานข้อมูล Supabase
     };
 
     try {
