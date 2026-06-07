@@ -11,10 +11,11 @@ import {
 } from '../db/investmentDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
+import InvestmentDashboard from './InvestmentDashboard';
 
 export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('portfolio'); // 'portfolio' | 'journal'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'portfolio' | 'journal'
   const [showManual, setShowManual] = useState(false);
 
   // === PORTFOLIO STATE ===
@@ -175,6 +176,16 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           {/* Tabs */}
           <div className="flex flex-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner border border-slate-200 dark:border-slate-800">
             <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-black transition-all whitespace-nowrap ${
+                activeTab === 'dashboard' 
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-700' 
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+              }`}
+            >
+              📊 DASHBOARD
+            </button>
+            <button
               onClick={() => setActiveTab('portfolio')}
               className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-black transition-all whitespace-nowrap ${
                 activeTab === 'portfolio' 
@@ -226,6 +237,11 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
             <li><strong>ระบบกราฟ (Chart Markers):</strong> กดไอคอน 📈 ท้ายตารางในทั้ง 2 แท็บ เพื่อเปิดดูกราฟราคาหุ้นย้อนหลังพร้อมจุดเข้า-ออกที่ระบบพล็อตให้แบบอัตโนมัติ</li>
           </ul>
         </div>
+      )}
+
+      {/* DASHBOARD TAB */}
+      {activeTab === 'dashboard' && (
+        <InvestmentDashboard currentUser={userEmail} requestAlert={requestAlert} />
       )}
 
       {/* PORTFOLIO TAB */}

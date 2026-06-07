@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Cartes
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick, updateWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
+import { calculateTrailingStop } from '../utils/riskManagement';
 
 export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
@@ -21,6 +22,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
   const [riskConsiderations, setRiskConsiderations] = useState('');
   const [targetRrr, setTargetRrr] = useState('');
   const [confidenceLevel, setConfidenceLevel] = useState('Medium');
+  const [tradeType, setTradeType] = useState('Base Trade');
+  const [campaignId, setCampaignId] = useState('');
   const [showManual, setShowManual] = useState(false);
   
   const getStartOfWeek = () => {
@@ -140,6 +143,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     setRiskConsiderations(pick.risk_considerations || '');
     setTargetRrr(pick.target_rrr ? pick.target_rrr.toString() : '');
     setConfidenceLevel(pick.confidence_level || 'Medium');
+    setTradeType(pick.trade_type || 'Base Trade');
+    setCampaignId(pick.campaign_id || '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -154,6 +159,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     setRiskConsiderations('');
     setTargetRrr('');
     setConfidenceLevel('Medium');
+    setTradeType('Base Trade');
+    setCampaignId('');
   };
 
   const handleAddPick = async (e) => {
@@ -178,6 +185,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       target_rrr: targetRrr ? parseFloat(targetRrr) : null,
       confidence_level: confidenceLevel,
       technical_score: aiScore,
+      trade_type: tradeType,
+      campaign_id: campaignId,
     };
 
     try {
@@ -228,6 +237,25 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     } else {
       if (!window.confirm("Are you sure you want to delete this pick?")) return;
       doDelete();
+    }
+  };
+
+  const handleTrailingSLClick = async (pick) => {
+    if (requestAlert) requestAlert("⏳ กำลังคำนวณ", "ระบบกำลังดึงข้อมูลราคาล่าสุด...");
+    const highestPrice = pick.highest_price_reached || pick.entry_alert_price;
+    const result = await calculateTrailingStop(pick.ticker, highestPrice);
+    if (!result) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", "ไม่สามารถดึงข้อมูลราคาเพื่อคำนวณ Trailing SL ได้");
+      return;
+    }
+    
+    if (requestAlert) {
+      requestAlert(
+        "🛡️ Auto Trailing SL",
+        `หุ้น: ${pick.ticker}\nHighest Price: $${highestPrice}\nATR (14): $${result.atr.toFixed(2)}\n\n📉 Trailing SL แนะนำ: $${result.trailingSL.toFixed(2)}\n💵 ราคาปัจจุบัน: $${result.currentPrice.toFixed(2)}`
+      );
+    } else {
+      alert(`Trailing SL for ${pick.ticker}: $${result.trailingSL.toFixed(2)}\n(ATR: ${result.atr.toFixed(2)})`);
     }
   };
 
@@ -366,6 +394,32 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 />
               </div>
               
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Trade Type</label>
+                  <select 
+                    value={tradeType}
+                    onChange={(e) => setTradeType(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                  >
+                    <option value="Base Trade">Base Trade</option>
+                    <option value="Nuclear Stage 1">Nuclear Stage 1</option>
+                    <option value="Nuclear Stage 2">Nuclear Stage 2</option>
+                    <option value="Nuclear Stage 3">Nuclear Stage 3</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Campaign ID (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={campaignId}
+                    onChange={(e) => setCampaignId(e.target.value)}
+                    placeholder="e.g. UBER-NUC-1"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none uppercase"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ticker</label>
@@ -711,12 +765,22 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                             {group.items.map((pick) => {
                               return (
                     <React.Fragment key={pick.id}>
-                    <tr className="transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                    <tr className={`transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-900/40 ${pick.trade_type?.includes('Nuclear') ? 'bg-amber-50/50 dark:bg-amber-900/10 border-l-2 border-amber-500' : ''}`}>
                       <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">
                         {pick.week_start_date}
                       </td>
                       <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                        {pick.ticker}
+                        <div>{pick.ticker}</div>
+                        {pick.trade_type && (
+                          <div className={`text-[9px] uppercase mt-1 px-1.5 py-0.5 rounded-sm inline-block ${pick.trade_type.includes('Nuclear') ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+                            {pick.trade_type}
+                          </div>
+                        )}
+                        {pick.campaign_id && (
+                          <div className="text-[9px] text-indigo-500 dark:text-indigo-400 font-mono mt-0.5">
+                            ID: {pick.campaign_id}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                         {pick.sector}
@@ -761,6 +825,13 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => handleTrailingSLClick(pick)}
+                            className="text-slate-400 hover:text-emerald-500 transition-colors p-1"
+                            title="Auto Trailing SL"
+                          >
+                            🛡️
+                          </button>
                           <button 
                             onClick={() => handleEdit(pick)}
                             className="text-slate-400 hover:text-amber-500 transition-colors p-1"
