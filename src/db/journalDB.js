@@ -250,88 +250,70 @@ export const checkUserExists = async (email) => {
 };
 
 export const loginUser = async (email, password) => {
-    // Attempt login. If migrated user but no Auth account yet, fallback to signup.
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error && error.message.includes('Invalid login credentials')) {
-        // Try creating account on the fly if it's a migrated user
-        const exists = await checkUserExists(email);
-        if (exists) {
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
-            if (signUpError) throw signUpError;
-            return signUpData.user;
-        }
-        throw error;
-    }
-    return data.user;
+    const res = await verifyUser(email, password);
+    if (!res.success) throw new Error(res.error);
+    return res.user;
 };
 
 export const verifyUser = async (email, password) => {
     if (!email || !password) return { success: false, error: 'Email and password are required' };
     try {
         const cleanEmail = email.trim().toLowerCase();
-        let user;
-        const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         
-        if (error) {
-             const exists = await checkUserExists(cleanEmail);
-             if (exists && error.message.includes('Invalid login credentials')) {
-                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: cleanEmail, password });
-                 
-                 if (signUpError) {
-                     if (signUpError.message.includes('already registered')) {
-                         return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
-                     }
-                     return { success: false, error: signUpError.message };
-                 }
-                 
-                 if (!signUpData.session) {
-                     return { success: false, error: 'รหัสผ่านไม่ถูกต้อง หรือระบบผิดพลาดกรุณาติดต่อแอดมิน' };
-                 }
-                 
-                 user = signUpData.user;
-             } else {
-                 let msg = error.message;
-                 if (msg.includes('Email not confirmed')) msg = 'ระบบยังไม่สมบูรณ์ (แอดมินต้องไปปิด Confirm Email ใน Supabase)';
-                 if (msg.includes('Invalid login credentials')) msg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-                 return { success: false, error: msg };
-             }
-        } else {
-            user = data.user;
+        const { data: userData, error } = await supabase.from('users').select('*').eq('email', cleanEmail).single();
+        
+        if (error || !userData) {
+             return { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
         }
         
-        const { data: userData } = await supabase.from('users').select('status').eq('email', cleanEmail).single();
-        if (cleanEmail !== 'phudit.mahawongsanan@gmail.com' && userData && userData.status === 'pending') {
-            await supabase.auth.signOut();
+        if (userData.profile?.password !== password) {
+             return { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
+        }
+        
+        if (cleanEmail !== 'phudit.mahawongsanan@gmail.com' && userData.status === 'pending') {
             return { success: false, error: '⏳ บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ' };
         }
         
-        return { success: true, user: user };
+        return { success: true, user: { email: cleanEmail } };
     } catch (error) {
         return { success: false, error: error.message };
     }
 };
 
 export const registerUser = async (email, password, displayName) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    const cleanEmail = email.trim().toLowerCase();
     
-    const finalDisplayName = displayName || email.split('@')[0];
-    await supabase.from('users').upsert({
-        email: email.trim().toLowerCase(),
-        profile: { name: finalDisplayName, photo: '', fontSize: 'normal' },
+    // Check if user already exists
+    const exists = await checkUserExists(cleanEmail);
+    if (exists) {
+        throw new Error("อีเมลนี้ถูกใช้งานแล้ว");
+    }
+    
+    const finalDisplayName = displayName || cleanEmail.split('@')[0];
+    const { data, error } = await supabase.from('users').upsert({
+        email: cleanEmail,
+        profile: { name: finalDisplayName, photo: '', fontSize: 'normal', password: password },
         initialBalances: { 'default': 10000 },
         targetRR: 20,
         accounts: [{ id: 'default', name: 'Main Account' }],
         status: 'pending',
         isVip: false
-    });
+    }).select().single();
     
-    await supabase.auth.signOut();
-    return data.user;
+    if (error) throw error;
+    
+    return { email: cleanEmail };
 };
 
-export const logoutUser = () => supabase.auth.signOut();
-export const resetPassword = (email) => supabase.auth.resetPasswordForEmail(email);
+export const logoutUser = () => {
+    localStorage.removeItem('phudit_session_user');
+    try { supabase.auth.signOut(); } catch(e) {} // fallback if any old session
+    return Promise.resolve();
+};
+
+export const resetPassword = async (email) => {
+    return { success: false, error: { message: "ระบบลืมรหัสผ่านถูกปิดใช้งาน กรุณาติดต่อ Admin เพื่อรีเซ็ตรหัสผ่าน" } };
+};
 
 export const getUserStatus = async (email) => {
     if (!email) return 'unauthorized';

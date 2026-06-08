@@ -44,29 +44,20 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setCurrentUser(session.user.email);
-      } else {
-        setCurrentUser(null);
-      }
-      setAuthReady(true);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setCurrentUser(session.user.email);
-      } else {
-        setCurrentUser(null);
-      }
-      setAuthReady(true);
-    });
-
-    return () => subscription.unsubscribe();
+    const sessionEmail = localStorage.getItem('phudit_session_user');
+    if (sessionEmail) {
+      setCurrentUser(sessionEmail);
+    } else {
+      setCurrentUser(null);
+    }
+    setAuthReady(true);
   }, []);
 
   const handleLogin = (email, rememberMe) => {
-    // Rely completely on onAuthStateChanged to prevent race conditions
+    setCurrentUser(email);
+    if (rememberMe) {
+      localStorage.setItem('phudit_session_user', email);
+    }
   };
 
   // โหลดค่าต่างๆ จากฐานข้อมูลจำลอง (LocalStorage) โดยอิงจาก currentUser
@@ -554,6 +545,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await logoutUser();
+    setCurrentUser(null);
     setActiveTab('dashboard');
   };
 
