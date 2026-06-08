@@ -37,7 +37,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
 
   const [expandedGroups, setExpandedGroups] = useState({});
-  const [expandedCharts, setExpandedCharts] = useState({});
+  const [selectedChartPick, setSelectedChartPick] = useState(null);
 
   const toggleGroup = (key) => {
     setExpandedGroups(prev => ({
@@ -46,11 +46,12 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     }));
   };
 
-  const toggleChart = (id) => {
-    setExpandedCharts(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+  const openChart = (pick) => {
+    setSelectedChartPick(pick);
+  };
+
+  const closeChart = () => {
+    setSelectedChartPick(null);
   };
 
   const loadPicks = async () => {
@@ -828,8 +829,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                           </button>
                           <button 
-                            onClick={() => toggleChart(pick.id)}
-                            className={`transition-colors p-1 ${expandedCharts[pick.id] ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'}`}
+                            onClick={() => openChart(pick)}
+                            className={`transition-colors p-1 text-slate-400 hover:text-indigo-500`}
                             title="View Chart"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
@@ -857,21 +858,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                         </td>
                       </tr>
                     )}
-                    {expandedCharts[pick.id] && (
-                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                        <td colSpan="9" className="p-0">
-                          <div className="w-full h-64 sm:h-80 p-2">
-                            <LightweightChartComponent 
-                              symbol={pick.ticker} 
-                              entry={pick.entry_alert_price} 
-                              stopLoss={pick.stop_loss_price} 
-                              entryTime={pick.week_start_date}
-                              direction="Long"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+
                     </React.Fragment>
                   );
                             })}
@@ -885,6 +872,53 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           </div>
         )}
       </div>
+
+      {/* Chart Modal Popup */}
+      {selectedChartPick && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+            onClick={closeChart}
+          ></div>
+          <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-fade-in z-10">
+            {/* Modal Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 gap-4 sm:gap-0">
+              <div className="flex items-center gap-4">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                  {selectedChartPick.ticker}
+                </h3>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">
+                    <span className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase">Entry:</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">${Number(selectedChartPick.entry_alert_price).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded">
+                    <span className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase">Stop:</span>
+                    <span className="text-rose-500 dark:text-rose-400 font-mono font-bold">${Number(selectedChartPick.stop_loss_price).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={closeChart}
+                className="absolute sm:relative top-4 right-4 sm:top-auto sm:right-auto p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-2 sm:p-4 h-[65vh] min-h-[400px] w-full bg-slate-50 dark:bg-slate-900">
+              <LightweightChartComponent 
+                symbol={selectedChartPick.ticker} 
+                entry={selectedChartPick.entry_alert_price} 
+                stopLoss={selectedChartPick.stop_loss_price} 
+                entryTime={selectedChartPick.week_start_date}
+                direction="Long"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
