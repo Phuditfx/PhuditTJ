@@ -171,7 +171,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Portfolio Growth</h3>
-          <div className="h-64 w-full">
+          <div className="h-64 min-h-[256px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={growthData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
@@ -191,7 +191,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Annual Performance (%)</h3>
-          <div className="h-64 w-full">
+          <div className="h-64 min-h-[256px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={annualPerformanceData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />

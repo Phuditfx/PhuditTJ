@@ -916,7 +916,7 @@ export default function App() {
                     <VipLockScreen featureName="Trading Bulletin (Feed)" onBack={() => setActiveTab('dashboard')} />
                   )
                 )}
-                {activeTab === 'data' && (
+                {activeTab === 'data' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
                   <DataManager
                     currentUser={currentUser}
                     trades={trades} setTrades={setTrades}

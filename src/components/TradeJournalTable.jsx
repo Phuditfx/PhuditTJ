@@ -1840,7 +1840,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </button>
             </div>
             
-            <div className="flex-1 w-full rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0a0a] relative">
+            <div className="flex-1 min-h-[300px] w-full rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0a0a] relative">
               <LightweightChartComponent 
                 symbol={chartModalTrade.symbol}
                 entry={chartModalTrade.entryPrice}

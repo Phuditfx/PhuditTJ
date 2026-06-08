@@ -487,7 +487,7 @@ export default function Dashboard({
         <div className="crypto-card p-6">
           <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">📅 Weekly Performance (This Month)</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">ผลกำไรสุทธิแยกตามสัปดาห์ (1-4) ประจำเดือนนี้</p>
-          <div className="h-48 w-full text-xs font-mono">
+          <div className="h-48 min-h-[192px] w-full text-xs font-mono">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} vertical={false} />
@@ -513,7 +513,7 @@ export default function Dashboard({
         <div className="crypto-card p-6">
           <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">📊 Monthly Performance</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">สรุปผลกำไรสุทธิรายเดือน (สูงสุด 6 เดือนย้อนหลัง)</p>
-          <div className="h-48 w-full text-xs font-mono">
+          <div className="h-48 min-h-[192px] w-full text-xs font-mono">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} vertical={false} />

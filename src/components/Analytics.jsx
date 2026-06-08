@@ -60,7 +60,7 @@ export default function Analytics({ trades }) {
       <div className="crypto-card p-6">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">📈 Equity Curve (Cumulative PnL)</h3>
         <p className="text-xs text-slate-550 dark:text-slate-400 mb-6">กราฟแสดงการเติบโตของพอร์ตจากกำไร/ขาดทุนสะสม</p>
-        <div className="h-64 w-full text-xs font-mono">
+        <div className="h-64 min-h-[256px] w-full text-xs font-mono">
           {pnlCurveData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={pnlCurveData}>
@@ -95,7 +95,7 @@ export default function Analytics({ trades }) {
         <div className="crypto-card p-6">
           <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">🎯 Win Rate Distribution</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">สัดส่วนออเดอร์ที่กำไรและขาดทุน</p>
-          <div className="h-48 w-full flex items-center justify-center">
+          <div className="h-48 min-h-[192px] w-full flex items-center justify-center">
             {totalTrades > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -131,7 +131,7 @@ export default function Analytics({ trades }) {
         <div className="crypto-card p-6">
           <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">⚖️ Average Win vs Loss</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">เปรียบเทียบค่าเฉลี่ยกำไรและขาดทุนต่อออเดอร์</p>
-          <div className="h-48 w-full">
+          <div className="h-48 min-h-[192px] w-full">
             {totalTrades > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

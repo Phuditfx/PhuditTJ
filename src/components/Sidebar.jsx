@@ -9,7 +9,6 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'feed', icon: '📰', label: t('app.feed', 'Trading Bulletin').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'analytics', icon: '📈', label: t('app.analytics', 'Analytics & Stats').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'fighter', icon: '⚡', label: t('app.fighter', 'Trade Simulator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
-    { id: 'data', icon: '⚙️', label: t('app.data', 'Data Management').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
 
   const VIP_ITEMS = [
@@ -119,17 +118,30 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
         ))}
 
         {isOwner && (
-          <button
-            onClick={() => setActiveTab('owner')}
-            className={`mt-4 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer border ${
-              activeTab === 'owner'
-                ? 'bg-rose-600 text-white border-rose-600 shadow-md'
-                : 'border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-            }`}
-          >
-            <span className="text-lg">👑</span>
-            <span>Owner Dashboard</span>
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab('data')}
+              className={`mt-4 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer border ${
+                activeTab === 'data'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-md'
+                  : 'border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+              }`}
+            >
+              <span className="text-lg">⚙️</span>
+              <span>Data Management</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('owner')}
+              className={`mt-2 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer border ${
+                activeTab === 'owner'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-md'
+                  : 'border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+              }`}
+            >
+              <span className="text-lg">👑</span>
+              <span>Owner Dashboard</span>
+            </button>
+          </>
         )}
 
         <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">

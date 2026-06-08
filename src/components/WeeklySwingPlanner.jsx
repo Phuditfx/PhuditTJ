@@ -580,7 +580,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="crypto-card p-5 flex flex-col items-center justify-center relative overflow-hidden">
             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 absolute top-4 left-5 uppercase tracking-wider">Trigger Rate</h3>
-            <div className="h-32 w-full mt-6 flex justify-center items-center relative">
+            <div className="h-32 min-h-[128px] w-full mt-6 flex justify-center items-center relative">
               {totalPicks > 0 ? (
                 <>
                   <ResponsiveContainer width="100%" height="100%">
@@ -617,7 +617,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
           <div className="crypto-card p-5 md:col-span-2 relative overflow-hidden">
              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Win Rate by Sector</h3>
-             <div className="h-32 w-full text-xs font-mono">
+             <div className="h-32 min-h-[128px] w-full text-xs font-mono">
                {sectorData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sectorData}>
@@ -645,7 +645,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
           <div className="crypto-card p-5 md:col-span-3 relative overflow-hidden">
              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Performance by Float Size</h3>
-             <div className="h-36 w-full text-xs font-mono">
+             <div className="h-36 min-h-[144px] w-full text-xs font-mono">
                {floatData.some(d => d.total > 0) ? (
                  <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={floatData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
@@ -673,7 +673,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
           <div className="crypto-card p-5 md:col-span-3 relative overflow-hidden">
              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Performance by Setup Type</h3>
-             <div className="h-36 w-full text-xs font-mono">
+             <div className="h-36 min-h-[144px] w-full text-xs font-mono">
                {setupData.some(d => d.total > 0) ? (
                  <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={setupData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>

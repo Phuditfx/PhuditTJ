@@ -158,7 +158,7 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
           แสดงการเติบโตของพอร์ตจากผลกำไรและประวัติการฝาก/ถอน
         </p>
 
-        <div className="h-72 w-full text-xs font-mono">
+        <div className="h-72 min-h-[288px] w-full text-xs font-mono">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={growthData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
               <defs>
@@ -247,7 +247,7 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
             <p className="text-xs text-slate-500 mt-1">ต้องมีประวัติการเทรด (ปิดแล้ว) อย่างน้อย 5 ออเดอร์ เพื่อให้ AI คำนวณความน่าจะเป็นได้แม่นยำ</p>
           </div>
         ) : (
-          <div className="h-80 w-full text-xs font-mono relative">
+          <div className="h-80 min-h-[320px] w-full text-xs font-mono relative">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={projectionData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
