@@ -276,10 +276,24 @@ export const verifyUser = async (email, password) => {
              const exists = await checkUserExists(cleanEmail);
              if (exists && error.message.includes('Invalid login credentials')) {
                  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: cleanEmail, password });
-                 if (signUpError) return { success: false, error: signUpError.message };
+                 
+                 if (signUpError) {
+                     if (signUpError.message.includes('already registered')) {
+                         return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
+                     }
+                     return { success: false, error: signUpError.message };
+                 }
+                 
+                 if (!signUpData.session) {
+                     return { success: false, error: 'รหัสผ่านไม่ถูกต้อง หรือระบบผิดพลาดกรุณาติดต่อแอดมิน' };
+                 }
+                 
                  user = signUpData.user;
              } else {
-                 return { success: false, error: error.message };
+                 let msg = error.message;
+                 if (msg.includes('Email not confirmed')) msg = 'ระบบยังไม่สมบูรณ์ (แอดมินต้องไปปิด Confirm Email ใน Supabase)';
+                 if (msg.includes('Invalid login credentials')) msg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+                 return { success: false, error: msg };
              }
         } else {
             user = data.user;

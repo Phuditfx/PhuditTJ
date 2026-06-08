@@ -32,11 +32,11 @@ export default function Login({ onLogin }) {
         return;
       }
       const res = await resetPassword(cleanEmail);
-      if (res.success) {
+      if (!res.error) {
         setSuccessMsg("ส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปยังอีเมลของคุณเรียบร้อยแล้ว กรุณาตรวจสอบกล่องจดหมายเข้า (Inbox/Junk) ของคุณ");
         setIsResettingPassword(false);
       } else {
-        setError(res.error);
+        setError(res.error.message || "เกิดข้อผิดพลาดในการส่งลิงก์รีเซ็ตรหัสผ่าน");
       }
       return;
     }
@@ -47,13 +47,13 @@ export default function Login({ onLogin }) {
     }
 
     if (isRegistering) {
-      const res = await registerUser(cleanEmail, password);
-      if (res.success) {
-        setSuccessMsg("สมัครสมาชิกสำเร็จ! บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณารอการยืนยันก่อนเข้าใช้งาน");
+      try {
+        const user = await registerUser(cleanEmail, password);
+        setSuccessMsg("สมัครสมาชิกสำเร็จ! บัญชีของคุณอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ กรุณารอจนกว่าจะได้รับการยืนยันก่อนเข้าใช้งาน");
         setActiveTab('login'); // เปลี่ยนกลับเป็นโหมดล็อคอิน
         setPassword('');
-      } else {
-        setError(res.error);
+      } catch (err) {
+        setError(err.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก");
       }
     } else {
       const res = await verifyUser(cleanEmail, password);
