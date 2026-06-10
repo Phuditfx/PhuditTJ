@@ -101,6 +101,36 @@ export default function Dashboard({
   const averageLoss = lossesCount > 0 ? grossLoss / lossesCount : 0;
   const avgExitEfficiency = efficiencyCount > 0 ? (totalEfficiency / efficiencyCount) : 0;
 
+  let totalHoldingMs = 0;
+  let holdCount = 0;
+  closedTrades.forEach(t => {
+    if (t.dateTime && t.exitDateTime) {
+      const entryTime = new Date(t.dateTime).getTime();
+      const exitTime = new Date(t.exitDateTime).getTime();
+      if (exitTime >= entryTime) {
+        totalHoldingMs += (exitTime - entryTime);
+        holdCount++;
+      }
+    }
+  });
+  const avgHoldingMs = holdCount > 0 ? totalHoldingMs / holdCount : 0;
+
+  const formatAvgHoldingTime = (ms) => {
+    if (ms === 0) return 'N/A';
+    const totalMins = Math.floor(ms / (1000 * 60));
+    const days = Math.floor(totalMins / (24 * 60));
+    const hours = Math.floor((totalMins % (24 * 60)) / 60);
+    const mins = totalMins % 60;
+    
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+    
+    return parts.join(' ');
+  };
+  const avgHoldStr = formatAvgHoldingTime(avgHoldingMs);
+
   const longTrades = closedTrades.filter(t => t.direction === 'Long');
   const shortTrades = closedTrades.filter(t => t.direction === 'Short');
   const longWins = longTrades.filter(t => parseFloat(t.pnl) > 0).length;
@@ -440,6 +470,10 @@ export default function Dashboard({
             <span className="text-xs font-mono font-bold text-emerald-500">{t('dashboard.long')}: {longWinRate.toFixed(0)}% ({longWins}/{longTrades.length})</span>
             <span className="text-xs font-mono font-bold text-rose-500">{t('dashboard.short')}: {shortWinRate.toFixed(0)}% ({shortWins}/{shortTrades.length})</span>
           </div>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Hold Time</span>
+          <span className="text-xl font-mono font-bold text-indigo-500 mt-2 block">{avgHoldStr}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between lg:col-span-3">
           <span className="text-[10px] text-indigo-500 uppercase font-black tracking-wider block flex items-center gap-1">

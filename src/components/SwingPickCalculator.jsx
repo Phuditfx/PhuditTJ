@@ -14,7 +14,7 @@ let nextId = 6;
 export default function SwingPickCalculator({ accountBalance = 0 }) {
   const [stocks, setStocks] = useState(DEFAULT_STOCKS);
   // Pre-fill capital from account balance (editable)
-  const [capital, setCapital] = useState(accountBalance > 0 ? String(accountBalance) : '');
+  const [capital, setCapital] = useState(accountBalance > 0 ? accountBalance.toFixed(2) : '');
   const [riskPct, setRiskPct] = useState('');
   const [riskFixed, setRiskFixed] = useState('');
 

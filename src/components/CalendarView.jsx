@@ -52,13 +52,11 @@ export default function CalendarView({ trades }) {
   const dayNamesFull = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const dayNamesShort = ["S", "M", "T", "W", "T", "F", "S"];
 
-  // Format P/L แบบย่อ
+  // Format P/L เต็มจำนวน ทศนิยม 2 ตำแหน่ง
   const formatPnL = (value) => {
     const abs = Math.abs(value);
-    if (abs >= 1000000) return `${value < 0 ? '-' : '+'}$${(abs / 1000000).toFixed(1)}M`;
-    if (abs >= 1000) return `${value < 0 ? '-' : '+'}$${(abs / 1000).toFixed(1)}K`;
-    if (abs >= 100) return `${value < 0 ? '-' : '+'}$${Math.round(abs)}`;
-    return `${value < 0 ? '-' : '+'}$${abs.toFixed(0)}`;
+    const formatted = abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${value < 0 ? '-' : '+'}$${formatted}`;
   };
 
   const renderCells = () => {
@@ -102,7 +100,7 @@ export default function CalendarView({ trades }) {
           {/* P/L - กลาง cell */}
           {hasTrades && (
             <div className="flex-1 flex flex-col items-center justify-center gap-0 px-0.5">
-              <span className={`text-[10px] sm:text-xs md:text-sm font-black leading-tight truncate max-w-full ${
+              <span className={`text-[8px] sm:text-[10px] md:text-xs font-black leading-tight truncate max-w-full ${
                 isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}>
                 {formatPnL(totalPnL)}
