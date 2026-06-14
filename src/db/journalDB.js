@@ -98,6 +98,43 @@ export const addGlobalFeedPost = async (post) => {
     }
 };
 
+export const deleteGlobalFeedPost = async (id) => {
+    try {
+        await supabase.from('global_feed_posts').delete().eq('id', id);
+    } catch (e) {
+        console.error("Error deleting global feed post:", e);
+    }
+};
+
+export const clearGlobalFeedPostsByMonth = async (monthStr) => {
+    try {
+        if (monthStr === 'All') {
+            await supabase.from('global_feed_posts').delete().not('id', 'is', null);
+        } else {
+            const { data } = await supabase.from('global_feed_posts').select('id, data');
+            if (data) {
+                const idsToDelete = data.filter(d => {
+                    if (!d.data || !d.data.timestamp) return false;
+                    try {
+                        const date = new Date(d.data.timestamp);
+                        if (isNaN(date.getTime())) return false;
+                        const mStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        return mStr === monthStr;
+                    } catch (e) {
+                        return false;
+                    }
+                }).map(d => d.id);
+                
+                if (idsToDelete.length > 0) {
+                    await supabase.from('global_feed_posts').delete().in('id', idsToDelete);
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Error clearing global feed posts:", e);
+    }
+};
+
 // ==========================================
 // REAL-TIME DATA SUBSCRIPTION
 // ==========================================

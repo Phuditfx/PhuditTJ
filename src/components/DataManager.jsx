@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { calculateStorageUsage, saveFeedPosts, saveTrades, savePlans, saveDividends } from '../db/journalDB';
+import { calculateStorageUsage, deleteGlobalFeedPost, clearGlobalFeedPostsByMonth, saveTrades, savePlans, saveDividends } from '../db/journalDB';
 import { Trash2, Download, AlertTriangle, Database, HardDrive, RefreshCw, CalendarDays } from 'lucide-react';
 
 export default function DataManager({ currentUser, trades, setTrades, feedPosts, setFeedPosts, plans, setPlans, dividends, setDividends, requestConfirm, requestAlert }) {
@@ -57,10 +57,10 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
   const tradeMonths = Array.from(new Set(trades.map(t => getMonthStr(t.dateTime)).filter(Boolean))).sort((a, b) => b.localeCompare(a));
 
   const handleDeleteFeedPost = (id) => {
-    const doDelete = () => {
+    const doDelete = async () => {
       const updated = feedPosts.filter(p => p.id !== id);
       setFeedPosts(updated);
-      saveFeedPosts(currentUser, updated);
+      await deleteGlobalFeedPost(id);
     };
     if (requestConfirm) {
       requestConfirm('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', doDelete);
@@ -73,14 +73,14 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
     let confirmMsg = 'Are you sure you want to delete ALL feed posts?';
     if (selectedFeedMonth !== 'All') confirmMsg = `Are you sure you want to delete all feed posts in ${selectedFeedMonth}?`;
     
-    const doClear = () => {
+    const doClear = async () => {
       if (selectedFeedMonth === 'All') {
         setFeedPosts([]);
-        saveFeedPosts(currentUser, []);
+        await clearGlobalFeedPostsByMonth('All');
       } else {
         const updated = feedPosts.filter(p => getMonthStr(p.timestamp) !== selectedFeedMonth);
         setFeedPosts(updated);
-        saveFeedPosts(currentUser, updated);
+        await clearGlobalFeedPostsByMonth(selectedFeedMonth);
       }
       setSelectedFeedMonth('All');
     };
