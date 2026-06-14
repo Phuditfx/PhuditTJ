@@ -264,10 +264,13 @@ export const saveAccounts = (email, accounts) => {
 export const calculateStorageUsage = async (email) => {
     if (!email) return 0;
     try {
+        // Purge legacy unused feed_posts cache to free up local storage
+        localStorage.removeItem(`phudit_feed_posts_${email.trim().toLowerCase()}`);
+        
         let total = 0;
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key.startsWith('phudit_')) {
+            if (key && key.startsWith('phudit_')) {
                 total += localStorage.getItem(key).length;
             }
         }
