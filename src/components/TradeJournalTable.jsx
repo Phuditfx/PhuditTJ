@@ -825,7 +825,7 @@ const DesktopTradeCard = React.memo(({
 
 export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip }) {
   const { t } = useLanguage();
-  const [filterStatus, setFilterStatus] = useState('All'); // All, Open, Closed
+  const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
   const [livePrices, setLivePrices] = useState({});
