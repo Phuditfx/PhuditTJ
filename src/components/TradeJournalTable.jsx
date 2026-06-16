@@ -1845,23 +1845,35 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 symbol={chartModalTrade.symbol}
                 entry={chartModalTrade.entryPrice}
                 stopLoss={chartModalTrade.stopLoss}
-                tp1={chartModalTrade.takeProfit}
+                tp1={ (() => {
+                   const ePrice = parseFloat(chartModalTrade.entryPrice) || 0;
+                   const sLoss = parseFloat(chartModalTrade.stopLoss) || 0;
+                   const gap = Math.abs(ePrice - sLoss);
+                   if (gap > 0) {
+                     return chartModalTrade.direction === 'Long' ? ePrice + gap : ePrice - gap;
+                   }
+                   return chartModalTrade.takeProfit;
+                })()}
                 entryTime={chartModalTrade.dateTime}
                 exitTime={chartModalTrade.exitDateTime}
                 direction={chartModalTrade.direction}
                 status={chartModalTrade.status}
                 actualExitPrice={chartModalTrade.actualExitPrice}
                 tp2={ (() => {
-                   const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
+                   const ePrice = parseFloat(chartModalTrade.entryPrice) || 0;
+                   const sLoss = parseFloat(chartModalTrade.stopLoss) || 0;
+                   const gap = Math.abs(ePrice - sLoss);
                    if (gap > 0) {
-                     return chartModalTrade.direction === 'Long' ? chartModalTrade.entryPrice + gap * 2 : chartModalTrade.entryPrice - gap * 2;
+                     return chartModalTrade.direction === 'Long' ? ePrice + gap * 2 : ePrice - gap * 2;
                    }
                    return '';
                 })()}
                 tp3={ (() => {
-                   const gap = Math.abs(chartModalTrade.entryPrice - chartModalTrade.stopLoss);
+                   const ePrice = parseFloat(chartModalTrade.entryPrice) || 0;
+                   const sLoss = parseFloat(chartModalTrade.stopLoss) || 0;
+                   const gap = Math.abs(ePrice - sLoss);
                    if (gap > 0) {
-                     return chartModalTrade.direction === 'Long' ? chartModalTrade.entryPrice + gap * 3 : chartModalTrade.entryPrice - gap * 3;
+                     return chartModalTrade.direction === 'Long' ? ePrice + gap * 3 : ePrice - gap * 3;
                    }
                    return '';
                 })()}
