@@ -772,40 +772,6 @@ export default function App() {
         {/* Mobile Slide-down Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in">
-            {/* Mobile/Tablet PnL/RR Display Mode */}
-            <div className="flex flex-col items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-              {pnlDisplayMode === 'pnl' ? (
-                <div className="font-mono font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                  ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              ) : (
-                <div className="font-mono font-bold text-lg text-slate-400 dark:text-slate-500 blur-[3px] select-none pointer-events-none" title="Hidden in RR Mode">
-                  $**,***.**
-                </div>
-              )}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 w-full">
-                <button
-                  onClick={() => setPnlDisplayMode('pnl')}
-                  className={`flex-1 px-2 py-1.5 text-xs font-bold rounded-md transition-colors ${
-                    pnlDisplayMode === 'pnl'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  PnL Mode
-                </button>
-                <button
-                  onClick={() => setPnlDisplayMode('rr')}
-                  className={`flex-1 px-2 py-1.5 text-xs font-bold rounded-md transition-colors ${
-                    pnlDisplayMode === 'rr'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  RR Mode
-                </button>
-              </div>
-            </div>
 
             <button onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }} className="sm:hidden w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
               {language === 'en' ? 'Switch to Thai (TH)' : 'Switch to English (EN)'}
@@ -822,8 +788,42 @@ export default function App() {
           </div>
         )}
 
-        {/* Mobile Only: Account & Date Filters */}
+        {/* Mobile Only: Account & Date Filters & Display Mode */}
         <div className="lg:hidden flex flex-col gap-2 w-full mt-2">
+          {/* Mobile Balance & Display Mode */}
+          <div className="md:hidden flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+            {pnlDisplayMode === 'pnl' ? (
+              <div className="font-mono font-bold text-base text-emerald-600 dark:text-emerald-400">
+                ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            ) : (
+              <div className="font-mono font-bold text-base text-slate-400 dark:text-slate-500 blur-[3px] select-none pointer-events-none" title="Hidden in RR Mode">
+                $**,***.**
+              </div>
+            )}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-md p-0.5 border border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setPnlDisplayMode('pnl')}
+                className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${
+                  pnlDisplayMode === 'pnl'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                PnL
+              </button>
+              <button
+                onClick={() => setPnlDisplayMode('rr')}
+                className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${
+                  pnlDisplayMode === 'rr'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                RR
+              </button>
+            </div>
+          </div>
           <div className="flex gap-2 w-full">
             <select 
               value={accountId}
