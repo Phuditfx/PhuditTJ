@@ -1433,12 +1433,6 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     />
                   );
                 })
-                      handleOpenCloseModal={handleOpenCloseModal}
-                      requestConfirm={requestConfirm}
-                      onDeleteTrade={onDeleteTrade}
-                    />
-                  );
-                })
               )}
             </div>
             {/* 🖥️ Desktop Cards Grid View (visible >= md) */}
