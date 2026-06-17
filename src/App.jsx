@@ -74,17 +74,36 @@ export default function App() {
   const [isVip, setIsVip] = useState(false);
   const [activeTab, setActiveTabRaw] = useState(() => localStorage.getItem('phudit_active_tab') || 'dashboard');
   const [profileTab, setProfileTab] = useState(null); // email of user being viewed
+  
+  const [lastViewedFeedId, setLastViewedFeedId] = useState(() => localStorage.getItem('phudit_last_viewed_feed_id') || null);
+  const [newFeedToast, setNewFeedToast] = useState(null);
 
   // Wrapper: กดเมนูใดก็ตามให้ออกจากหน้า Profile ทันที
   const setActiveTab = (tab) => {
     setProfileTab(null);
     setIsMobileMenuOpen(false);
     setActiveTabRaw(tab);
+    if (tab === 'feed' && feedPosts.length > 0) {
+      setLastViewedFeedId(feedPosts[0].id);
+      localStorage.setItem('phudit_last_viewed_feed_id', feedPosts[0].id);
+    }
   };
 
   useEffect(() => {
     localStorage.setItem('phudit_active_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'feed' && feedPosts.length > 0) {
+      if (lastViewedFeedId !== feedPosts[0].id) {
+        setLastViewedFeedId(feedPosts[0].id);
+        localStorage.setItem('phudit_last_viewed_feed_id', feedPosts[0].id);
+      }
+    }
+  }, [activeTab, feedPosts, lastViewedFeedId]);
+
+  const hasNewFeedPost = feedPosts.length > 0 && feedPosts[0].id !== lastViewedFeedId && activeTab !== 'feed';
+
 
   const [pnlDisplayMode, setPnlDisplayMode] = useState(() => localStorage.getItem('phudit_pnl_display_mode') || 'pnl');
 
@@ -115,15 +134,35 @@ export default function App() {
   };
   const closeAlert = () => setAlertDialog({ isOpen: false, title: '', message: '' });
   
+  const initialFeedLoaded = React.useRef(false);
+  const prevTopPostId = React.useRef(null);
+
   // 🌍 Global Feed Subscription (Anyone can see all posts)
   useEffect(() => {
     const unsubFeed = subscribeToGlobalFeed((posts) => {
+      if (!initialFeedLoaded.current) {
+        initialFeedLoaded.current = true;
+        if (posts.length > 0) prevTopPostId.current = posts[0].id;
+      } else {
+        if (posts.length > 0 && posts[0].id !== prevTopPostId.current) {
+          const newPost = posts[0];
+          prevTopPostId.current = newPost.id;
+          if (newPost.author?.email !== currentUser) {
+            setNewFeedToast({ 
+              title: newPost.title || 'New Trading Bulletin',
+              author: newPost.author?.name || 'A trader',
+              id: newPost.id
+            });
+            setTimeout(() => setNewFeedToast(null), 8000);
+          }
+        }
+      }
       setFeedPosts(posts);
     });
     return () => {
       if (unsubFeed) unsubFeed();
     };
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     let isMounted = true;
@@ -868,6 +907,7 @@ export default function App() {
             accounts={accounts}
             setShowAccountModal={setShowAccountModal}
             setShowManual={setShowManual}
+            hasNewFeedPost={hasNewFeedPost}
           />
         </div>
 
@@ -1075,11 +1115,16 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('feed')}
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
+          className={`relative flex flex-col items-center p-2 rounded-lg transition-colors min-w-[56px] ${
             activeTab === 'feed' ? 'text-brand-primary' : 'text-brand-text-secondary'
           }`}
         >
-          <span className="text-xl">📰</span>
+          <div className="relative">
+            <span className="text-xl">📰</span>
+            {hasNewFeedPost && (
+              <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
+            )}
+          </div>
           <span className="text-[10px] font-bold mt-1">Feed</span>
         </button>
         <button
@@ -1629,6 +1674,31 @@ export default function App() {
                 รับทราบ (OK)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 Toast Notification for New Feed Post */}
+      {newFeedToast && (
+        <div className="fixed bottom-[80px] lg:bottom-6 right-4 z-[90] animate-slide-up cursor-pointer" onClick={() => { setActiveTab('feed'); setNewFeedToast(null); }}>
+          <div className="bg-indigo-600 dark:bg-indigo-500 text-white p-3 rounded-2xl shadow-[0_10px_30px_rgba(79,70,229,0.4)] flex items-center gap-4 max-w-[320px] w-full border border-indigo-400/30 hover:scale-105 transition-transform">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
+              📰
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-0.5 truncate">
+                New post by {newFeedToast.author}
+              </div>
+              <div className="text-sm font-bold leading-tight truncate">
+                {newFeedToast.title}
+              </div>
+            </div>
+            <button 
+              className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors flex-shrink-0"
+              onClick={(e) => { e.stopPropagation(); setNewFeedToast(null); }}
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

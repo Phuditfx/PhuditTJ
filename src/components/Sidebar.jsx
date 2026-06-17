@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner, accounts, setShowAccountModal, setShowManual }) {
+export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost }) {
   const { t } = useLanguage();
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -79,7 +79,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+            className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
               activeTab === item.id
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
@@ -87,6 +87,9 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           >
             <span className="text-lg">{item.icon}</span>
             <span>{item.label}</span>
+            {item.id === 'feed' && hasNewFeedPost && (
+              <span className="absolute top-3.5 left-8 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
+            )}
           </button>
         ))}
 
