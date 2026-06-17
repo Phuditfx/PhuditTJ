@@ -756,7 +756,7 @@ export default function App() {
           </div>
           {/* Mobile Hamburger Button */}
           <button 
-            className="sm:hidden ml-2 p-2 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="md:hidden ml-2 p-2 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -771,14 +771,49 @@ export default function App() {
 
         {/* Mobile Slide-down Menu */}
         {isMobileMenuOpen && (
-          <div className="sm:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in">
-            <button onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }} className="w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
+          <div className="md:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in">
+            {/* Mobile/Tablet PnL/RR Display Mode */}
+            <div className="flex flex-col items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+              {pnlDisplayMode === 'pnl' ? (
+                <div className="font-mono font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                  ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              ) : (
+                <div className="font-mono font-bold text-lg text-slate-400 dark:text-slate-500 blur-[3px] select-none pointer-events-none" title="Hidden in RR Mode">
+                  $**,***.**
+                </div>
+              )}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 w-full">
+                <button
+                  onClick={() => setPnlDisplayMode('pnl')}
+                  className={`flex-1 px-2 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                    pnlDisplayMode === 'pnl'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  PnL Mode
+                </button>
+                <button
+                  onClick={() => setPnlDisplayMode('rr')}
+                  className={`flex-1 px-2 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                    pnlDisplayMode === 'rr'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  RR Mode
+                </button>
+              </div>
+            </div>
+
+            <button onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }} className="sm:hidden w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
               {language === 'en' ? 'Switch to Thai (TH)' : 'Switch to English (EN)'}
             </button>
-            <button onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }} className="w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
+            <button onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }} className="sm:hidden w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
               {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
             </button>
-            <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full py-2.5 flex justify-center items-center gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-400 text-sm font-bold cursor-pointer">
+            <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="sm:hidden w-full py-2.5 flex justify-center items-center gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-400 text-sm font-bold cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
               </svg>
