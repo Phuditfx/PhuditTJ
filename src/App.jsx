@@ -86,6 +86,12 @@ export default function App() {
     localStorage.setItem('phudit_active_tab', activeTab);
   }, [activeTab]);
 
+  const [pnlDisplayMode, setPnlDisplayMode] = useState(() => localStorage.getItem('phudit_pnl_display_mode') || 'pnl');
+
+  useEffect(() => {
+    localStorage.setItem('phudit_pnl_display_mode', pnlDisplayMode);
+  }, [pnlDisplayMode]);
+
   const [accountId, setAccountId] = useState('default');
   const [globalDateRange, setGlobalDateRange] = useState('1M');
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -698,8 +704,40 @@ export default function App() {
               <span className="text-sm font-extrabold text-amber-605 dark:text-amber-400 block font-sans">{currentRank.name}</span>
             </div>
             <div className="hidden md:block w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
-            <div className="hidden md:block text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
-              ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className="hidden md:flex flex-col items-end justify-center">
+              {pnlDisplayMode === 'pnl' ? (
+                <div className="text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                  ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              ) : (
+                <div className="text-left font-mono font-bold text-sm text-slate-400 dark:text-slate-500 blur-[2px] select-none pointer-events-none" title="Hidden in RR Mode">
+                  $**,***.**
+                </div>
+              )}
+            </div>
+            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 ml-2 border border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setPnlDisplayMode('pnl')}
+                className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${
+                  pnlDisplayMode === 'pnl'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+                title="โหมดแสดงผล PnL (ดอลลาร์)"
+              >
+                PnL
+              </button>
+              <button
+                onClick={() => setPnlDisplayMode('rr')}
+                className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${
+                  pnlDisplayMode === 'rr'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+                title="โหมดแสดงผล RR (เพื่อลดความกดดัน)"
+              >
+                RR
+              </button>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 ml-2">
@@ -818,6 +856,7 @@ export default function App() {
                 onLoadSampleData={handleLoadSampleData}
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}
+                pnlDisplayMode={pnlDisplayMode}
               />
             )}
             
@@ -836,6 +875,7 @@ export default function App() {
                 requestAlert={requestAlert}
                 plans={plans}
                 isVip={isVip}
+                pnlDisplayMode={pnlDisplayMode}
               />
             )}
 
@@ -871,7 +911,7 @@ export default function App() {
                 </div>
                 {activeTab === 'calendar' && (
                   isVip
-                    ? <CalendarView trades={trades} />
+                    ? <CalendarView trades={trades} pnlDisplayMode={pnlDisplayMode} />
                     : <VipLockScreen featureName="Calendar" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'plans' && (

@@ -15,7 +15,8 @@ export default function Dashboard({
   fundingHistory = [],
   setFundingHistory,
   isVip,
-  onLoadSampleData
+  onLoadSampleData,
+  pnlDisplayMode = 'pnl'
 }) {
   const { t } = useLanguage();
   const [localBalance, setLocalBalance] = React.useState(initialBalance);
@@ -221,7 +222,11 @@ export default function Dashboard({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="crypto-card p-5 relative overflow-hidden">
           <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{t('dashboard.accountBalance')}</span>
-          <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          {pnlDisplayMode === 'pnl' ? (
+            <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          ) : (
+            <span className="text-3xl font-mono font-bold text-slate-400 mt-2 block blur-md select-none pointer-events-none" title="Hidden in RR Mode">$**,***.**</span>
+          )}
           <div className="flex justify-between items-center mt-3 text-xs pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span className="text-slate-500">{t('dashboard.initialBalance')}:</span>
             <div className="flex items-center gap-1.5">
@@ -269,9 +274,14 @@ export default function Dashboard({
         </div>
 
         <div className="crypto-card p-5 relative overflow-hidden">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{t('dashboard.netPerformance')}</span>
-          <span className={`text-3xl font-mono font-bold mt-2 block ${netPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'}`}>
-            {netPnL >= 0 ? '+' : '-'}${Math.abs(netPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}</span>
+          <span className={`text-3xl font-mono font-bold mt-2 block ${
+            (pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'
+          }`}>
+            {(pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? '+' : ''}
+            {pnlDisplayMode === 'pnl' ? '$' : ''}
+            {Math.abs(pnlDisplayMode === 'pnl' ? netPnL : achievedRR).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {pnlDisplayMode === 'rr' ? ' R' : ''}
           </span>
           <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span>{t('dashboard.activeTrades')}: <strong className="text-indigo-650 dark:text-indigo-400 font-mono">{trades.filter(t => t.status === 'Open').length}</strong></span>

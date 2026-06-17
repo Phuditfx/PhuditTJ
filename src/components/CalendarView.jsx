@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
 
-export default function CalendarView({ trades }) {
+export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayTrades, setSelectedDayTrades] = useState(null);
-  const [displayMode, setDisplayMode] = useState('pnl');
 
   // คำนวณวันในเดือน
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -38,12 +37,12 @@ export default function CalendarView({ trades }) {
       totalRR += dayRR;
       totalTrades += dayTrades.length;
       
-      const metric = displayMode === 'pnl' ? dayPnL : dayRR;
+      const metric = pnlDisplayMode === 'pnl' ? dayPnL : dayRR;
       if (metric > 0) winDays++;
       else if (metric < 0) lossDays++;
     });
     return { totalPnL, totalRR, totalTrades, winDays, lossDays };
-  }, [tradesByDay, displayMode]);
+  }, [tradesByDay, pnlDisplayMode]);
 
   const prevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -86,7 +85,7 @@ export default function CalendarView({ trades }) {
       const totalPnL = dayTrades.reduce((acc, t) => acc + (parseFloat(t.pnl) || 0), 0);
       const totalRR = dayTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
       
-      const displayValue = displayMode === 'pnl' ? totalPnL : totalRR;
+      const displayValue = pnlDisplayMode === 'pnl' ? totalPnL : totalRR;
 
       const isWin = displayValue > 0;
       const isLoss = displayValue < 0;
@@ -119,7 +118,7 @@ export default function CalendarView({ trades }) {
               <span className={`text-[8px] sm:text-[10px] md:text-xs font-black leading-tight truncate max-w-full ${
                 isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}>
-                {displayMode === 'pnl' ? formatPnL(totalPnL) : formatRR(totalRR)}
+                {pnlDisplayMode === 'pnl' ? formatPnL(totalPnL) : formatRR(totalRR)}
               </span>
               <span className="text-[7px] sm:text-[8px] text-slate-400 dark:text-slate-500 font-semibold leading-tight">
                 {dayTrades.length} {dayTrades.length === 1 ? 'trade' : 'trades'}
@@ -146,28 +145,6 @@ export default function CalendarView({ trades }) {
               <h2 className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
                 📅 Trading Calendar
               </h2>
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-                <button
-                  onClick={() => setDisplayMode('pnl')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                    displayMode === 'pnl'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  PnL
-                </button>
-                <button
-                  onClick={() => setDisplayMode('rr')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                    displayMode === 'rr'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  RR
-                </button>
-              </div>
             </div>
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">Visualize your daily performance</p>
           </div>
@@ -189,17 +166,17 @@ export default function CalendarView({ trades }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-2 sm:p-3 text-center">
             <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase block">
-              Net {displayMode === 'pnl' ? 'P/L' : 'RR'}
+              Net {pnlDisplayMode === 'pnl' ? 'P/L' : 'RR'}
             </span>
             <span className={`text-xs sm:text-sm font-black ${
-              (displayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR) >= 0 
+              (pnlDisplayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR) >= 0 
                 ? 'text-emerald-600 dark:text-emerald-400' 
                 : 'text-rose-600 dark:text-rose-400'
             }`}>
-              {(displayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR) >= 0 ? '+' : ''}
-              {displayMode === 'pnl' ? '$' : ''}
-              {Math.abs(displayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR).toFixed(2)}
-              {displayMode === 'rr' ? ' RR' : ''}
+              {(pnlDisplayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR) >= 0 ? '+' : ''}
+              {pnlDisplayMode === 'pnl' ? '$' : ''}
+              {Math.abs(pnlDisplayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR).toFixed(2)}
+              {pnlDisplayMode === 'rr' ? ' RR' : ''}
             </span>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-2 sm:p-3 text-center">
@@ -240,14 +217,14 @@ export default function CalendarView({ trades }) {
                   🔍 Explore Day: {selectedDayTrades.day} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </h3>
                 <p className={`text-[11px] sm:text-[12px] font-bold mt-1 ${
-                  (displayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR) > 0 
+                  (pnlDisplayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR) > 0 
                     ? 'text-emerald-500' 
-                    : ((displayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR) < 0 ? 'text-rose-500' : 'text-slate-500')
+                    : ((pnlDisplayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR) < 0 ? 'text-rose-500' : 'text-slate-500')
                 }`}>
-                  Net {displayMode === 'pnl' ? 'PnL' : 'RR'}: {(displayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR) > 0 ? '+' : ''}
-                  {displayMode === 'pnl' ? '$' : ''}
-                  {Math.abs(displayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR).toFixed(2)}
-                  {displayMode === 'rr' ? ' RR' : ''} • {selectedDayTrades.trades.length} {selectedDayTrades.trades.length === 1 ? 'trade' : 'trades'}
+                  Net {pnlDisplayMode === 'pnl' ? 'PnL' : 'RR'}: {(pnlDisplayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR) > 0 ? '+' : ''}
+                  {pnlDisplayMode === 'pnl' ? '$' : ''}
+                  {Math.abs(pnlDisplayMode === 'pnl' ? selectedDayTrades.totalPnL : selectedDayTrades.totalRR).toFixed(2)}
+                  {pnlDisplayMode === 'rr' ? ' RR' : ''} • {selectedDayTrades.trades.length} {selectedDayTrades.trades.length === 1 ? 'trade' : 'trades'}
                 </p>
               </div>
               <button 

@@ -15,7 +15,8 @@ const TradeRow = React.memo(({
   handleOpenEditModal,
   handleOpenCloseModal,
   requestConfirm,
-  onDeleteTrade
+  onDeleteTrade,
+  pnlDisplayMode = 'pnl'
 }) => {
   const isClosed = trade.status === 'Closed';
   
@@ -92,14 +93,29 @@ const TradeRow = React.memo(({
         }`}>
           <div className={!isVip ? 'blur-sm select-none pointer-events-none' : ''}>
             {(() => {
+              let pnlVal = null;
               if (isClosed) {
-                const parsedPnl = parseFloat(trade.pnl || 0);
-                return `${parsedPnl >= 0 ? '+' : '-'}$${Math.abs(parsedPnl).toFixed(2)}`;
+                pnlVal = parseFloat(trade.pnl || 0);
               } else if (livePrice) {
-                const pnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
-                return <span className="animate-pulse">{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}</span>;
+                pnlVal = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
               }
-              return '-';
+
+              if (pnlVal === null) return '-';
+
+              if (pnlDisplayMode === 'rr') {
+                let rrToShow = null;
+                if (isClosed) {
+                  rrToShow = trade.actualRR;
+                } else if (livePrice) {
+                  const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+                  const initialRisk = trade.plannedRisk || (gap * trade.shares);
+                  if (initialRisk > 0) rrToShow = pnlVal / initialRisk;
+                }
+                if (rrToShow === null) return <span className="blur-sm select-none pointer-events-none">***</span>;
+                return <span className={!isClosed ? 'animate-pulse' : ''}>{rrToShow >= 0 ? '+' : ''}{rrToShow.toFixed(2)} R</span>;
+              }
+
+              return <span className={!isClosed ? 'animate-pulse' : ''}>{pnlVal >= 0 ? '+' : '-'}${Math.abs(pnlVal).toFixed(2)}</span>;
             })()}
           </div>
           {!isVip && (
@@ -300,7 +316,8 @@ const TradeCard = React.memo(({
   handleOpenEditModal,
   handleOpenCloseModal,
   requestConfirm,
-  onDeleteTrade
+  onDeleteTrade,
+  pnlDisplayMode = 'pnl'
 }) => {
   const isClosed = trade.status === 'Closed';
 
@@ -408,9 +425,14 @@ const TradeCard = React.memo(({
         <div className={!isVip ? 'blur-sm select-none' : ''}>
           {pnl !== null ? (
             <span className={`font-mono font-black text-sm ${
-              pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              pnlDisplayMode === 'rr'
+                ? (rrToShow >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')
+                : (pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')
             } ${!isClosed ? 'animate-pulse' : ''}`}>
-              {pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}
+              {pnlDisplayMode === 'rr' 
+                ? (rrToShow !== null ? `${rrToShow >= 0 ? '+' : ''}${rrToShow.toFixed(2)} R` : <span className="blur-sm">***</span>)
+                : `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`
+              }
             </span>
           ) : (
             <span className="text-slate-400 text-sm">-</span>
@@ -507,7 +529,8 @@ const DesktopTradeCard = React.memo(({
   handleOpenEditModal,
   handleOpenCloseModal,
   requestConfirm,
-  onDeleteTrade
+  onDeleteTrade,
+  pnlDisplayMode = 'pnl'
 }) => {
   const { t } = useLanguage();
   const isClosed = trade.status === 'Closed';
@@ -652,9 +675,14 @@ const DesktopTradeCard = React.memo(({
                 <div className={`w-full ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
                   {pnl !== null ? (
                     <span className={`font-mono font-black text-[13px] ${
-                      pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                      pnlDisplayMode === 'rr'
+                        ? (rrToShow >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')
+                        : (pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')
                     } ${!isClosed ? 'animate-pulse' : ''}`}>
-                      {pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}
+                      {pnlDisplayMode === 'rr'
+                        ? (rrToShow !== null ? `${rrToShow >= 0 ? '+' : ''}${rrToShow.toFixed(2)} R` : <span className="blur-sm">***</span>)
+                        : `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`
+                      }
                     </span>
                   ) : (
                     <span className="text-slate-400 text-[13px] font-mono">-</span>
@@ -823,7 +851,7 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip, pnlDisplayMode = 'pnl' }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -1398,6 +1426,13 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                       setActiveFeedbackTradeId={setActiveFeedbackTradeId}
                       setChartModalTrade={setChartModalTrade}
                       handleOpenEditModal={handleOpenEditModal}
+                      handleOpenCloseModal={handleOpenCloseModal}
+                      requestConfirm={requestConfirm}
+                      onDeleteTrade={onDeleteTrade}
+                      pnlDisplayMode={pnlDisplayMode}
+                    />
+                  );
+                })
                       handleOpenCloseModal={handleOpenCloseModal}
                       requestConfirm={requestConfirm}
                       onDeleteTrade={onDeleteTrade}
