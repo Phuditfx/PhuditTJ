@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost }) {
+export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
   const { t } = useLanguage();
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -23,9 +23,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   ];
 
   return (
-    <aside className="w-full lg:w-64 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-24">
+    <aside className={`w-full ${!isMobileView ? 'lg:w-64 flex-shrink-0 lg:sticky lg:top-24' : ''} flex flex-col gap-6`}>
       
       {/* Account Selector */}
+      {!isMobileView && (
       <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-2">
         <div className="flex justify-between items-center mb-1">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">
@@ -48,8 +49,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           ))}
         </select>
       </div>
+      )}
 
       {/* Date Range Filter */}
+      {!isMobileView && (
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
           {t('common.dateRange', 'Date Range')}
@@ -70,6 +73,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           ))}
         </div>
       </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex flex-col gap-1">

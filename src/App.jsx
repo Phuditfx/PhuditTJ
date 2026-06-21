@@ -812,7 +812,25 @@ export default function App() {
 
         {/* Mobile Slide-down Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in">
+          <div className="md:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in max-h-[70vh] overflow-y-auto">
+            
+            <Sidebar 
+              isMobileView={true}
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+              accountId={accountId} 
+              setAccountId={setAccountId} 
+              globalDateRange={globalDateRange}
+              setGlobalDateRange={setGlobalDateRange}
+              isVip={isVip} 
+              isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
+              accounts={accounts}
+              setShowAccountModal={setShowAccountModal}
+              setShowManual={setShowManual}
+              hasNewFeedPost={hasNewFeedPost}
+            />
+
+            <hr className="my-2 border-slate-200 dark:border-slate-800" />
 
             <button onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }} className="sm:hidden w-full py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">
               {language === 'en' ? 'Switch to Thai (TH)' : 'Switch to English (EN)'}
