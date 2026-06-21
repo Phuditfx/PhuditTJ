@@ -154,12 +154,12 @@ export default function PortfolioRebalancer() {
         </form>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden mb-6 relative">
+      {/* Main Asset List (Card Grid Layout) */}
+      <div className="relative min-h-[300px]">
         
         {!isAllocationValid && (
-          <div className="absolute inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm z-20 flex items-center justify-center">
-             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-2xl border-2 border-rose-500 text-center max-w-md">
+          <div className="absolute inset-0 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm z-20 flex items-start justify-center pt-10 rounded-xl">
+             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-2xl border-2 border-rose-500 text-center max-w-md mx-4 sticky top-10">
                 <div className="text-4xl mb-3">🚨</div>
                 <h3 className="text-rose-600 dark:text-rose-400 font-black text-xl mb-2">Target Allocation ไม่ถูกต้อง</h3>
                 <p className="text-slate-600 dark:text-slate-300 font-medium">สัดส่วนเป้าหมายปัจจุบันคือ <strong>{totalAllocation}%</strong><br/>คุณต้องปรับสัดส่วนเป้าหมาย (Target Alloc) ของสินทรัพย์ทั้งหมดให้รวมกัน <strong>เท่ากับ 100% พอดี</strong> เพื่อให้ระบบคำนวณใหม่ได้</p>
@@ -167,105 +167,116 @@ export default function PortfolioRebalancer() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase text-xs font-bold">
-              <tr>
-                <th className="px-4 py-4">Asset Ticker</th>
-                <th className="px-4 py-4">Current Shares</th>
-                <th className="px-4 py-4">Current Price</th>
-                <th className="px-4 py-4">Current Value</th>
-                <th className="px-4 py-4">Target Alloc %</th>
-                <th className="px-4 py-4">Target Value</th>
-                <th className="px-4 py-4 text-right">Action Needed</th>
-                <th className="px-4 py-4 text-center">Delete</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {assets.map(asset => {
-                const currentVal = asset.shares * asset.price;
-                const targetVal = newTotalValue * (asset.targetAlloc / 100);
-                const difference = targetVal - currentVal;
-                const actionShares = asset.price > 0 ? difference / asset.price : 0;
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-10">
+          {assets.map(asset => {
+            const currentVal = asset.shares * asset.price;
+            const targetVal = newTotalValue * (asset.targetAlloc / 100);
+            const difference = targetVal - currentVal;
+            const actionShares = asset.price > 0 ? difference / asset.price : 0;
+            
+            const isBuy = difference > 1; // 1 dollar threshold
+            const isSell = difference < -1;
+            
+            return (
+              <div key={asset.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 hover:shadow-md transition-shadow relative">
                 
-                const isBuy = difference > 1; // 1 dollar threshold
-                const isSell = difference < -1;
-                
-                return (
-                  <tr key={asset.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <input 
-                        type="text" 
-                        value={asset.ticker}
-                        onChange={(e) => handleUpdateAsset(asset.id, 'ticker', e.target.value)}
-                        className="w-20 font-black text-slate-900 dark:text-white bg-transparent border border-slate-200 dark:border-slate-700 rounded px-2 py-1.5 uppercase focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
+                {/* Header */}
+                <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <input 
+                    type="text" 
+                    value={asset.ticker}
+                    onChange={(e) => handleUpdateAsset(asset.id, 'ticker', e.target.value)}
+                    className="w-24 font-black text-xl text-slate-900 dark:text-white bg-transparent border-b-2 border-transparent hover:border-slate-300 dark:hover:border-slate-700 px-1 py-1 uppercase focus:border-orange-500 focus:outline-none transition-colors"
+                    placeholder="TICKER"
+                  />
+                  <div className="text-right flex items-center gap-3">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold leading-tight">Current Val</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">
+                        ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <button onClick={() => handleRemoveAsset(asset.id)} className="text-slate-300 hover:text-rose-500 dark:text-slate-600 dark:hover:text-rose-400 font-bold p-1 transition-colors" title="Delete Asset">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {/* Body Row 1: Shares & Price */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Current Shares</label>
+                    <input 
+                      type="number" min="0" step="any"
+                      value={asset.shares}
+                      onChange={(e) => handleUpdateAsset(asset.id, 'shares', e.target.value)}
+                      className="w-full font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Current Price ($)</label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
                       <input 
                         type="number" min="0" step="any"
-                        value={asset.shares}
-                        onChange={(e) => handleUpdateAsset(asset.id, 'shares', e.target.value)}
-                        className="w-24 font-medium text-slate-900 dark:text-white bg-transparent border border-slate-200 dark:border-slate-700 rounded px-2 py-1.5 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                        value={asset.price}
+                        onChange={(e) => handleUpdateAsset(asset.id, 'price', e.target.value)}
+                        className="w-full pl-6 pr-3 font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 focus:ring-1 focus:ring-orange-500 focus:outline-none"
                       />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="relative w-28">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                        <input 
-                          type="number" min="0" step="any"
-                          value={asset.price}
-                          onChange={(e) => handleUpdateAsset(asset.id, 'price', e.target.value)}
-                          className="w-full pl-6 pr-2 font-medium text-slate-900 dark:text-white bg-transparent border border-slate-200 dark:border-slate-700 rounded py-1.5 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">
-                      ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 w-24">
-                        <input 
-                          type="number" min="0" max="100" step="any"
-                          value={asset.targetAlloc}
-                          onChange={(e) => handleUpdateAsset(asset.id, 'targetAlloc', e.target.value)}
-                          className="w-full font-bold bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 text-indigo-700 dark:text-indigo-400 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                        />
-                        <span className="text-slate-400 font-bold">%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-bold text-indigo-600 dark:text-indigo-400">
+                    </div>
+                  </div>
+                </div>
+
+                {/* Body Row 2: Target */}
+                <div className="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-lg border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Alloc (%)</label>
+                    <div className="flex items-center gap-1 w-24">
+                      <input 
+                        type="number" min="0" max="100" step="any"
+                        value={asset.targetAlloc}
+                        onChange={(e) => handleUpdateAsset(asset.id, 'targetAlloc', e.target.value)}
+                        className="w-full font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-indigo-700 dark:text-indigo-400 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      />
+                      <span className="text-slate-400 font-bold">%</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Value</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
                       ${targetVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer: Action Needed */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Action Needed</span>
+                    <div>
                       {isBuy && (
-                        <div className="bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 px-3 py-1.5 rounded-lg inline-block text-right shadow-sm">
-                          <div className="font-black text-sm uppercase">Buy {Math.abs(actionShares).toFixed(4)}</div>
-                          <div className="text-[10px] font-bold opacity-80 mt-0.5">+${Math.abs(difference).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div className="bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 px-3 py-2 rounded-lg text-right shadow-sm">
+                          <div className="font-black text-sm uppercase leading-none">Buy {Math.abs(actionShares).toFixed(4)}</div>
+                          <div className="text-[10px] font-bold opacity-80 mt-1">+${Math.abs(difference).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         </div>
                       )}
                       {isSell && (
-                        <div className="bg-rose-100 dark:bg-rose-900/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-400 px-3 py-1.5 rounded-lg inline-block text-right shadow-sm">
-                          <div className="font-black text-sm uppercase">Sell {Math.abs(actionShares).toFixed(4)}</div>
-                          <div className="text-[10px] font-bold opacity-80 mt-0.5">-${Math.abs(difference).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div className="bg-rose-100 dark:bg-rose-900/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-400 px-3 py-2 rounded-lg text-right shadow-sm">
+                          <div className="font-black text-sm uppercase leading-none">Sell {Math.abs(actionShares).toFixed(4)}</div>
+                          <div className="text-[10px] font-bold opacity-80 mt-1">-${Math.abs(difference).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         </div>
                       )}
                       {!isBuy && !isSell && (
-                        <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 px-3 py-2 rounded-lg inline-block font-bold shadow-sm uppercase text-xs">
+                        <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg font-bold shadow-sm uppercase text-xs">
                           Hold
                         </div>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => handleRemoveAsset(asset.id)} className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 font-bold p-2 transition-colors">
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
