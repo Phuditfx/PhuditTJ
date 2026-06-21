@@ -8,6 +8,10 @@ export default function PortfolioRebalancer() {
   ]);
   const [newCash, setNewCash] = useState(0);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+
   // New row input state
   const [newTicker, setNewTicker] = useState('');
   const [newShares, setNewShares] = useState('');
@@ -55,6 +59,20 @@ export default function PortfolioRebalancer() {
     setNewPrice('');
     setNewTarget('');
   };
+
+  const totalPages = itemsPerPage === 'All' ? 1 : Math.ceil(assets.length / itemsPerPage);
+  const paginatedAssets = useMemo(() => {
+    if (itemsPerPage === 'All') return assets;
+    const start = (currentPage - 1) * itemsPerPage;
+    return assets.slice(start, start + itemsPerPage);
+  }, [assets, currentPage, itemsPerPage]);
+
+  // Ensure current page is valid when assets are deleted
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 animate-fade-in text-slate-900 dark:text-slate-100">
@@ -154,18 +172,45 @@ export default function PortfolioRebalancer() {
         </form>
       </div>
 
-      {/* Main Asset List (Compact Table Layout) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden mb-6 relative">
-        
-        {!isAllocationValid && (
-          <div className="absolute inset-0 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm z-20 flex items-center justify-center">
-             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-2xl border-2 border-rose-500 text-center max-w-md">
-                <div className="text-4xl mb-3">🚨</div>
-                <h3 className="text-rose-600 dark:text-rose-400 font-black text-xl mb-2">Target Allocation ไม่ถูกต้อง</h3>
-                <p className="text-slate-600 dark:text-slate-300 font-medium">สัดส่วนเป้าหมายปัจจุบันคือ <strong>{totalAllocation}%</strong><br/>คุณต้องปรับสัดส่วนเป้าหมาย (Target Alloc) ของสินทรัพย์ทั้งหมดให้รวมกัน <strong>เท่ากับ 100% พอดี</strong> เพื่อให้ระบบคำนวณใหม่ได้</p>
-             </div>
+      {/* Target Allocation Warning */}
+      {!isAllocationValid && (
+        <div className="bg-rose-50 dark:bg-rose-900/20 border-2 border-rose-500 rounded-xl p-4 mb-6 shadow-sm flex items-start gap-4 animate-pulse">
+          <div className="text-3xl">🚨</div>
+          <div>
+            <h3 className="text-rose-600 dark:text-rose-400 font-black text-lg mb-1">Target Allocation ไม่ถูกต้อง</h3>
+            <p className="text-slate-700 dark:text-slate-300 font-medium text-sm">
+              สัดส่วนเป้าหมายปัจจุบันคือ <strong>{totalAllocation}%</strong><br/>
+              คุณต้องปรับสัดส่วนเป้าหมาย (Target Alloc) ของสินทรัพย์ทั้งหมดในตารางให้รวมกัน <strong>เท่ากับ 100% พอดี</strong> เพื่อให้ระบบคำนวณใหม่ได้
+            </p>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Main Asset List (Compact Table Layout) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden mb-6">
+        
+        {/* Table Header Controls */}
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center">
+          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+            Asset List <span className="ml-1 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">{assets.length} items</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Show</label>
+            <select 
+              value={itemsPerPage} 
+              onChange={(e) => {
+                setItemsPerPage(e.target.value === 'All' ? 'All' : Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-orange-500"
+            >
+              <option value={12}>12</option>
+              <option value={24}>24</option>
+              <option value={50}>50</option>
+              <option value="All">All</option>
+            </select>
+          </div>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
@@ -182,7 +227,7 @@ export default function PortfolioRebalancer() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-              {assets.map(asset => {
+              {paginatedAssets.map(asset => {
                 const currentVal = asset.shares * asset.price;
                 const targetVal = newTotalValue * (asset.targetAlloc / 100);
                 const difference = targetVal - currentVal;
@@ -261,6 +306,31 @@ export default function PortfolioRebalancer() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {itemsPerPage !== 'All' && totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex gap-1">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Prev
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
