@@ -6,14 +6,14 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'journal', icon: '📓', label: t('app.journal', 'Trades Table').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
-    { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
-    { id: 'portfolioRebalancer', icon: '⚖️', label: 'Portfolio Rebalancer' },
     { id: 'feed', icon: '📰', label: t('app.feed', 'Trading Bulletin').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'analytics', icon: '📈', label: t('app.analytics', 'Analytics & Stats').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'fighter', icon: '⚡', label: t('app.fighter', 'Trade Simulator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
 
   const VIP_ITEMS = [
+    { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
+    { id: 'portfolioRebalancer', icon: '⚖️', label: 'Portfolio Rebalancer' },
     { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
     { id: 'alphaPicks', icon: '🏛️', label: 'Alpha Picks Inv.' },
     { id: 'swing', icon: '📐', label: 'Swing Calculator' },

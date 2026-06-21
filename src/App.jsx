@@ -957,11 +957,15 @@ export default function App() {
             )}
 
             {activeTab === 'positionSizing' && (
-              <PositionSizingCalculator />
+              isVip
+                ? <PositionSizingCalculator />
+                : <VipLockScreen featureName="Position Sizing & Risk" onBack={() => setActiveTab('dashboard')} />
             )}
 
             {activeTab === 'portfolioRebalancer' && (
-              <PortfolioRebalancer />
+              isVip
+                ? <PortfolioRebalancer />
+                : <VipLockScreen featureName="Portfolio Rebalancer" onBack={() => setActiveTab('dashboard')} />
             )}
 
             {/* ✅ Task 5: User Profile Tab */}
