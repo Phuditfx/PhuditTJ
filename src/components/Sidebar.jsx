@@ -6,6 +6,8 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'journal', icon: '📓', label: t('app.journal', 'Trades Table').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
+    { id: 'portfolioRebalancer', icon: '⚖️', label: 'Portfolio Rebalancer' },
     { id: 'feed', icon: '📰', label: t('app.feed', 'Trading Bulletin').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'analytics', icon: '📈', label: t('app.analytics', 'Analytics & Stats').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'fighter', icon: '⚡', label: t('app.fighter', 'Trade Simulator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -59,7 +61,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
               onClick={() => setGlobalDateRange(range)}
               className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
                 globalDateRange === range
-                  ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-sm'
+                  ? 'bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 shadow-sm'
                   : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
@@ -81,8 +83,8 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             onClick={() => setActiveTab(item.id)}
             className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
               activeTab === item.id
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
             }`}
           >
             <span className="text-lg">{item.icon}</span>
@@ -94,7 +96,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
         ))}
 
         {/* VIP Items — always visible, locked for non-VIP */}
-        <div className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-widest mt-4 mb-2 px-3 flex items-center gap-1.5">
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 px-3 flex items-center gap-1.5">
           <span>👑</span>
           <span>Pro Features</span>
         </div>
@@ -105,11 +107,11 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
               activeTab === item.id
                 ? isVip
-                  ? 'bg-amber-500 text-white shadow-md shadow-amber-900/20'
-                  : 'bg-indigo-950/80 text-indigo-300 shadow-md'
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
+                  : 'bg-slate-100 text-slate-400 shadow-inner border-l-4 border-slate-300'
                 : isVip
-                  ? 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
-                  : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-600 dark:hover:text-slate-400'
+                  ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
+                  : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-500 dark:hover:text-slate-400 border-l-4 border-transparent'
             }`}
           >
             <span className="text-lg">{item.icon}</span>

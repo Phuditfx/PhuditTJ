@@ -36,6 +36,8 @@ import SwingPickCalculator from './components/SwingPickCalculator';
 import UserProfile from './components/UserProfile';
 import WeeklySwingPlanner from './components/WeeklySwingPlanner';
 import AlphaPickPlanner from './components/AlphaPickPlanner';
+import PositionSizingCalculator from './components/PositionSizingCalculator';
+import PortfolioRebalancer from './components/PortfolioRebalancer';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -710,7 +712,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/30 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-orange-500/30 transition-colors duration-300">
       
       <header className="glass-panel sticky top-0 z-40 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
         <div className="flex items-center justify-between w-full md:w-auto">
@@ -730,10 +732,10 @@ export default function App() {
               {profile.photo ? (
                 <img src={profile.photo} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-150 dark:border-indigo-900/50 flex items-center justify-center shadow-sm text-[13px]">👤</div>
+                <div className="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-900/50 flex items-center justify-center shadow-sm text-[13px]">👤</div>
               )}
               <div className="flex flex-col text-left">
-                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">{profile.name || currentUser.split('@')[0]}</span>
+                <span className="text-[10px] text-orange-600 dark:text-orange-400 font-extrabold uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">{profile.name || currentUser.split('@')[0]}</span>
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none max-w-[100px] sm:max-w-none truncate">{currentUser}</span>
               </div>
             </div>
@@ -759,7 +761,7 @@ export default function App() {
                 onClick={() => setPnlDisplayMode('pnl')}
                 className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${
                   pnlDisplayMode === 'pnl'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
                 title="โหมดแสดงผล PnL (ดอลลาร์)"
@@ -770,7 +772,7 @@ export default function App() {
                 onClick={() => setPnlDisplayMode('rr')}
                 className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${
                   pnlDisplayMode === 'rr'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
                 title="โหมดแสดงผล RR (เพื่อลดความกดดัน)"
@@ -845,7 +847,7 @@ export default function App() {
                 onClick={() => setPnlDisplayMode('pnl')}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${
                   pnlDisplayMode === 'pnl'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
               >
@@ -855,7 +857,7 @@ export default function App() {
                 onClick={() => setPnlDisplayMode('rr')}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${
                   pnlDisplayMode === 'rr'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
               >
@@ -952,6 +954,14 @@ export default function App() {
                 isVip={isVip}
                 pnlDisplayMode={pnlDisplayMode}
               />
+            )}
+
+            {activeTab === 'positionSizing' && (
+              <PositionSizingCalculator />
+            )}
+
+            {activeTab === 'portfolioRebalancer' && (
+              <PortfolioRebalancer />
             )}
 
             {/* ✅ Task 5: User Profile Tab */}
