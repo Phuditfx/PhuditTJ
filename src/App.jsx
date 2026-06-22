@@ -1172,13 +1172,25 @@ export default function App() {
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="bg-white dark:bg-slate-900 rounded-t-2xl p-4 relative z-10 animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
-            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
-            <div className="flex justify-between items-center mb-4 px-2">
+          <div className="bg-white dark:bg-slate-900 rounded-t-2xl p-4 relative z-10 animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.2)] max-h-[85vh] flex flex-col">
+            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 shrink-0"></div>
+            <div className="flex justify-between items-center mb-4 px-2 shrink-0">
               <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">More Tools</h3>
               <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">✕</button>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-4 overflow-y-auto pb-6 px-1 custom-scrollbar">
+              <button onClick={() => setActiveTab('analytics')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'analytics' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                <span className="text-2xl mb-1">📈</span>
+                <span className="text-[10px] font-bold text-center leading-tight">Analytics</span>
+              </button>
+              <button onClick={() => setActiveTab('positionSizing')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'positionSizing' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                <span className="text-2xl mb-1">🛡️</span>
+                <span className="text-[10px] font-bold text-center leading-tight">Position<br/>Sizing</span>
+              </button>
+              <button onClick={() => setActiveTab('portfolioRebalancer')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'portfolioRebalancer' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                <span className="text-2xl mb-1">⚖️</span>
+                <span className="text-[10px] font-bold text-center leading-tight">Rebalance</span>
+              </button>
               <button onClick={() => setActiveTab('fighter')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'fighter' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">⚡</span>
                 <span className="text-[10px] font-bold text-center">Fighter</span>
@@ -1192,7 +1204,7 @@ export default function App() {
                 <span className="text-[10px] font-bold text-center">TI Pick</span>
               </button>
               <button onClick={() => setActiveTab('weeklyPicks')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'weeklyPicks' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                <span className="text-2xl mb-1">📈</span>
+                <span className="text-2xl mb-1">🎯</span>
                 <span className="text-[10px] font-bold text-center leading-tight">TI Weekly<br/>Picks</span>
               </button>
               <button onClick={() => setActiveTab('alphaPicks')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'alphaPicks' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
@@ -1208,13 +1220,19 @@ export default function App() {
                 <span className="text-[10px] font-bold text-center leading-tight">Dividend</span>
               </button>
               {currentUser === 'phudit.mahawongsanan@gmail.com' && (
-                <button onClick={() => setActiveTab('owner')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'owner' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                  <span className="text-2xl mb-1">👑</span>
-                  <span className="text-[10px] font-bold text-center">Owner</span>
-                </button>
+                <>
+                  <button onClick={() => setActiveTab('data')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'data' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                    <span className="text-2xl mb-1">⚙️</span>
+                    <span className="text-[10px] font-bold text-center">Data</span>
+                  </button>
+                  <button onClick={() => setActiveTab('owner')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'owner' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                    <span className="text-2xl mb-1">👑</span>
+                    <span className="text-[10px] font-bold text-center">Owner</span>
+                  </button>
+                </>
               )}
             </div>
-            <div className="pb-safe"></div>
+            <div className="pb-safe shrink-0"></div>
           </div>
         </div>
       )}
