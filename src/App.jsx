@@ -1103,7 +1103,7 @@ export default function App() {
         </div>
 
         {/* ⚡ Right Side Snap Widget Sidebar */}
-        <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-24">
+        <aside className="hidden lg:flex lg:w-80 flex-shrink-0 flex-col gap-6 lg:sticky lg:top-24">
           <QuickOrderWidget 
             currentRank={currentRank}
             accountBalance={accountBalance}
