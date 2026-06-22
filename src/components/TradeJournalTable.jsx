@@ -856,6 +856,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
   const [filterMonth, setFilterMonth] = useState('All');
+  const [sortBy, setSortBy] = useState('RR'); // Date, RR
   const [livePrices, setLivePrices] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -944,7 +945,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   }).filter(Boolean))].sort().reverse();
 
   // ตัวกรองและค้นหาข้อมูล
-  const filteredTrades = trades.filter(trade => {
+  const baseFilteredTrades = trades.filter(trade => {
     const matchesStatus = filterStatus === 'All' || trade.status === filterStatus;
     const matchesSearch = trade.symbol.toLowerCase().includes(searchSymbol.toLowerCase());
     
@@ -956,6 +957,44 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     }
     
     return matchesStatus && matchesSearch && matchesMonth;
+  });
+
+  const getTradeRR = (trade) => {
+    if (trade.status === 'Closed') {
+      return typeof trade.actualRR === 'number' ? trade.actualRR : parseFloat(trade.actualRR) || null;
+    } else {
+      const livePrice = livePrices[trade.symbol];
+      if (!livePrice) return null;
+      const livePnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
+      const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+      const initialRisk = trade.plannedRisk || (gap * trade.shares);
+      return initialRisk > 0 ? livePnl / initialRisk : null;
+    }
+  };
+
+  const filteredTrades = [...baseFilteredTrades].sort((a, b) => {
+    if (sortBy === 'RR') {
+      const rrA = getTradeRR(a);
+      const rrB = getTradeRR(b);
+
+      const validA = rrA !== null && !isNaN(rrA);
+      const validB = rrB !== null && !isNaN(rrB);
+
+      // Put null or NaN at the bottom
+      if (!validA && validB) return 1;
+      if (validA && !validB) return -1;
+      if (!validA && !validB) return new Date(b.dateTime || 0) - new Date(a.dateTime || 0);
+
+      // Group: Open trades top, Closed trades bottom
+      if (a.status === 'Open' && b.status === 'Closed') return -1;
+      if (a.status === 'Closed' && b.status === 'Open') return 1;
+
+      // Both valid, same status, sort descending by RR
+      if (rrA !== rrB) return rrB - rrA;
+    }
+    
+    // Default or fallback: sort by Date descending
+    return new Date(b.dateTime || 0) - new Date(a.dateTime || 0);
   });
 
   // Export to CSV (replaces old handleExportExcel which just created an unstyled xlsx file)
@@ -1328,6 +1367,23 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 🗑️ ลบเดือน {filterMonth}
               </button>
             )}
+          </div>
+
+          {/* การเรียงลำดับ */}
+          <div className="flex bg-slate-55 dark:bg-slate-950 p-1 rounded border border-slate-200 dark:border-slate-800">
+            {['Date', 'RR'].map((sortType) => (
+              <button
+                key={sortType}
+                onClick={() => setSortBy(sortType)}
+                className={`px-3 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                  sortBy === sortType 
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                {sortType === 'Date' ? '📅 Date' : '🔥 RR'}
+              </button>
+            ))}
           </div>
 
           {/* ฟิลเตอร์สถานะ */}
