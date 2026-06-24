@@ -12,8 +12,9 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
   const tradesByDay = useMemo(() => {
     const map = {};
     trades.forEach(t => {
-      if (t.status !== 'Closed' || !t.dateTime) return;
-      const d = new Date(t.dateTime);
+      const targetDateStr = t.exitDateTime || t.dateTime;
+      if (t.status !== 'Closed' || !targetDateStr) return;
+      const d = new Date(targetDateStr);
       if (d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear()) {
         const day = d.getDate();
         if (!map[day]) map[day] = [];
@@ -249,9 +250,9 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
                         {t.direction}
                       </span>
                       <span className="font-bold text-slate-800 dark:text-slate-200 uppercase">{t.symbol}</span>
-                      {t.dateTime && (
+                      {(t.exitDateTime || t.dateTime) && (
                         <span className="text-[10px] text-slate-400 font-mono">
-                          {new Date(t.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(t.exitDateTime || t.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
                     </div>
