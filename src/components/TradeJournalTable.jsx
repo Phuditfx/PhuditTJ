@@ -1584,10 +1584,10 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (
         <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="crypto-card p-6 max-w-lg w-full flex flex-col gap-5 relative max-h-[90vh] overflow-y-auto">
+          <div className="crypto-card max-w-lg w-full flex flex-col relative max-h-[90vh] md:max-h-[85vh] overflow-hidden">
             
             {/* Header Modal */}
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
+            <div className="p-5 md:p-6 pb-4 md:pb-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-850 shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-emerald-650 dark:text-emerald-400">
                   {selectedTrade.status === 'Closed' ? '✏️ Edit Trade Setup' : '🚪 Close Trade Setup'} - {selectedTrade.symbol}
@@ -1605,7 +1605,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             </div>
 
             {/* Inputs Form */}
-            <div className="flex flex-col gap-4">
+            <div className="p-5 md:p-6 py-4 md:py-5 flex-1 overflow-y-auto flex flex-col gap-4 md:gap-5">
               <div className="flex gap-4">
                 {/* Actual Exit Price */}
                 <div className="flex flex-col gap-1.5 flex-1 relative">
@@ -1885,7 +1885,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             </div>
 
             {/* Bottom Actions */}
-            <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 pt-4 mt-2">
+            <div className="p-4 md:px-6 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 shrink-0 bg-slate-50/50 dark:bg-slate-900/30">
               <button
                 onClick={() => setSelectedTrade(null)}
                 className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
@@ -1971,9 +1971,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       {/* ✏️ Edit Open Trade Modal */}
       {editingOpenTrade && (
         <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="crypto-card p-6 max-w-sm w-full flex flex-col gap-5 relative max-h-[90vh] overflow-y-auto">
+          <div className="crypto-card max-w-sm w-full flex flex-col relative max-h-[90vh] md:max-h-[85vh] overflow-hidden">
             
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-3">
+            <div className="p-5 md:p-6 pb-4 md:pb-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-850 shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400">
                   ✏️ Edit Entry Setup
@@ -1990,7 +1990,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </button>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="p-5 md:p-6 py-4 md:py-5 flex-1 overflow-y-auto flex flex-col gap-3 custom-scrollbar">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry Price ($)</label>
                 <input 
@@ -2074,7 +2074,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 pt-4 mt-2">
+            </div>
+
+            <div className="p-4 md:px-6 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 shrink-0 bg-slate-50/50 dark:bg-slate-900/30">
               <button
                 onClick={() => setEditingOpenTrade(null)}
                 className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
