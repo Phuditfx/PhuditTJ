@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Social Feed PWA</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i data-lucide="zap" class="logo-icon"></i>
+                <h1>FeedPWA</h1>
+            </div>
+            <div class="header-actions">
+                <button id="enableNotificationsBtn" class="btn-icon">
+                    <i data-lucide="bell" id="bellIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Feed Section -->
+        <main class="feed">
+            <div class="post-card create-post">
+                <div class="user-avatar">
+                    <img src="https://ui-avatars.com/api/?name=You&background=6366f1&color=fff" alt="User">
+                </div>
+                <div class="post-input-container">
+                    <button id="simulatePostBtn" class="btn-primary">
+                        <i data-lucide="send"></i>
+                        Simulate New Post
+                    </button>
+                    <small style="display:block; margin-top:8px; color:#64748b; font-size:12px;">This will trigger a push notification to all subscribers.</small>
+                </div>
+            </div>
+
+            <div id="feedList">
+                <!-- Posts will appear here -->
+                <div class="post-card">
+                    <div class="post-header">
+                        <div class="user-avatar"><img src="https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff" alt="Admin"></div>
+                        <div class="post-meta">
+                            <h4>Admin</h4>
+                            <span>Just now</span>
+                        </div>
+                    </div>
+                    <div class="post-content">
+                        <p>Welcome to FeedPWA! Click the bell icon at the top right to enable push notifications. Then try simulating a post!</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Bottom Nav -->
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item active">
+                <i data-lucide="home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i data-lucide="search"></i>
+                <span>Explore</span>
+            </a>
+            <a href="#" class="nav-item">
+                <div class="nav-icon-container">
+                    <i data-lucide="bell"></i>
+                    <span class="nav-badge" id="navBadge" style="display:none;">0</span>
+                </div>
+                <span>Alerts</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i data-lucide="user"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
+    </div>
+    
+    <script src="/app.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+</body>
+</html>
