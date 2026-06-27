@@ -2073,9 +2073,6 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 </div>
               </div>
             </div>
-
-            </div>
-
             <div className="p-4 md:px-6 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-850 shrink-0 bg-slate-50/50 dark:bg-slate-900/30">
               <button
                 onClick={() => setEditingOpenTrade(null)}
