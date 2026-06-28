@@ -1,21 +1,38 @@
 export const fetchOHLCData = async (ticker) => {
   try {
-    // Yahoo Finance v8 chart API using allorigins proxy to bypass CORS
-    // Requesting 1 month of daily data to get enough days for ATR14
-    const url = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1mo`);
-    const proxyUrl = `https://api.allorigins.win/get?url=${url}`;
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1mo`;
     
-    const response = await fetch(proxyUrl);
-    const proxyData = await response.json();
+    const proxies = [
+      { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&disableCache=true`, type: 'allorigins' },
+      { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, type: 'raw' }
+    ];
+
+    let data = null;
     
-    if (!proxyData || !proxyData.contents) {
-      throw new Error('Failed to fetch data from proxy');
+    for (const proxy of proxies) {
+      try {
+        const response = await fetch(proxy.url);
+        if (!response.ok) continue;
+        
+        if (proxy.type === 'allorigins') {
+          const proxyData = await response.json();
+          if (proxyData && proxyData.contents) {
+            data = JSON.parse(proxyData.contents);
+            break;
+          }
+        } else {
+          data = await response.json();
+          if (data && data.chart) {
+            break;
+          }
+        }
+      } catch (err) {
+        console.warn(`OHLC proxy ${proxy.type} failed for ${ticker}`);
+      }
     }
     
-    const data = JSON.parse(proxyData.contents);
-    
-    if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
-      throw new Error('Invalid data structure from Yahoo Finance');
+    if (!data || !data.chart || !data.chart.result || data.chart.result.length === 0) {
+      throw new Error('Invalid data structure from Yahoo Finance or all proxies failed');
     }
     
     const result = data.chart.result[0];
@@ -45,7 +62,6 @@ export const calculateATR = (ohlcData, period = 14) => {
   
   const trueRanges = [];
   
-  // Calculate True Range for each day starting from the second day
   for (let i = 1; i < ohlcData.length; i++) {
     const currentHigh = ohlcData[i].high;
     const currentLow = ohlcData[i].low;
@@ -59,15 +75,11 @@ export const calculateATR = (ohlcData, period = 14) => {
     trueRanges.push(tr);
   }
   
-  // Get the most recent `period` true ranges
   const recentTRs = trueRanges.slice(-period);
-  
   if (recentTRs.length < period) return null;
   
   const sumTR = recentTRs.reduce((sum, tr) => sum + tr, 0);
-  const atr = sumTR / period;
-  
-  return atr;
+  return sumTR / period;
 };
 
 export const calculateTrailingStop = async (ticker, highestPriceReached) => {
@@ -77,13 +89,12 @@ export const calculateTrailingStop = async (ticker, highestPriceReached) => {
   const atr = calculateATR(ohlc, 14);
   if (!atr) return null;
   
-  // current trailing SL formula: highest price - 1.5 * ATR14
   const trailingSL = highestPriceReached - (atr * 1.5);
   
   return {
     atr: atr,
     trailingSL: trailingSL,
-    currentPrice: ohlc[ohlc.length - 1].close // return current price for convenience
+    currentPrice: ohlc[ohlc.length - 1].close
   };
 };
 
@@ -94,27 +105,48 @@ export const fetchLivePrices = async (tickersArray) => {
     const pricesMap = {};
     const fetchPromises = tickersArray.map(async (ticker) => {
       try {
-        const url = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`);
-        const proxyUrl = `https://api.allorigins.win/get?url=${url}&disableCache=true`;
+        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
         
-        const response = await fetch(proxyUrl);
-        const proxyData = await response.json();
+        const proxies = [
+          { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&disableCache=true`, type: 'allorigins' },
+          { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, type: 'raw' }
+        ];
+
+        let data = null;
         
-        if (proxyData && proxyData.contents) {
-          const data = JSON.parse(proxyData.contents);
-          if (data.chart && data.chart.result && data.chart.result.length > 0) {
-            const result = data.chart.result[0];
-            const meta = result.meta;
-            if (meta && meta.regularMarketPrice) {
-              pricesMap[ticker] = meta.regularMarketPrice;
+        for (const proxy of proxies) {
+          try {
+            const response = await fetch(proxy.url);
+            if (!response.ok) continue;
+            
+            if (proxy.type === 'allorigins') {
+              const proxyData = await response.json();
+              if (proxyData && proxyData.contents) {
+                data = JSON.parse(proxyData.contents);
+                break;
+              }
             } else {
-              // fallback to close array
-              const quote = result.indicators.quote[0];
-              if (quote && quote.close) {
-                const closePrices = quote.close.filter(p => p !== null);
-                if (closePrices.length > 0) {
-                  pricesMap[ticker] = closePrices[closePrices.length - 1];
-                }
+              data = await response.json();
+              if (data && data.chart) {
+                break;
+              }
+            }
+          } catch (err) {
+            console.warn(`Live price proxy ${proxy.type} failed for ${ticker}`);
+          }
+        }
+        
+        if (data && data.chart && data.chart.result && data.chart.result.length > 0) {
+          const result = data.chart.result[0];
+          const meta = result.meta;
+          if (meta && meta.regularMarketPrice) {
+            pricesMap[ticker] = meta.regularMarketPrice;
+          } else {
+            const quote = result.indicators.quote[0];
+            if (quote && quote.close) {
+              const closePrices = quote.close.filter(p => p !== null);
+              if (closePrices.length > 0) {
+                pricesMap[ticker] = closePrices[closePrices.length - 1];
               }
             }
           }
