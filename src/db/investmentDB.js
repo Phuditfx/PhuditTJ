@@ -162,6 +162,14 @@ export async function deleteInvestmentPosition(positionId) {
     if (error) throw error;
 }
 
+export async function updateInvestmentPosition(id, updateData) {
+  const { error } = await supabase
+    .from('investment_positions')
+    .update({ ...updateData, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ----------------------------------------------------
 // ALPHA PICKS JOURNAL (Plan & Stats)
 // ----------------------------------------------------
@@ -205,6 +213,14 @@ export async function updateAlphaPicksJournalStatus(id, newStatus) {
   const { error } = await supabase
     .from('alpha_picks_journal')
     .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateAlphaPicksJournalData(id, updateData) {
+  const { error } = await supabase
+    .from('alpha_picks_journal')
+    .update({ ...updateData, updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw error;
 }

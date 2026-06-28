@@ -109,6 +109,7 @@ export const fetchLivePrices = async (tickersArray) => {
         
         const proxies = [
           { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&disableCache=true`, type: 'allorigins' },
+          { url: `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, type: 'raw' },
           { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, type: 'raw' }
         ];
 

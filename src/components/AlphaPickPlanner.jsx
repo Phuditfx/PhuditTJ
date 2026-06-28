@@ -11,7 +11,8 @@ import {
   deleteAlphaPicksJournal,
   updateAlphaPicksJournalStatus,
   updateInvestmentPositionPnL,
-  updateAlphaPickJournalPnL
+  updateAlphaPickJournalPnL,
+  updateAlphaPicksJournalData
 } from '../db/investmentDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
@@ -51,6 +52,17 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   const [jTarget, setJTarget] = useState('');
   const [jNotes, setJNotes] = useState('');
   const [chartModalJournal, setChartModalJournal] = useState(null);
+  
+  // Edit Journal State
+  const [editingJournal, setEditingJournal] = useState(null);
+  const [editJournalForm, setEditJournalForm] = useState({
+    pickDate: '',
+    ticker: '',
+    entry: '',
+    stopLoss: '',
+    target: '',
+    notes: ''
+  });
 
   const loadData = async (currentPortfolioId = selectedPortfolioId) => {
     if (!userEmail) return;
@@ -225,6 +237,38 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
       setChartModalJournal(null);
     } else {
       setChartModalJournal(pick);
+    }
+  };
+
+  const handleEditJournalClick = (pick) => {
+    setEditingJournal(pick);
+    setEditJournalForm({
+      pickDate: pick.pick_date || '',
+      ticker: pick.ticker || '',
+      entry: pick.entry_alert_price || '',
+      stopLoss: pick.stop_loss_price || '',
+      target: pick.target_price || '',
+      notes: pick.notes || ''
+    });
+  };
+
+  const handleEditJournalSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingJournal) return;
+    try {
+      await updateAlphaPicksJournalData(editingJournal.id, {
+        pick_date: editJournalForm.pickDate,
+        ticker: editJournalForm.ticker.toUpperCase(),
+        entry_alert_price: editJournalForm.entry ? parseFloat(editJournalForm.entry) : null,
+        stop_loss_price: editJournalForm.stopLoss ? parseFloat(editJournalForm.stopLoss) : null,
+        target_price: editJournalForm.target ? parseFloat(editJournalForm.target) : null,
+        notes: editJournalForm.notes
+      });
+      setEditingJournal(null);
+      await loadData();
+      if (requestAlert) requestAlert("✅ สำเร็จ", "แก้ไขข้อมูล Journal เรียบร้อยแล้ว");
+    } catch (error) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", error.message);
     }
   };
 
@@ -635,6 +679,9 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                             <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate" title={pick.notes}>{pick.notes || '-'}</td>
                             <td className="px-4 py-3 text-center">
                               <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => handleEditJournalClick(pick)} className="p-1 text-slate-400 hover:text-indigo-500 transition-colors" title="Edit Pick">
+                                  ✏️
+                                </button>
                                 <button onClick={() => toggleJournalChart(pick)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold transition-colors shadow-sm" title="View Chart">
                                   <span>📈</span> ดูกราฟ
                                 </button>
@@ -724,6 +771,100 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           </div>
         </div>
       )}
+
+      {/* Edit Journal Modal */}
+      {editingJournal && (
+        <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>✏️ แก้ไขข้อมูล (Journal)</span>
+              </h3>
+              <button onClick={() => setEditingJournal(null)} className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <form onSubmit={handleEditJournalSubmit} className="p-5 flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pick Date</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={editJournalForm.pickDate}
+                    onChange={(e) => setEditJournalForm({...editJournalForm, pickDate: e.target.value})}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ticker</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editJournalForm.ticker}
+                    onChange={(e) => setEditJournalForm({...editJournalForm, ticker: e.target.value})}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white uppercase font-black"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-blue-500 mb-1">Entry Alert</label>
+                  <input 
+                    type="number" step="any"
+                    value={editJournalForm.entry}
+                    onChange={(e) => setEditJournalForm({...editJournalForm, entry: e.target.value})}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-rose-500 mb-1">Stop Loss</label>
+                  <input 
+                    type="number" step="any"
+                    value={editJournalForm.stopLoss}
+                    onChange={(e) => setEditJournalForm({...editJournalForm, stopLoss: e.target.value})}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-emerald-500 mb-1">Target Price</label>
+                <input 
+                  type="number" step="any"
+                  value={editJournalForm.target}
+                  onChange={(e) => setEditJournalForm({...editJournalForm, target: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
+                <textarea 
+                  value={editJournalForm.notes}
+                  onChange={(e) => setEditJournalForm({...editJournalForm, notes: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white h-24 resize-none"
+                  placeholder="Notes/Thesis..."
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingJournal(null)}
+                  className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-black rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
+                >
+                  บันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Create New Portfolio Modal */}
       {showNewPortfolioModal && (
         <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">

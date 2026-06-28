@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { calculateAllTimeReturn, calculateAnnualGrowth, groupTransactionsByYear } from '../utils/financialMath';
+import { updateInvestmentPosition } from '../db/investmentDB';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, Cell
@@ -11,6 +12,11 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
   const [transactions, setTransactions] = useState([]);
   const [snapshots, setSnapshots] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Edit Position State
+  const [editingPosition, setEditingPosition] = useState(null);
+  const [editForm, setEditForm] = useState({ ticker: '', totalShares: '', averageCost: '' });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -41,7 +47,33 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
     };
     
     fetchData();
-  }, [currentUser, portfolioId]);
+  }, [currentUser, portfolioId, refreshTrigger]);
+
+  const handleEditClick = (pos) => {
+    setEditingPosition(pos);
+    setEditForm({
+      ticker: pos.ticker,
+      totalShares: pos.total_shares || pos.shares || '',
+      averageCost: pos.average_cost || ''
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingPosition) return;
+    try {
+      await updateInvestmentPosition(editingPosition.id, {
+        ticker: editForm.ticker.toUpperCase(),
+        total_shares: parseFloat(editForm.totalShares),
+        average_cost: parseFloat(editForm.averageCost)
+      });
+      setEditingPosition(null);
+      setRefreshTrigger(prev => prev + 1); // trigger reload
+      if (requestAlert) requestAlert("✅ สำเร็จ", "แก้ไขข้อมูลหุ้นเรียบร้อยแล้ว");
+    } catch (err) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", err.message);
+    }
+  };
 
   // Derived state
   const totalInvested = useMemo(() => {
@@ -236,6 +268,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
                 <th className="px-5 py-4">Avg Cost</th>
                 <th className="px-5 py-4">Current Price</th>
                 <th className="px-5 py-4">Unrealized PnL</th>
+                <th className="px-5 py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -269,6 +302,15 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
                           </span>
                         </div>
                       </td>
+                      <td className="px-5 py-4 text-center">
+                        <button 
+                          onClick={() => handleEditClick(pos)}
+                          className="p-2 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white rounded-lg transition-colors"
+                          title="Edit Position"
+                        >
+                          ✏️
+                        </button>
+                      </td>
                     </tr>
                   )
                 })
@@ -277,6 +319,72 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
           </table>
         </div>
       </div>
+
+      {/* Edit Position Modal */}
+      {editingPosition && (
+        <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>✏️ แก้ไขข้อมูล (Holdings)</span>
+              </h3>
+              <button onClick={() => setEditingPosition(null)} className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ticker</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editForm.ticker}
+                  onChange={(e) => setEditForm({...editForm, ticker: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white uppercase"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Total Shares</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  required
+                  value={editForm.totalShares}
+                  onChange={(e) => setEditForm({...editForm, totalShares: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Average Cost</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  required
+                  value={editForm.averageCost}
+                  onChange={(e) => setEditForm({...editForm, averageCost: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingPosition(null)}
+                  className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
+                >
+                  บันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
