@@ -6,7 +6,7 @@ import {
   LineChart, Line, Cell
 } from 'recharts';
 
-export default function InvestmentDashboard({ currentUser, requestAlert }) {
+export default function InvestmentDashboard({ currentUser, requestAlert, portfolioId }) {
   const [positions, setPositions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [snapshots, setSnapshots] = useState([]);
@@ -18,11 +18,17 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [posRes, transRes, snapRes] = await Promise.all([
-          supabase.from('investment_positions').select('*').eq('user_email', currentUser),
-          supabase.from('investment_transactions').select('*').eq('user_email', currentUser).order('transaction_date', { ascending: true }),
-          supabase.from('portfolio_snapshots').select('*').eq('user_email', currentUser).order('snapshot_date', { ascending: true })
-        ]);
+        let posQuery = supabase.from('investment_positions').select('*').eq('user_email', currentUser);
+        let transQuery = supabase.from('investment_transactions').select('*').eq('user_email', currentUser).order('transaction_date', { ascending: true });
+        let snapQuery = supabase.from('portfolio_snapshots').select('*').eq('user_email', currentUser).order('snapshot_date', { ascending: true });
+        
+        if (portfolioId) {
+            posQuery = posQuery.eq('portfolio_id', portfolioId);
+            transQuery = transQuery.eq('portfolio_id', portfolioId);
+            snapQuery = snapQuery.eq('portfolio_id', portfolioId);
+        }
+
+        const [posRes, transRes, snapRes] = await Promise.all([posQuery, transQuery, snapQuery]);
         
         if (posRes.data) setPositions(posRes.data);
         if (transRes.data) setTransactions(transRes.data);
@@ -35,7 +41,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
     };
     
     fetchData();
-  }, [currentUser]);
+  }, [currentUser, portfolioId]);
 
   // Derived state
   const totalInvested = useMemo(() => {
@@ -214,25 +220,28 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white">Current Holdings</h3>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col mt-4">
+        <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+          <h3 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+            <span>💼</span> Current Holdings
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">รายการหุ้นที่ถือครองในพอร์ตปัจจุบัน (เลื่อนซ้าย-ขวาเพื่อดูข้อมูลทั้งหมด)</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-500 uppercase text-[10px] font-bold">
+        <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap min-w-[700px]">
+            <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase text-[10px] font-black tracking-wider">
               <tr>
-                <th className="px-4 py-3">Ticker</th>
-                <th className="px-4 py-3">Shares</th>
-                <th className="px-4 py-3">Avg Cost</th>
-                <th className="px-4 py-3">Current Price</th>
-                <th className="px-4 py-3">Unrealized PnL</th>
+                <th className="px-5 py-4">Ticker</th>
+                <th className="px-5 py-4">Shares</th>
+                <th className="px-5 py-4">Avg Cost</th>
+                <th className="px-5 py-4">Current Price</th>
+                <th className="px-5 py-4">Unrealized PnL</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
               {positions.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-slate-500 italic">No open positions found.</td>
+                  <td colSpan="5" className="px-5 py-10 text-center text-slate-500 italic">No open positions found.</td>
                 </tr>
               ) : (
                 positions.map((pos) => {
@@ -242,13 +251,23 @@ export default function InvestmentDashboard({ currentUser, requestAlert }) {
                   const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
                   
                   return (
-                    <tr key={pos.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">{pos.ticker}</td>
-                      <td className="px-4 py-3 font-mono">{parseFloat(pos.shares || pos.total_shares).toFixed(2)}</td>
-                      <td className="px-4 py-3 font-mono">${parseFloat(pos.average_cost).toFixed(2)}</td>
-                      <td className="px-4 py-3 font-mono">${parseFloat(pos.current_price || pos.average_cost).toFixed(2)}</td>
-                      <td className={`px-4 py-3 font-mono font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {pnl > 0 ? '+' : ''}{pnl.toFixed(2)} ({pnlPct.toFixed(2)}%)
+                    <tr key={pos.id} className="hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-colors group">
+                      <td className="px-5 py-4 font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">
+                          {pos.ticker.substring(0,2)}
+                        </div>
+                        {pos.ticker}
+                      </td>
+                      <td className="px-5 py-4 font-mono font-medium">{parseFloat(pos.shares || pos.total_shares).toFixed(4)}</td>
+                      <td className="px-5 py-4 font-mono font-medium">${parseFloat(pos.average_cost).toFixed(2)}</td>
+                      <td className="px-5 py-4 font-mono font-bold text-slate-700 dark:text-slate-300">${parseFloat(pos.current_price || pos.average_cost).toFixed(2)}</td>
+                      <td className={`px-5 py-4 font-mono font-black ${pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <div className="flex flex-col">
+                          <span>{pnl > 0 ? '+' : ''}{pnl.toFixed(2)}</span>
+                          <span className={`text-[10px] ${pnl >= 0 ? 'text-emerald-500/80 dark:text-emerald-500/60' : 'text-rose-500/80 dark:text-rose-500/60'}`}>
+                            {pnl > 0 ? '+' : ''}{pnlPct.toFixed(2)}%
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   )

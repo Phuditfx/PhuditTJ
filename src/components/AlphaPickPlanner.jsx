@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  getInvestmentPortfolios,
+  createInvestmentPortfolio,
   getInvestmentPositions, 
   addInvestmentTransaction, 
   deleteInvestmentPosition,
@@ -23,6 +25,11 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   const [livePrices, setLivePrices] = useState({});
 
   // === PORTFOLIO STATE ===
+  const [portfolios, setPortfolios] = useState([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState(null);
+  const [showNewPortfolioModal, setShowNewPortfolioModal] = useState(false);
+  const [newPortfolioName, setNewPortfolioName] = useState('');
+  
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ticker, setTicker] = useState('');
@@ -45,42 +52,56 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   const [jNotes, setJNotes] = useState('');
   const [chartModalJournal, setChartModalJournal] = useState(null);
 
-  const loadData = async () => {
+  const loadData = async (currentPortfolioId = selectedPortfolioId) => {
     if (!userEmail) return;
     setLoading(true);
     setJournalLoading(true);
     try {
-      const posData = await getInvestmentPositions(userEmail);
-      setPositions(posData);
-      const jData = await getAlphaPicksJournal(userEmail);
-      setJournalEntries(jData);
-
-      // Fetch live prices
-      const tickers = new Set();
-      posData.forEach(p => { if (parseFloat(p.total_shares) > 0) tickers.add(p.ticker); });
-      jData.forEach(p => { if (p.status === 'Active' || p.status === 'Triggered-Active') tickers.add(p.ticker); });
+      // Load portfolios
+      const ports = await getInvestmentPortfolios(userEmail);
+      setPortfolios(ports);
       
-      if (tickers.size > 0) {
-        const prices = await fetchLivePrices(Array.from(tickers));
-        setLivePrices(prices);
+      let activePortId = currentPortfolioId;
+      if (!activePortId && ports.length > 0) {
+        activePortId = ports[0].id;
+        setSelectedPortfolioId(activePortId);
+      }
+
+      if (activePortId) {
+        const posData = await getInvestmentPositions(userEmail, activePortId);
+        setPositions(posData);
+        const jData = await getAlphaPicksJournal(userEmail, activePortId);
+        setJournalEntries(jData);
+
+        // Fetch live prices
+        const tickers = new Set();
+        posData.forEach(p => { if (parseFloat(p.total_shares) > 0) tickers.add(p.ticker); });
+        jData.forEach(p => { if (p.status === 'Active' || p.status === 'Triggered-Active') tickers.add(p.ticker); });
         
-        // Background DB Update
-        posData.forEach(p => {
-          if (parseFloat(p.total_shares) > 0 && prices[p.ticker]) {
-            const currentPrice = prices[p.ticker];
-            const pnl = (currentPrice - parseFloat(p.average_cost)) * parseFloat(p.total_shares);
-            updateInvestmentPositionPnL(p.id, pnl, currentPrice);
-          }
-        });
-        
-        jData.forEach(p => {
-          if ((p.status === 'Active' || p.status === 'Triggered-Active') && p.entry_alert_price && prices[p.ticker]) {
-            const currentPrice = prices[p.ticker];
-            // Compute percentage PnL from entry since we don't have shares for Journal Picks
-            const pnl = currentPrice - parseFloat(p.entry_alert_price);
-            updateAlphaPickJournalPnL(p.id, pnl);
-          }
-        });
+        if (tickers.size > 0) {
+          const prices = await fetchLivePrices(Array.from(tickers));
+          setLivePrices(prices);
+          
+          // Background DB Update
+          posData.forEach(p => {
+            if (parseFloat(p.total_shares) > 0 && prices[p.ticker]) {
+              const currentPrice = prices[p.ticker];
+              const pnl = (currentPrice - parseFloat(p.average_cost)) * parseFloat(p.total_shares);
+              updateInvestmentPositionPnL(p.id, pnl, currentPrice);
+            }
+          });
+          
+          jData.forEach(p => {
+            if ((p.status === 'Active' || p.status === 'Triggered-Active') && p.entry_alert_price && prices[p.ticker]) {
+              const currentPrice = prices[p.ticker];
+              const pnl = currentPrice - parseFloat(p.entry_alert_price);
+              updateAlphaPickJournalPnL(p.id, pnl);
+            }
+          });
+        }
+      } else {
+        setPositions([]);
+        setJournalEntries([]);
       }
     } catch (err) {
       console.error(err);
@@ -90,19 +111,37 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   };
 
   useEffect(() => {
-    loadData();
-  }, [userEmail]);
+    loadData(selectedPortfolioId);
+  }, [userEmail, selectedPortfolioId]);
+
+  const handleCreatePortfolio = async (e) => {
+    e.preventDefault();
+    if (!newPortfolioName.trim()) return;
+    try {
+      const newPort = await createInvestmentPortfolio(userEmail, newPortfolioName.trim());
+      setNewPortfolioName('');
+      setShowNewPortfolioModal(false);
+      setSelectedPortfolioId(newPort.id);
+      if (requestAlert) requestAlert("✅ สำเร็จ", "สร้างพอร์ตลงทุนใหม่เรียบร้อยแล้ว");
+    } catch (err) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", err.message);
+    }
+  };
 
   // === PORTFOLIO HANDLERS ===
   const handleTransaction = async (e) => {
     e.preventDefault();
+    if (!selectedPortfolioId) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", "กรุณาสร้างหรือเลือกพอร์ตลงทุนก่อน");
+      return;
+    }
     if (!ticker || !shares || !price) return;
     try {
       await addInvestmentTransaction(
-        userEmail, ticker, type, parseFloat(shares), parseFloat(price), transactionDate, notes
+        userEmail, selectedPortfolioId, ticker, type, parseFloat(shares), parseFloat(price), transactionDate, notes
       );
       setTicker(''); setShares(''); setPrice(''); setNotes('');
-      loadData();
+      loadData(selectedPortfolioId);
       if (requestAlert) requestAlert("✅ สำเร็จ", "บันทึกรายการเรียบร้อยแล้ว");
     } catch (err) {
       if (requestAlert) requestAlert("❌ ผิดพลาด", `ไม่สามารถบันทึกรายการได้: ${err.message}`);
@@ -114,7 +153,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
     const doDelete = async () => {
       try {
         await deleteInvestmentPosition(id);
-        loadData();
+        loadData(selectedPortfolioId);
       } catch (err) { console.error(err); }
     };
     if (requestConfirm) requestConfirm("Delete Position", "แน่ใจหรือไม่ว่าต้องการลบการลงทุนในหุ้นตัวนี้?", doDelete);
@@ -138,10 +177,15 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
   // === JOURNAL HANDLERS ===
   const handleAddJournal = async (e) => {
     e.preventDefault();
+    if (!selectedPortfolioId) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", "กรุณาสร้างหรือเลือกพอร์ตลงทุนก่อน");
+      return;
+    }
     if (!jTicker || !jPickDate) return;
     try {
       await addAlphaPicksJournal({
         user_email: userEmail,
+        portfolio_id: selectedPortfolioId,
         pick_date: jPickDate,
         ticker: jTicker.toUpperCase(),
         entry_alert_price: jEntry ? parseFloat(jEntry) : null,
@@ -150,7 +194,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
         notes: jNotes
       });
       setJTicker(''); setJEntry(''); setJStopLoss(''); setJTarget(''); setJNotes('');
-      loadData();
+      loadData(selectedPortfolioId);
       if (requestAlert) requestAlert("✅ สำเร็จ", "บันทึก Alpha Pick เรียบร้อย");
     } catch (err) {
       if (requestAlert) requestAlert("❌ ผิดพลาด", err.message);
@@ -161,7 +205,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
     const doDelete = async () => {
       try {
         await deleteAlphaPicksJournal(id);
-        loadData();
+        loadData(selectedPortfolioId);
       } catch (err) { console.error(err); }
     };
     if (requestConfirm) requestConfirm("Delete Record", "ลบบันทึก Alpha Pick นี้ใช่ไหม?", doDelete);
@@ -172,7 +216,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
     const newStatus = currentStatus === 'Pending' ? 'Active' : currentStatus === 'Active' ? 'Closed' : 'Pending';
     try {
       await updateAlphaPicksJournalStatus(id, newStatus);
-      loadData();
+      loadData(selectedPortfolioId);
     } catch (err) { console.error(err); }
   };
 
@@ -205,10 +249,33 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
             <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Alpha Picks Investment</h2>
             <div className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-[10px] font-black tracking-widest uppercase border border-amber-200 dark:border-amber-800/50">PRO</div>
           </div>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Long-Term DCA Portfolio Tracker & Journal</p>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-3">Long-Term DCA Portfolio Tracker & Journal</p>
+          
+          {/* Portfolio Switcher */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedPortfolioId || ''}
+              onChange={(e) => setSelectedPortfolioId(e.target.value)}
+              className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer min-w-[200px]"
+            >
+              {portfolios.length === 0 && <option value="">Loading...</option>}
+              {portfolios.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <button 
+              onClick={() => setShowNewPortfolioModal(true)}
+              className="p-1.5 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-800/50 rounded-lg transition-colors"
+              title="Create new portfolio"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="flex items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
           {/* Tabs */}
           <div className="flex flex-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner border border-slate-200 dark:border-slate-800">
             <button
@@ -277,7 +344,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
 
       {/* DASHBOARD TAB */}
       {activeTab === 'dashboard' && (
-        <InvestmentDashboard currentUser={userEmail} requestAlert={requestAlert} />
+        <InvestmentDashboard currentUser={userEmail} requestAlert={requestAlert} portfolioId={selectedPortfolioId} />
       )}
 
       {/* PORTFOLIO TAB */}
@@ -654,6 +721,49 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 }]}
               />
             </div>
+          </div>
+        </div>
+      )}
+      {/* Create New Portfolio Modal */}
+      {showNewPortfolioModal && (
+        <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>📁 สร้างพอร์ตลงทุนใหม่</span>
+              </h3>
+              <button onClick={() => setShowNewPortfolioModal(false)} className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <form onSubmit={handleCreatePortfolio} className="p-5">
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">ชื่อพอร์ตลงทุน (Portfolio Name)</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newPortfolioName}
+                  onChange={(e) => setNewPortfolioName(e.target.value)}
+                  placeholder="เช่น Growth Portfolio, Dividend Tech..."
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setShowNewPortfolioModal(false)}
+                  className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
+                >
+                  บันทึก
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

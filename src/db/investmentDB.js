@@ -1,14 +1,52 @@
 import { supabase } from '../supabaseClient';
 
-// Get all positions for a user
-export async function getInvestmentPositions(userEmail) {
+// ----------------------------------------------------
+// PORTFOLIOS
+// ----------------------------------------------------
+
+export async function getInvestmentPortfolios(userEmail) {
   if (!userEmail) return [];
   const { data, error } = await supabase
+    .from('investment_portfolios')
+    .select('*')
+    .eq('user_email', userEmail)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching portfolios:', error);
+    return [];
+  }
+  return data;
+}
+
+export async function createInvestmentPortfolio(userEmail, name, description = '') {
+  if (!userEmail || !name) throw new Error("Missing required fields");
+  const { data, error } = await supabase
+    .from('investment_portfolios')
+    .insert([{ user_email: userEmail, name, description }])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+}
+
+// ----------------------------------------------------
+// POSITIONS & TRANSACTIONS
+// ----------------------------------------------------
+
+export async function getInvestmentPositions(userEmail, portfolioId = null) {
+  if (!userEmail) return [];
+  let query = supabase
     .from('investment_positions')
     .select('*')
     .eq('user_email', userEmail)
     .order('updated_at', { ascending: false });
+    
+  if (portfolioId) {
+    query = query.eq('portfolio_id', portfolioId);
+  }
 
+  const { data, error } = await query;
   if (error) {
     console.error('Error fetching investment positions:', error);
     return [];
@@ -16,7 +54,6 @@ export async function getInvestmentPositions(userEmail) {
   return data;
 }
 
-// Get all transactions for a position
 export async function getInvestmentTransactions(positionId) {
   if (!positionId) return [];
   const { data, error } = await supabase
@@ -32,15 +69,15 @@ export async function getInvestmentTransactions(positionId) {
   return data;
 }
 
-// Add a new transaction (Buy/Sell)
-export async function addInvestmentTransaction(userEmail, ticker, type, shares, price, transactionDate, notes) {
-  if (!userEmail || !ticker || !shares || !price) throw new Error("Missing required fields");
+export async function addInvestmentTransaction(userEmail, portfolioId, ticker, type, shares, price, transactionDate, notes) {
+  if (!userEmail || !portfolioId || !ticker || !shares || !price) throw new Error("Missing required fields");
 
   // 1. Check if position exists
   let { data: positions } = await supabase
     .from('investment_positions')
     .select('*')
     .eq('user_email', userEmail)
+    .eq('portfolio_id', portfolioId)
     .eq('ticker', ticker.toUpperCase());
 
   let position = positions && positions.length > 0 ? positions[0] : null;
@@ -53,6 +90,7 @@ export async function addInvestmentTransaction(userEmail, ticker, type, shares, 
       .from('investment_positions')
       .insert([{
         user_email: userEmail,
+        portfolio_id: portfolioId,
         ticker: ticker.toUpperCase(),
         total_shares: shares,
         average_cost: price,
@@ -103,6 +141,7 @@ export async function addInvestmentTransaction(userEmail, ticker, type, shares, 
     .from('investment_transactions')
     .insert([{
       user_email: userEmail,
+      portfolio_id: portfolioId,
       position_id: position.id,
       type: type,
       shares: shares,
@@ -127,14 +166,19 @@ export async function deleteInvestmentPosition(positionId) {
 // ALPHA PICKS JOURNAL (Plan & Stats)
 // ----------------------------------------------------
 
-export async function getAlphaPicksJournal(userEmail) {
+export async function getAlphaPicksJournal(userEmail, portfolioId = null) {
   if (!userEmail) return [];
-  const { data, error } = await supabase
+  let query = supabase
     .from('alpha_picks_journal')
     .select('*')
     .eq('user_email', userEmail)
     .order('pick_date', { ascending: false });
+    
+  if (portfolioId) {
+    query = query.eq('portfolio_id', portfolioId);
+  }
 
+  const { data, error } = await query;
   if (error) {
     console.error('Error fetching alpha picks journal:', error);
     return [];
