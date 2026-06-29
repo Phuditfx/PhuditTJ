@@ -198,7 +198,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
                 value={block.text}
                 onChange={(e) => handleBlockTextChange(block.id, e.target.value)}
                 disabled={isPublishing}
-                className="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-slate-200 resize-y min-h-[150px] text-[15px] placeholder-slate-400 dark:placeholder-slate-500 mb-3 disabled:opacity-50"
+                className="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-slate-200 caret-slate-900 dark:caret-white resize-y min-h-[250px] text-[15px] placeholder-slate-400 dark:placeholder-slate-500 mb-3 disabled:opacity-50"
               />
 
               {block.previewUrl && (
