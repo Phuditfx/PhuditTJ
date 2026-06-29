@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { calculateAllTimeReturn, calculateAnnualGrowth, groupTransactionsByYear } from '../utils/financialMath';
-import { updateInvestmentPosition } from '../db/investmentDB';
+import { updateInvestmentPosition, addPortfolioFunding } from '../db/investmentDB';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, Cell
@@ -11,12 +11,19 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
   const [positions, setPositions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [snapshots, setSnapshots] = useState([]);
+  const [cashBalance, setCashBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Edit Position State
   const [editingPosition, setEditingPosition] = useState(null);
   const [editForm, setEditForm] = useState({ ticker: '', totalShares: '', averageCost: '' });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Manage Cash Modal State
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashType, setCashType] = useState('DEPOSIT');
+  const [cashAmount, setCashAmount] = useState('');
+  const [cashNotes, setCashNotes] = useState('');
 
   useEffect(() => {
     if (!currentUser) return;
@@ -27,18 +34,22 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
         let posQuery = supabase.from('investment_positions').select('*').eq('user_email', currentUser);
         let transQuery = supabase.from('investment_transactions').select('*').eq('user_email', currentUser).order('transaction_date', { ascending: true });
         let snapQuery = supabase.from('portfolio_snapshots').select('*').eq('user_email', currentUser).order('snapshot_date', { ascending: true });
-        
+        let portQuery = supabase.from('investment_portfolios').select('cash_balance').eq('user_email', currentUser);
         if (portfolioId) {
             posQuery = posQuery.eq('portfolio_id', portfolioId);
             transQuery = transQuery.eq('portfolio_id', portfolioId);
             snapQuery = snapQuery.eq('portfolio_id', portfolioId);
+            portQuery = portQuery.eq('id', portfolioId).single();
+        } else {
+            portQuery = portQuery.limit(1).single();
         }
 
-        const [posRes, transRes, snapRes] = await Promise.all([posQuery, transQuery, snapQuery]);
+        const [posRes, transRes, snapRes, portRes] = await Promise.all([posQuery, transQuery, snapQuery, portQuery]);
         
         if (posRes.data) setPositions(posRes.data);
         if (transRes.data) setTransactions(transRes.data);
         if (snapRes.data) setSnapshots(snapRes.data);
+        if (portRes.data) setCashBalance(parseFloat(portRes.data.cash_balance) || 0);
       } catch (err) {
         console.error("Error fetching investment data:", err);
       } finally {
@@ -70,6 +81,24 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
       setEditingPosition(null);
       setRefreshTrigger(prev => prev + 1); // trigger reload
       if (requestAlert) requestAlert("✅ สำเร็จ", "แก้ไขข้อมูลหุ้นเรียบร้อยแล้ว");
+    } catch (err) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", err.message);
+    }
+  };
+
+  const handleCashSubmit = async (e) => {
+    e.preventDefault();
+    if (!cashAmount || isNaN(cashAmount) || parseFloat(cashAmount) <= 0) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", "กรุณาระบุจำนวนเงินให้ถูกต้อง");
+      return;
+    }
+    try {
+      await addPortfolioFunding(currentUser, portfolioId, cashType, parseFloat(cashAmount), cashNotes);
+      setShowCashModal(false);
+      setCashAmount('');
+      setCashNotes('');
+      setRefreshTrigger(prev => prev + 1);
+      if (requestAlert) requestAlert("✅ สำเร็จ", "ทำรายการเรียบร้อยแล้ว");
     } catch (err) {
       if (requestAlert) requestAlert("❌ ผิดพลาด", err.message);
     }
@@ -168,8 +197,20 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
   return (
     <div className="flex flex-col gap-6 animate-fade-in w-full max-w-full overflow-hidden">
       
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-slate-800 dark:text-white">Alpha Picks Dashboard</h2>
+        <div className="flex items-center gap-3">
+          <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Cash:</span>
+            <span className="text-lg font-black text-slate-800 dark:text-white">${cashBalance.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+          </div>
+          <button 
+            onClick={() => setShowCashModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-all text-sm"
+          >
+            Manage Cash
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -378,6 +419,64 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
                   className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                   บันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    {showCashModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+              Manage Cash (ฝาก/ถอน)
+            </h3>
+            <form onSubmit={handleCashSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
+                <select 
+                  value={cashType}
+                  onChange={(e) => setCashType(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="DEPOSIT" className="text-emerald-600">DEPOSIT (ฝากเงิน)</option>
+                  <option value="WITHDRAWAL" className="text-rose-600">WITHDRAWAL (ถอนเงิน)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Amount ($)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes (Optional)</label>
+                <input 
+                  type="text" 
+                  value={cashNotes}
+                  onChange={(e) => setCashNotes(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setShowCashModal(false)}
+                  className="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors shadow-md"
+                >
+                  Confirm
                 </button>
               </div>
             </form>

@@ -428,14 +428,28 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
 
                 <div className="col-span-1 md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ticker</label>
-                  <input 
-                    type="text" 
-                    value={ticker}
-                    onChange={(e) => setTicker(e.target.value)}
-                    placeholder="e.g. UBER"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none uppercase"
-                    required
-                  />
+                  {type === 'SELL' ? (
+                    <select
+                      value={ticker}
+                      onChange={(e) => setTicker(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none uppercase"
+                      required
+                    >
+                      <option value="" disabled>-- Select Stock to Sell --</option>
+                      {positions.filter(p => parseFloat(p.total_shares) > 0).map(p => (
+                        <option key={p.id} value={p.ticker}>{p.ticker}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input 
+                      type="text" 
+                      value={ticker}
+                      onChange={(e) => setTicker(e.target.value)}
+                      placeholder="e.g. UBER"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none uppercase"
+                      required
+                    />
+                  )}
                 </div>
 
                 <div className="col-span-1">

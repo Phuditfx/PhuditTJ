@@ -152,6 +152,30 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
     }]);
 
   if (txError) throw txError;
+
+  // 5. Update Portfolio Cash Balance
+  const transactionValue = parseFloat(shares) * parseFloat(price);
+  
+  // Fetch current portfolio balance
+  const { data: portData, error: portFetchErr } = await supabase
+    .from('investment_portfolios')
+    .select('cash_balance')
+    .eq('id', portfolioId)
+    .single();
+    
+  if (!portFetchErr && portData) {
+    let currentCash = parseFloat(portData.cash_balance) || 0;
+    if (type === 'BUY') {
+      currentCash -= transactionValue;
+    } else if (type === 'SELL') {
+      currentCash += transactionValue;
+    }
+    
+    await supabase
+      .from('investment_portfolios')
+      .update({ cash_balance: currentCash })
+      .eq('id', portfolioId);
+  }
 }
 
 export async function deleteInvestmentPosition(positionId) {
@@ -248,4 +272,64 @@ export async function updateAlphaPickJournalPnL(id, pnl) {
     .update({ unrealized_pnl: pnl, updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) console.error('Error updating journal PnL:', error);
+}
+
+// ----------------------------------------------------
+// PORTFOLIO FUNDING (Cash Balance)
+// ----------------------------------------------------
+
+export async function addPortfolioFunding(userEmail, portfolioId, type, amount, notes = '') {
+  if (!userEmail || !portfolioId || !type || !amount) throw new Error("Missing required fields for funding");
+
+  // 1. Record history
+  const { error: txError } = await supabase
+    .from('portfolio_funding_history')
+    .insert([{
+      user_email: userEmail,
+      portfolio_id: portfolioId,
+      type: type,
+      amount: amount,
+      transaction_date: new Date().toISOString().split('T')[0],
+      notes: notes
+    }]);
+
+  if (txError) throw txError;
+
+  // 2. Update Cash Balance
+  const { data: portData, error: portFetchErr } = await supabase
+    .from('investment_portfolios')
+    .select('cash_balance')
+    .eq('id', portfolioId)
+    .single();
+
+  if (portFetchErr) throw portFetchErr;
+
+  let currentCash = parseFloat(portData.cash_balance) || 0;
+  if (type === 'DEPOSIT') {
+    currentCash += parseFloat(amount);
+  } else if (type === 'WITHDRAWAL') {
+    currentCash -= parseFloat(amount);
+  }
+
+  const { error: updateError } = await supabase
+    .from('investment_portfolios')
+    .update({ cash_balance: currentCash })
+    .eq('id', portfolioId);
+
+  if (updateError) throw updateError;
+}
+
+export async function getPortfolioFundingHistory(portfolioId) {
+  if (!portfolioId) return [];
+  const { data, error } = await supabase
+    .from('portfolio_funding_history')
+    .select('*')
+    .eq('portfolio_id', portfolioId)
+    .order('transaction_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching funding history:', error);
+    return [];
+  }
+  return data;
 }
