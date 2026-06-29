@@ -30,8 +30,10 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d.setDate(diff));
-    monday.setHours(0, 0, 0, 0);
-    return monday.toISOString().split('T')[0];
+    const year = monday.getFullYear();
+    const month = String(monday.getMonth() + 1).padStart(2, '0');
+    const date = String(monday.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
   };
 
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
