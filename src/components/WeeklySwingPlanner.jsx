@@ -721,8 +721,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {groupedPicks.map((group) => {
-               const isExpanded = expandedGroups[group.key] !== false;
+            {groupedPicks.map((group, index) => {
+               const isExpanded = expandedGroups[group.key] !== undefined ? expandedGroups[group.key] : index === 0;
                return (
                  <div key={group.key} className="border border-slate-200 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-sm">
                    <button 
