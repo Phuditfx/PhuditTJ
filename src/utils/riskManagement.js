@@ -1,38 +1,16 @@
 export const fetchOHLCData = async (ticker) => {
   try {
-    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1mo`;
+    const url = `/api/yahoo?symbol=${encodeURIComponent(ticker)}&interval=1d&range=1mo`;
+    const response = await fetch(url, { cache: 'no-store' });
     
-    const proxies = [
-      { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&disableCache=true`, type: 'allorigins' },
-      { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, type: 'raw' }
-    ];
-
-    let data = null;
-    
-    for (const proxy of proxies) {
-      try {
-        const response = await fetch(proxy.url);
-        if (!response.ok) continue;
-        
-        if (proxy.type === 'allorigins') {
-          const proxyData = await response.json();
-          if (proxyData && proxyData.contents) {
-            data = JSON.parse(proxyData.contents);
-            break;
-          }
-        } else {
-          data = await response.json();
-          if (data && data.chart) {
-            break;
-          }
-        }
-      } catch (err) {
-        console.warn(`OHLC proxy ${proxy.type} failed for ${ticker}`);
-      }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch OHLC data: ${response.statusText}`);
     }
     
+    const data = await response.json();
+    
     if (!data || !data.chart || !data.chart.result || data.chart.result.length === 0) {
-      throw new Error('Invalid data structure from Yahoo Finance or all proxies failed');
+      throw new Error('Invalid data structure from Yahoo Finance API');
     }
     
     const result = data.chart.result[0];
@@ -105,37 +83,14 @@ export const fetchLivePrices = async (tickersArray) => {
     const pricesMap = {};
     const fetchPromises = tickersArray.map(async (ticker) => {
       try {
-        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
+        const url = `/api/yahoo?symbol=${encodeURIComponent(ticker)}&range=1d&interval=1m`;
         
-        const proxies = [
-          { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&disableCache=true`, type: 'allorigins' },
-          { url: `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, type: 'raw' },
-          { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, type: 'raw' }
-        ];
-
-        let data = null;
-        
-        for (const proxy of proxies) {
-          try {
-            const response = await fetch(proxy.url);
-            if (!response.ok) continue;
-            
-            if (proxy.type === 'allorigins') {
-              const proxyData = await response.json();
-              if (proxyData && proxyData.contents) {
-                data = JSON.parse(proxyData.contents);
-                break;
-              }
-            } else {
-              data = await response.json();
-              if (data && data.chart) {
-                break;
-              }
-            }
-          } catch (err) {
-            console.warn(`Live price proxy ${proxy.type} failed for ${ticker}`);
-          }
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Status: ${response.status}`);
         }
+        
+        const data = await response.json();
         
         if (data && data.chart && data.chart.result && data.chart.result.length > 0) {
           const result = data.chart.result[0];
@@ -143,7 +98,7 @@ export const fetchLivePrices = async (tickersArray) => {
           if (meta && meta.regularMarketPrice) {
             pricesMap[ticker] = meta.regularMarketPrice;
           } else {
-            const quote = result.indicators.quote[0];
+            const quote = result.indicators?.quote?.[0];
             if (quote && quote.close) {
               const closePrices = quote.close.filter(p => p !== null);
               if (closePrices.length > 0) {
