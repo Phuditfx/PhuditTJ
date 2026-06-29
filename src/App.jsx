@@ -981,8 +981,8 @@ export default function App() {
             )}
 
             {activeTab === 'portfolioRebalancer' && (
-              isVip
-                ? <PortfolioRebalancer />
+              isVip 
+                ? <PortfolioRebalancer currentUser={currentUser} requestAlert={requestAlert} />
                 : <VipLockScreen featureName="Portfolio Rebalancer" onBack={() => setActiveTab('dashboard')} />
             )}
 

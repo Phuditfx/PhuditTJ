@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getInvestmentPortfolios, getInvestmentPositions, updateInvestmentPositionTargetAlloc } from '../db/investmentDB';
+import { fetchLivePrices } from '../utils/riskManagement';
 
-export default function PortfolioRebalancer() {
-  const [assets, setAssets] = useState([
-    { id: '1', ticker: 'AAPL', shares: 50, price: 150, targetAlloc: 40 },
-    { id: '2', ticker: 'MSFT', shares: 30, price: 310, targetAlloc: 40 },
-    { id: '3', ticker: 'TSLA', shares: 10, price: 200, targetAlloc: 20 }
-  ]);
+export default function PortfolioRebalancer({ currentUser, requestAlert }) {
+  const [portfolios, setPortfolios] = useState([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const [dbAssets, setDbAssets] = useState([]);
+  const [tempAssets, setTempAssets] = useState([]);
+  const [livePrices, setLivePrices] = useState({});
+
   const [newCash, setNewCash] = useState(0);
 
   // Pagination state
@@ -18,6 +23,73 @@ export default function PortfolioRebalancer() {
   const [newPrice, setNewPrice] = useState('');
   const [newTarget, setNewTarget] = useState('');
 
+  // Fetch portfolios on mount
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchPorts = async () => {
+      try {
+        const ports = await getInvestmentPortfolios(currentUser);
+        setPortfolios(ports);
+        if (ports.length > 0) {
+          setSelectedPortfolioId(ports[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to load portfolios', err);
+      }
+    };
+    fetchPorts();
+  }, [currentUser]);
+
+  // Fetch positions and live prices when portfolio changes
+  useEffect(() => {
+    if (!currentUser || !selectedPortfolioId) {
+      setDbAssets([]);
+      return;
+    }
+    
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const positions = await getInvestmentPositions(currentUser, selectedPortfolioId);
+        const filteredPositions = positions.filter(p => parseFloat(p.total_shares) > 0);
+        
+        // Map DB positions to our asset format
+        const mappedAssets = filteredPositions.map(p => ({
+          id: p.id,
+          isDb: true,
+          ticker: p.ticker,
+          shares: parseFloat(p.total_shares),
+          price: parseFloat(p.current_price || p.average_cost || 0),
+          targetAlloc: parseFloat(p.target_alloc || 0)
+        }));
+        setDbAssets(mappedAssets);
+        
+        // Fetch live prices
+        const tickers = mappedAssets.map(a => a.ticker);
+        if (tickers.length > 0) {
+          const prices = await fetchLivePrices(tickers);
+          setLivePrices(prices);
+        }
+      } catch (err) {
+        console.error('Failed to load positions', err);
+        if (requestAlert) requestAlert('❌ Error', 'ไม่สามารถโหลดข้อมูลพอร์ตได้');
+      }
+      setLoading(false);
+    };
+    loadData();
+  }, [currentUser, selectedPortfolioId, requestAlert]);
+
+  // Combine assets and apply live prices
+  const assets = useMemo(() => {
+    const combined = [...dbAssets, ...tempAssets];
+    return combined.map(a => {
+      if (livePrices[a.ticker] !== undefined) {
+        return { ...a, price: livePrices[a.ticker] };
+      }
+      return a;
+    });
+  }, [dbAssets, tempAssets, livePrices]);
+
   const currentTotalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + (asset.shares * asset.price), 0);
   }, [assets]);
@@ -28,15 +100,45 @@ export default function PortfolioRebalancer() {
     return assets.reduce((sum, asset) => sum + parseFloat(asset.targetAlloc || 0), 0);
   }, [assets]);
 
-  const isAllocationValid = totalAllocation === 100;
+  const isAllocationValid = Math.abs(totalAllocation - 100) < 0.01;
 
-  const handleUpdateAsset = (id, field, value) => {
+  const handleUpdateAsset = async (id, field, value, isDb) => {
     const val = parseFloat(value);
-    setAssets(assets.map(a => a.id === id ? { ...a, [field]: isNaN(val) && field !== 'ticker' ? '' : (field === 'ticker' ? value.toUpperCase() : val) } : a));
+    const parsedValue = isNaN(val) && field !== 'ticker' ? '' : (field === 'ticker' ? value.toUpperCase() : val);
+
+    if (isDb) {
+      if (field === 'targetAlloc') {
+        setDbAssets(dbAssets.map(a => a.id === id ? { ...a, targetAlloc: parsedValue } : a));
+        try {
+          await updateInvestmentPositionTargetAlloc(id, parsedValue || 0);
+        } catch (err) {
+          console.error('Failed to update target alloc in DB', err);
+        }
+      }
+      if (field === 'price') {
+         // Allow overriding price locally for simulation
+         const asset = dbAssets.find(a => a.id === id);
+         if (asset) {
+           setLivePrices(prev => ({ ...prev, [asset.ticker]: parsedValue }));
+         }
+      }
+    } else {
+      setTempAssets(tempAssets.map(a => a.id === id ? { ...a, [field]: parsedValue } : a));
+      if (field === 'price') {
+        const asset = tempAssets.find(a => a.id === id);
+        if (asset) {
+          setLivePrices(prev => ({ ...prev, [asset.ticker]: parsedValue }));
+        }
+      }
+    }
   };
 
-  const handleRemoveAsset = (id) => {
-    setAssets(assets.filter(a => a.id !== id));
+  const handleRemoveAsset = (id, isDb) => {
+    if (isDb) {
+      if (requestAlert) requestAlert('❌ ไม่อนุญาต', 'ไม่สามารถลบหุ้นจริงจากหน้านี้ได้ กรุณาไปทำรายการ SELL ในหน้า Alpha Picks');
+      return;
+    }
+    setTempAssets(tempAssets.filter(a => a.id !== id));
   };
 
   const handleAddAsset = (e) => {
@@ -46,13 +148,18 @@ export default function PortfolioRebalancer() {
     const nPrice = parseFloat(newPrice) || 0;
     const nTarget = parseFloat(newTarget) || 0;
     
-    setAssets([...assets, {
-      id: Date.now().toString(),
-      ticker: newTicker.toUpperCase(),
+    const tickerUpper = newTicker.toUpperCase();
+    
+    setTempAssets([...tempAssets, {
+      id: `temp-${Date.now()}`,
+      isDb: false,
+      ticker: tickerUpper,
       shares: nShares,
       price: nPrice,
       targetAlloc: nTarget
     }]);
+
+    setLivePrices(prev => ({ ...prev, [tickerUpper]: nPrice }));
 
     setNewTicker('');
     setNewShares('');
@@ -67,7 +174,6 @@ export default function PortfolioRebalancer() {
     return assets.slice(start, start + itemsPerPage);
   }, [assets, currentPage, itemsPerPage]);
 
-  // Ensure current page is valid when assets are deleted
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
@@ -78,13 +184,31 @@ export default function PortfolioRebalancer() {
     <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 animate-fade-in text-slate-900 dark:text-slate-100">
       
       {/* Header section */}
-      <div className="mb-8 border-b-2 border-orange-500 pb-4">
-        <h1 className="text-3xl font-extrabold flex items-center gap-3 text-slate-900 dark:text-white">
-          <span className="text-orange-500">⚖️</span> Portfolio Rebalancer
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2 font-medium">
-          คำนวณและปรับสัดส่วนพอร์ตหุ้นของคุณให้ตรงกับเป้าหมายการลงทุน (Target Allocation)
-        </p>
+      <div className="mb-8 border-b-2 border-orange-500 pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold flex items-center gap-3 text-slate-900 dark:text-white">
+            <span className="text-orange-500">⚖️</span> Portfolio Rebalancer
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2 font-medium">
+            คำนวณและปรับสัดส่วนพอร์ตหุ้นของคุณให้ตรงกับเป้าหมายการลงทุน (Target Allocation)
+          </p>
+        </div>
+        
+        {/* Portfolio Selector */}
+        <div className="flex flex-col gap-1 w-full md:w-64">
+          <label className="text-xs font-bold text-slate-500 uppercase">เลือกพอร์ตลงทุน (Alpha Picks)</label>
+          <select
+            value={selectedPortfolioId}
+            onChange={(e) => setSelectedPortfolioId(e.target.value)}
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none"
+            disabled={loading}
+          >
+            {portfolios.length === 0 && <option value="">No Portfolios Available</option>}
+            {portfolios.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -130,7 +254,7 @@ export default function PortfolioRebalancer() {
       {/* Add New Asset Form */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-5 mb-6">
         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-4 flex items-center gap-2">
-          <span>➕</span> เพิ่มสินทรัพย์ใหม่ (Add Asset)
+          <span>➕</span> เพิ่มสินทรัพย์ใหม่เพื่อจำลอง (Simulate Add Asset)
         </h3>
         <form onSubmit={handleAddAsset} className="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
           <div className="col-span-2 md:col-span-1">
@@ -213,6 +337,9 @@ export default function PortfolioRebalancer() {
         </div>
 
         <div className="overflow-x-auto">
+          {loading ? (
+            <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading positions...</div>
+          ) : (
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase text-[10px] tracking-wider font-extrabold">
               <tr>
@@ -238,27 +365,30 @@ export default function PortfolioRebalancer() {
                 
                 return (
                   <tr key={asset.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-3 py-1">
+                    <td className="px-3 py-1 relative">
+                      {asset.isDb && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-4 bg-indigo-500 rounded-r-full" title="Synced from DB"></div>}
                       <input 
                         type="text" 
                         value={asset.ticker}
-                        onChange={(e) => handleUpdateAsset(asset.id, 'ticker', e.target.value)}
-                        className="w-16 font-black text-slate-900 dark:text-white bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-slate-700 px-1 py-0.5 uppercase focus:border-orange-500 focus:outline-none transition-colors"
+                        onChange={(e) => handleUpdateAsset(asset.id, 'ticker', e.target.value, asset.isDb)}
+                        disabled={asset.isDb}
+                        className={`w-16 ml-1 font-black text-slate-900 dark:text-white bg-transparent border-b px-1 py-0.5 uppercase focus:outline-none transition-colors ${asset.isDb ? 'border-transparent opacity-70 cursor-not-allowed' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-orange-500'}`}
                       />
                     </td>
                     <td className="px-3 py-1 text-right">
                       <input 
                         type="number" min="0" step="any"
                         value={asset.shares}
-                        onChange={(e) => handleUpdateAsset(asset.id, 'shares', e.target.value)}
-                        className="w-20 text-right font-medium text-slate-900 dark:text-white bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 rounded px-1 py-0.5 focus:border-orange-500 focus:outline-none"
+                        onChange={(e) => handleUpdateAsset(asset.id, 'shares', e.target.value, asset.isDb)}
+                        disabled={asset.isDb}
+                        className={`w-20 text-right font-medium text-slate-900 dark:text-white bg-transparent border rounded px-1 py-0.5 focus:outline-none ${asset.isDb ? 'border-transparent opacity-70 cursor-not-allowed' : 'border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-orange-500'}`}
                       />
                     </td>
                     <td className="px-3 py-1 text-right">
                       <input 
                         type="number" min="0" step="any"
                         value={asset.price}
-                        onChange={(e) => handleUpdateAsset(asset.id, 'price', e.target.value)}
+                        onChange={(e) => handleUpdateAsset(asset.id, 'price', e.target.value, asset.isDb)}
                         className="w-20 text-right font-medium text-slate-900 dark:text-white bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 rounded px-1 py-0.5 focus:border-orange-500 focus:outline-none"
                       />
                     </td>
@@ -270,8 +400,8 @@ export default function PortfolioRebalancer() {
                         <input 
                           type="number" min="0" max="100" step="any"
                           value={asset.targetAlloc}
-                          onChange={(e) => handleUpdateAsset(asset.id, 'targetAlloc', e.target.value)}
-                          className="w-full text-center font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-orange-600 dark:text-orange-400 focus:border-orange-500 focus:outline-none"
+                          onChange={(e) => handleUpdateAsset(asset.id, 'targetAlloc', e.target.value, asset.isDb)}
+                          className={`w-full text-center font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-orange-600 dark:text-orange-400 focus:border-orange-500 focus:outline-none ${asset.isDb ? 'ring-1 ring-indigo-500/30' : ''}`}
                         />
                       </div>
                     </td>
@@ -296,15 +426,21 @@ export default function PortfolioRebalancer() {
                       )}
                     </td>
                     <td className="px-3 py-1 text-center">
-                      <button onClick={() => handleRemoveAsset(asset.id)} className="text-slate-300 hover:text-rose-500 dark:text-slate-600 dark:hover:text-rose-400 font-bold p-1 transition-colors" title="Delete Asset">
+                      <button onClick={() => handleRemoveAsset(asset.id, asset.isDb)} className={`font-bold p-1 transition-colors ${asset.isDb ? 'text-slate-200 dark:text-slate-700 cursor-not-allowed' : 'text-slate-300 hover:text-rose-500 dark:text-slate-600 dark:hover:text-rose-400'}`} title={asset.isDb ? "Cannot delete synced DB asset here" : "Delete Asset"}>
                         ✕
                       </button>
                     </td>
                   </tr>
                 );
               })}
+              {assets.length === 0 && (
+                <tr>
+                  <td colSpan="8" className="px-4 py-8 text-center text-slate-500">No assets in portfolio. Add new assets above or select another portfolio.</td>
+                </tr>
+              )}
             </tbody>
           </table>
+          )}
         </div>
         
         {/* Pagination Controls */}

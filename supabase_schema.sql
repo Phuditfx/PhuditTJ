@@ -126,3 +126,6 @@ CREATE TABLE IF NOT EXISTS public.portfolio_snapshots (
 ALTER TABLE public.portfolio_snapshots ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all operations" ON public.portfolio_snapshots;
 CREATE POLICY "Allow all operations" ON public.portfolio_snapshots FOR ALL USING (true) WITH CHECK (true);
+
+-- Added for Portfolio Rebalancer
+ALTER TABLE public.investment_positions ADD COLUMN IF NOT EXISTS target_alloc NUMERIC DEFAULT 0;

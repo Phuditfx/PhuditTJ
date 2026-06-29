@@ -170,6 +170,15 @@ export async function updateInvestmentPosition(id, updateData) {
   if (error) throw error;
 }
 
+export async function updateInvestmentPositionTargetAlloc(id, targetAlloc) {
+  const { error } = await supabase
+    .from('investment_positions')
+    .update({ target_alloc: targetAlloc, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+
 // ----------------------------------------------------
 // ALPHA PICKS JOURNAL (Plan & Stats)
 // ----------------------------------------------------
