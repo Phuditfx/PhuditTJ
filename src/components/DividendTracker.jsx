@@ -90,7 +90,7 @@ export default function DividendTracker({ dividends = [], onSaveDividend, onDele
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">Amount ($)</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number" 
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}

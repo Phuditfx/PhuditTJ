@@ -174,7 +174,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         {/* Row for TI Entry Alert (Full width or split) */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] text-amber-600 dark:text-amber-400 uppercase font-semibold">TI Entry Alert ($) <span className="text-[9px] text-slate-500">(Day Breakout)</span></label>
-          <input 
+          <input onFocus={(e) => e.target.select()}  
             type="number" 
             value={tiEntryAlert} 
             onChange={e => updateShared('tiEntryAlert', e.target.value)} 
@@ -186,7 +186,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         <div className="grid grid-cols-3 gap-2">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry ($)</label>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" 
               value={entry} 
               onChange={e => updateShared('entry', e.target.value)} 
@@ -197,7 +197,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Stop Loss ($)</label>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" 
               value={sl} 
               onChange={e => updateShared('stopLoss', e.target.value)} 
@@ -208,7 +208,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Take Profit ($)</label>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" 
               value={tp} 
               onChange={e => updateShared('tp1', e.target.value)} 
@@ -271,7 +271,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           {shareInputMode === 'calculated' ? (
             <div className="text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-1 select-all">{fractionalShares}</div>
           ) : (
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number"
               value={customShares}
               onChange={(e) => setCustomShares(e.target.value)}

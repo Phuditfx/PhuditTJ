@@ -204,7 +204,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
         <div className="bg-slate-50 dark:bg-[#111] p-3 rounded-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-amber-600"></div>
           <label className="text-[10px] text-amber-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">TI ENTRY ALERT</label>
-          <input 
+          <input onFocus={(e) => e.target.select()}  
             type="number" 
             value={tiEntryAlert} 
             onChange={(e) => updateShared('tiEntryAlert', e.target.value)} 
@@ -217,7 +217,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
         <div className="bg-slate-50 dark:bg-[#111] p-3 rounded-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-emerald-600"></div>
           <label className="text-[10px] text-emerald-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">CUSTOM ENTRY (TF60)</label>
-          <input 
+          <input onFocus={(e) => e.target.select()}  
             type="number" 
             value={entry} 
             onChange={(e) => updateShared('entry', e.target.value)} 
@@ -229,7 +229,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
         <div className="bg-slate-50 dark:bg-[#111] p-3 rounded-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>
           <label className="text-[10px] text-rose-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">CUSTOM SL (TF60)</label>
-          <input 
+          <input onFocus={(e) => e.target.select()}  
             type="number" 
             value={stopLoss} 
             onChange={(e) => updateShared('stopLoss', e.target.value)} 
@@ -273,7 +273,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
                 </button>
               ))}
             </div>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" 
               value={inputValue} 
               onChange={(e) => setInputValue(e.target.value)} 
@@ -376,7 +376,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
             <div key={tp.id} className={`bg-slate-50 dark:bg-[#111] p-4 rounded-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-3 transition-all ${tp.glow} hover:border-slate-300 dark:hover:border-slate-600`}>
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{tp.id} TARGET</span>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                   type="number" 
                   value={tp.price} 
                   onChange={(e) => tp.setPrice(e.target.value)} 

@@ -224,7 +224,7 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
           <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase">เติมเงินสดใหม่ (New Cash)</p>
           <div className="mt-1 relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" 
               value={newCash}
               onChange={(e) => setNewCash(e.target.value)}
@@ -266,21 +266,21 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
           </div>
           <div className="col-span-1">
             <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Shares (จำนวน)</label>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" min="0" step="any" placeholder="0" value={newShares} onChange={(e) => setNewShares(e.target.value)}
               className="w-full font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none"
             />
           </div>
           <div className="col-span-1">
             <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Price ($)</label>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" min="0" step="any" required placeholder="150" value={newPrice} onChange={(e) => setNewPrice(e.target.value)}
               className="w-full font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none"
             />
           </div>
           <div className="col-span-1">
             <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target (%)</label>
-            <input 
+            <input onFocus={(e) => e.target.select()}  
               type="number" min="0" max="100" step="any" placeholder="10" value={newTarget} onChange={(e) => setNewTarget(e.target.value)}
               className="w-full font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none"
             />
@@ -376,7 +376,7 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
                       />
                     </td>
                     <td className="px-3 py-1 text-right">
-                      <input 
+                      <input onFocus={(e) => e.target.select()}  
                         type="number" min="0" step="any"
                         value={asset.shares}
                         onChange={(e) => handleUpdateAsset(asset.id, 'shares', e.target.value, asset.isDb)}
@@ -385,7 +385,7 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
                       />
                     </td>
                     <td className="px-3 py-1 text-right">
-                      <input 
+                      <input onFocus={(e) => e.target.select()}  
                         type="number" min="0" step="any"
                         value={asset.price}
                         onChange={(e) => handleUpdateAsset(asset.id, 'price', e.target.value, asset.isDb)}
@@ -397,7 +397,7 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
                     </td>
                     <td className="px-3 py-1">
                       <div className="flex items-center justify-center gap-1 mx-auto w-16">
-                        <input 
+                        <input onFocus={(e) => e.target.select()}  
                           type="number" min="0" max="100" step="any"
                           value={asset.targetAlloc}
                           onChange={(e) => handleUpdateAsset(asset.id, 'targetAlloc', e.target.value, asset.isDb)}

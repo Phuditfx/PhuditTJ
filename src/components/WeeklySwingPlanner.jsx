@@ -434,7 +434,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Entry Alert ($)</label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number" 
                     step="0.01"
                     value={entryPrice}
@@ -445,7 +445,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Stop Loss ($)</label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number" 
                     step="0.01"
                     value={stopLoss}
@@ -521,7 +521,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Target RRR</label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number" 
                     step="0.1"
                     value={targetRrr}

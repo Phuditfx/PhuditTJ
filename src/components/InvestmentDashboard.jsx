@@ -345,7 +345,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Total Shares</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number" 
                   step="any"
                   required
@@ -356,7 +356,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Average Cost</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number" 
                   step="any"
                   required

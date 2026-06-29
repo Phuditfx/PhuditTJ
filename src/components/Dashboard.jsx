@@ -231,7 +231,7 @@ export default function Dashboard({
             <span className="text-slate-500">{t('dashboard.initialBalance')}:</span>
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-mono">$</span>
-              <input 
+              <input onFocus={(e) => e.target.select()}  
                 type="number" 
                 value={localBalance} 
                 onChange={(e) => {
@@ -375,7 +375,7 @@ export default function Dashboard({
                 <div className="text-left">
                   <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">{t('dashboard.targetRR')}</div>
                   <div className="flex items-center gap-1.5">
-                    <input 
+                    <input onFocus={(e) => e.target.select()}  
                       type="number" 
                       value={localRR} 
                       onChange={(e) => {
@@ -705,7 +705,7 @@ export default function Dashboard({
 
             <div>
               <label className="text-xs font-bold text-slate-500 block mb-1">Amount ($)</label>
-              <input
+              <input onFocus={(e) => e.target.select()} 
                 type="number"
                 value={fundingAmount}
                 onChange={(e) => setFundingAmount(e.target.value)}

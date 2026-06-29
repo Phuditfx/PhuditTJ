@@ -66,7 +66,7 @@ export default function PositionSizingCalculator() {
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ขนาดพอร์ตการลงทุน ($)</label>
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                  <input
+                  <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0"
                     value={portfolioSize}
@@ -95,7 +95,7 @@ export default function PositionSizingCalculator() {
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ความเสี่ยงต่อไม้ (%)</label>
                 <div className="relative w-24">
-                  <input
+                  <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0.1"
                     step="0.1"
@@ -127,7 +127,7 @@ export default function PositionSizingCalculator() {
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ระยะ Stop Loss (%)</label>
                 <div className="relative w-24">
-                  <input
+                  <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0.1"
                     step="0.1"
@@ -160,7 +160,7 @@ export default function PositionSizingCalculator() {
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ขีดจำกัดความเจ็บปวดต่อไม้ ($)</label>
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                  <input
+                  <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0"
                     value={maxPainLimit}

@@ -199,7 +199,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
             )}
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
-              <input
+              <input onFocus={(e) => e.target.select()} 
                 type="number"
                 min="0"
                 step="100"
@@ -221,7 +221,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">% ของ Capital</span>
                 <div className="relative">
-                  <input
+                  <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0"
                     max="100"
@@ -245,7 +245,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                 <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Fixed $ Amount</span>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                  <input
+                  <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0"
                     step="10"
@@ -317,7 +317,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                     ) : (
                       <div className="relative">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
-                        <input
+                        <input onFocus={(e) => e.target.select()} 
                           type="number"
                           min="0"
                           step="0.01"
@@ -338,7 +338,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                     <span className="text-[9px] font-bold text-rose-500 dark:text-rose-450 uppercase tracking-wider block mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">SL ($)</span>
                     <div className="relative">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
-                      <input
+                      <input onFocus={(e) => e.target.select()} 
                         type="number"
                         min="0"
                         step="0.01"

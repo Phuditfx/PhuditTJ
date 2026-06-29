@@ -1613,7 +1613,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     <span>Actual Exit Price ($)</span>
                     {isFetchingPrice && <span className="text-[9px] text-amber-500 animate-pulse">Fetching Live Price...</span>}
                   </label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number"
                     value={exitPrice}
                     onChange={(e) => {
@@ -1628,7 +1628,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 {/* Shares to Close */}
                 <div className="flex flex-col gap-1.5 flex-1">
                   <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares to Close</label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number"
                     value={closeShares}
                     onChange={(e) => {
@@ -1662,7 +1662,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold flex justify-between" title="Maximum Favorable Excursion (ราคาสูงสุดที่ทำกำไรได้ระหว่างถือออเดอร์)">
                     <span>MFE Price ($)</span>
                   </label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number"
                     value={mfePrice}
                     onChange={(e) => setMfePrice(e.target.value)}
@@ -1674,7 +1674,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold flex justify-between" title="Maximum Adverse Excursion (ราคาต่ำสุดที่ขาดทุนระหว่างถือออเดอร์)">
                     <span>MAE Price ($)</span>
                   </label>
-                  <input 
+                  <input onFocus={(e) => e.target.select()}  
                     type="number"
                     value={maePrice}
                     onChange={(e) => setMaePrice(e.target.value)}
@@ -1993,7 +1993,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             <div className="p-5 md:p-6 py-4 md:py-5 flex-1 overflow-y-auto flex flex-col gap-3 custom-scrollbar">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry Price ($)</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number"
                   value={editEntry}
                   onChange={(e) => setEditEntry(e.target.value)}
@@ -2002,7 +2002,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Stop Loss ($)</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number"
                   value={editSL}
                   onChange={(e) => setEditSL(e.target.value)}
@@ -2011,7 +2011,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Take Profit 1 ($) (Optional)</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number"
                   value={editTP}
                   onChange={(e) => setEditTP(e.target.value)}
@@ -2020,7 +2020,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares (Position Size)</label>
-                <input 
+                <input onFocus={(e) => e.target.select()}  
                   type="number"
                   value={editShares}
                   onChange={(e) => setEditShares(e.target.value)}
