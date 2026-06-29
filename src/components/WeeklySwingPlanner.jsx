@@ -122,6 +122,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     if (floatSz === 'Small') score += 1; 
     else if (floatSz === 'Large') score -= 1; 
     if (si === 'High') score += 2; 
+    else if (si === 'Medium') score += 1;
     return Math.max(1, Math.min(10, Math.floor(score)));
   };
 
@@ -476,6 +477,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
                   >
                     <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
                     <option value="High">High</option>
                   </select>
                 </div>
