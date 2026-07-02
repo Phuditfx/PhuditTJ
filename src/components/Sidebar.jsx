@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
+export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isTiPicks, isAlphaPicks, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
   const { t } = useLanguage();
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -21,6 +21,13 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'dividends', icon: '💰', label: t('app.dividends', 'Dividends').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
+
+  const checkAccess = (tabId) => {
+    if (isVip) return true;
+    if (isTiPicks && ['positionSizing', 'weeklyPicks', 'swing', 'calendar', 'plans'].includes(tabId)) return true;
+    if (isAlphaPicks && ['portfolioRebalancer', 'alphaPicks', 'plans', 'dividends'].includes(tabId)) return true;
+    return false;
+  };
 
   return (
     <aside className={`w-full ${!isMobileView ? 'lg:w-64 flex-shrink-0 lg:sticky lg:top-24' : ''} flex flex-col gap-6`}>
@@ -104,27 +111,29 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           <span>👑</span>
           <span>Pro Features</span>
         </div>
-        {VIP_ITEMS.map((item) => (
+        {VIP_ITEMS.map((item) => {
+          const hasPermission = checkAccess(item.id);
+          return (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
               activeTab === item.id
-                ? isVip
+                ? hasPermission
                   ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
                   : 'bg-slate-100 text-slate-400 shadow-inner border-l-4 border-slate-300'
-                : isVip
+                : hasPermission
                   ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
                   : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-500 dark:hover:text-slate-400 border-l-4 border-transparent'
             }`}
           >
             <span className="text-lg">{item.icon}</span>
             <span className="flex-1 text-left">{item.label}</span>
-            {!isVip && (
+            {!hasPermission && (
               <span className="text-[10px] ml-auto opacity-60 text-amber-500">🔒</span>
             )}
           </button>
-        ))}
+        )})}
 
         {isOwner && (
           <>

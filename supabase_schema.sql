@@ -148,3 +148,11 @@ CREATE TABLE IF NOT EXISTS public.portfolio_funding_history (
 ALTER TABLE public.portfolio_funding_history ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all operations" ON public.portfolio_funding_history;
 CREATE POLICY "Allow all operations" ON public.portfolio_funding_history FOR ALL USING (true) WITH CHECK (true);
+
+-- 4-Tier User Status System (Roles)
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_ti_picks BOOLEAN DEFAULT false;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_alpha_picks BOOLEAN DEFAULT false;
+
+-- Feed Post Category (General, TI Picks, Alpha Picks)
+ALTER TABLE public.feed_posts ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';
+ALTER TABLE public.global_feed_posts ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';

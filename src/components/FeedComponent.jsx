@@ -43,8 +43,9 @@ function ImageLightbox({ src, onClose }) {
 // ============================
 // Main Feed Component
 // ============================
-export default function FeedComponent({ posts = [], onSavePost, currentUser, profile, onViewProfile, requestAlert, requestConfirm }) {
+export default function FeedComponent({ posts = [], onSavePost, currentUser, profile, onViewProfile, requestAlert, requestConfirm, isVip, isTiPicks, isAlphaPicks }) {
   const [postTitle, setPostTitle] = useState('');
+  const [postCategory, setPostCategory] = useState('General');
   const [blocks, setBlocks] = useState([{ id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -142,6 +143,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
         },
         timestamp: new Date().toLocaleString(),
         title: postTitle,
+        category: postCategory,
         blocks: processedBlocks,
       };
       onSavePost(newPost);
@@ -169,14 +171,26 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wider">Create Post</h3>
 
-        <input
-          type="text"
-          placeholder="Post Title (Optional)"
-          value={postTitle}
-          onChange={(e) => setPostTitle(e.target.value)}
-          disabled={isPublishing}
-          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white font-bold text-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:font-normal disabled:opacity-50"
-        />
+        <div className="flex gap-4 mb-4">
+          <select 
+            value={postCategory}
+            onChange={(e) => setPostCategory(e.target.value)}
+            disabled={isPublishing}
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all disabled:opacity-50"
+          >
+            <option value="General">ทั่วไป (General)</option>
+            <option value="TI Picks">TI Picks</option>
+            <option value="Alpha Picks">Alpha Picks</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Post Title (Optional)"
+            value={postTitle}
+            onChange={(e) => setPostTitle(e.target.value)}
+            disabled={isPublishing}
+            className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white font-bold text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:font-normal disabled:opacity-50"
+          />
+        </div>
 
         <div className="flex flex-col gap-4">
           {blocks.map((block) => (
@@ -269,7 +283,26 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
 
       {/* Feed List */}
       <div className="flex flex-col gap-6 mt-4">
-        {posts.map(post => (
+        {(() => {
+          const visiblePosts = posts.filter(post => {
+            if (isVip) return true;
+            const cat = post.category || 'General';
+            if (cat === 'General') return true;
+            if (cat === 'TI Picks' && isTiPicks) return true;
+            if (cat === 'Alpha Picks' && isAlphaPicks) return true;
+            return false;
+          });
+          
+          if (visiblePosts.length === 0) {
+            return (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                <p className="font-medium text-lg mb-2">No posts yet</p>
+                <p className="text-sm">Be the first to share an insight!</p>
+              </div>
+            );
+          }
+          
+          return visiblePosts.map(post => (
           <div key={post.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
             {/* Post Header — ✅ Task 4 & 5: clickable avatar + author name */}
@@ -304,9 +337,18 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
                 >
                   {post.author.name}
                 </button>
-                <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
-                  <Clock size={11} strokeWidth={2.5} />
-                  <span>{post.timestamp}</span>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-0.5">
+                  <div className="flex items-center gap-1">
+                    <Clock size={11} strokeWidth={2.5} />
+                    <span>{post.timestamp}</span>
+                  </div>
+                  {post.category && post.category !== 'General' && (
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
+                      post.category === 'TI Picks' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    }`}>
+                      {post.category}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -350,14 +392,8 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
             </div>
 
           </div>
-        ))}
-
-        {posts.length === 0 && (
-          <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-            <p className="font-medium text-lg mb-2">No posts yet</p>
-            <p className="text-sm">Be the first to share an insight!</p>
-          </div>
-        )}
+        ))
+        })()}
       </div>
 
       {/* ✅ Task 4: Image Lightbox Modal */}

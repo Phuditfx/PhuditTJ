@@ -74,6 +74,8 @@ export default function App() {
   const [feedPosts, setFeedPosts] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isVip, setIsVip] = useState(false);
+  const [isTiPicks, setIsTiPicks] = useState(false);
+  const [isAlphaPicks, setIsAlphaPicks] = useState(false);
   const [activeTab, setActiveTabRaw] = useState(() => localStorage.getItem('phudit_active_tab') || 'dashboard');
   const [profileTab, setProfileTab] = useState(null); // email of user being viewed
   
@@ -208,6 +210,8 @@ export default function App() {
         setFundingHistory(data.fundingHistory || []);
         setAccounts(data.accounts || [{ id: 'default', name: 'Main Account' }]);
         setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
+        setIsTiPicks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isTiPicks);
+        setIsAlphaPicks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isAlphaPicks);
         
         setDataLoading(false);
       });
@@ -217,6 +221,8 @@ export default function App() {
       setDividends([]);
       setFundingHistory([]);
       setIsVip(false);
+      setIsTiPicks(false);
+      setIsAlphaPicks(false);
       setDataLoading(false);
     }
 
@@ -823,6 +829,8 @@ export default function App() {
               globalDateRange={globalDateRange}
               setGlobalDateRange={setGlobalDateRange}
               isVip={isVip} 
+              isTiPicks={isTiPicks}
+              isAlphaPicks={isAlphaPicks}
               isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
               accounts={accounts}
               setShowAccountModal={setShowAccountModal}
@@ -923,6 +931,8 @@ export default function App() {
             globalDateRange={globalDateRange}
             setGlobalDateRange={setGlobalDateRange}
             isVip={isVip} 
+            isTiPicks={isTiPicks}
+            isAlphaPicks={isAlphaPicks}
             isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
             accounts={accounts}
             setShowAccountModal={setShowAccountModal}
@@ -969,19 +979,19 @@ export default function App() {
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}
                 plans={plans}
-                isVip={isVip}
+                isVip={isVip || isTiPicks || isAlphaPicks}
                 pnlDisplayMode={pnlDisplayMode}
               />
             )}
 
             {activeTab === 'positionSizing' && (
-              isVip
+              isVip || isTiPicks
                 ? <PositionSizingCalculator />
                 : <VipLockScreen featureName="Position Sizing & Risk" onBack={() => setActiveTab('dashboard')} />
             )}
 
             {activeTab === 'portfolioRebalancer' && (
-              isVip 
+              isVip || isAlphaPicks
                 ? <PortfolioRebalancer currentUser={currentUser} requestAlert={requestAlert} />
                 : <VipLockScreen featureName="Portfolio Rebalancer" onBack={() => setActiveTab('dashboard')} />
             )}
@@ -993,23 +1003,23 @@ export default function App() {
                 allPosts={feedPosts}
                 onBack={() => { setProfileTab(null); setActiveTab('feed'); }}
                 currentUser={currentUser}
-                isVip={isVip}
+                isVip={isVip || isTiPicks || isAlphaPicks}
               />
             ) : (
               <>
                 {/* ✅ Task 3: VIP-gated tabs */}
                 {activeTab === 'analytics' && (
-                  isVip
+                  isVip || isTiPicks || isAlphaPicks
                     ? <Analytics trades={filteredGlobalTrades} />
                     : <VipLockScreen featureName="Analytics & Stats" onBack={() => setActiveTab('dashboard')} />
                 )}
                 <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
-                  {isVip ? (
+                  {isVip || isTiPicks || isAlphaPicks ? (
                     <FighterComponent
                       accountBalance={accountBalance}
                       sharedOrder={sharedOrder}
                       setSharedOrder={setSharedOrder}
-                      isVip={isVip}
+                      isVip={isVip || isTiPicks || isAlphaPicks}
                       requestAlert={requestAlert}
                     />
                   ) : activeTab === 'fighter' ? (
@@ -1017,12 +1027,12 @@ export default function App() {
                   ) : null}
                 </div>
                 {activeTab === 'calendar' && (
-                  isVip
+                  isVip || isTiPicks
                     ? <CalendarView trades={trades} pnlDisplayMode={pnlDisplayMode} />
                     : <VipLockScreen featureName="Calendar" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'plans' && (
-                  isVip ? (
+                  isVip || isTiPicks || isAlphaPicks ? (
                     <TradingPlans
                       plans={plans}
                       onSavePlan={handleSavePlan}
@@ -1035,7 +1045,7 @@ export default function App() {
                   )
                 )}
                 {activeTab === 'dividends' && (
-                  isVip ? (
+                  isVip || isAlphaPicks ? (
                     <DividendTracker
                       dividends={dividends}
                       onSaveDividend={handleSaveDividend}
@@ -1049,7 +1059,6 @@ export default function App() {
                 )}
                 {/* ✅ Task 4 & 5: Feed with Lightbox + Profile navigation */}
                 {activeTab === 'feed' && (
-                  isVip ? (
                     <FeedComponent
                       posts={feedPosts}
                       onSavePost={handleSaveFeedPost}
@@ -1058,10 +1067,10 @@ export default function App() {
                       onViewProfile={(email) => { setProfileTab(email); }}
                       requestAlert={requestAlert}
                       requestConfirm={requestConfirm}
+                      isVip={isVip}
+                      isTiPicks={isTiPicks}
+                      isAlphaPicks={isAlphaPicks}
                     />
-                  ) : (
-                    <VipLockScreen featureName="Trading Bulletin (Feed)" onBack={() => setActiveTab('dashboard')} />
-                  )
                 )}
                 {activeTab === 'data' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
                   <DataManager
@@ -1076,18 +1085,18 @@ export default function App() {
                 )}
                 {/* ✅ Task 2: TI Swing Pick Calculator (VIP only) */}
                 {activeTab === 'swing' && (
-                  isVip
+                  isVip || isTiPicks
                     ? <SwingPickCalculator accountBalance={accountBalance} />
                     : <VipLockScreen featureName="TI Swing Pick Calculator" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'weeklyPicks' && (
-                  isVip
-                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} requestConfirm={requestConfirm} />
+                  isVip || isTiPicks
+                    ? <WeeklySwingPlanner userEmail={currentUser} isVip={isVip || isTiPicks} requestAlert={requestAlert} requestConfirm={requestConfirm} />
                     : <VipLockScreen featureName="TI Weekly Swing Planner" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'alphaPicks' && (
-                  isVip
-                    ? <AlphaPickPlanner userEmail={currentUser} isVip={isVip} requestAlert={requestAlert} requestConfirm={requestConfirm} />
+                  isVip || isAlphaPicks
+                    ? <AlphaPickPlanner userEmail={currentUser} isVip={isVip || isAlphaPicks} requestAlert={requestAlert} requestConfirm={requestConfirm} />
                     : <VipLockScreen featureName="Alpha Picks Investment" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (

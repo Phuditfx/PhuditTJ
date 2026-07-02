@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllUsersData, approveUser, deleteUser, toggleUserVip } from '../db/journalDB';
+import { getAllUsersData, approveUser, deleteUser, toggleUserVip, toggleUserTiPicks, toggleUserAlphaPicks } from '../db/journalDB';
 
 export default function OwnerDashboard({ currentUser, requestConfirm, requestAlert }) {
   const [users, setUsers] = useState([]);
@@ -52,6 +52,16 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
 
   const handleToggleVip = async (email, currentVip) => {
     await toggleUserVip(email, !currentVip);
+    await fetchUsers();
+  };
+
+  const handleToggleTiPicks = async (email, currentVal) => {
+    await toggleUserTiPicks(email, !currentVal);
+    await fetchUsers();
+  };
+
+  const handleToggleAlphaPicks = async (email, currentVal) => {
+    await toggleUserAlphaPicks(email, !currentVal);
     await fetchUsers();
   };
 
@@ -133,6 +143,16 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                           ⭐ VIP
                         </span>
                       )}
+                      {u.isTiPicks && (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                          📐 TI Picks
+                        </span>
+                      )}
+                      {u.isAlphaPicks && (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          🏛️ Alpha Picks
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="py-4 px-3 text-center text-slate-600 dark:text-slate-400 font-bold">{u.tradesCount}</td>
@@ -153,6 +173,26 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                         }`}
                       >
                         {u.isVip ? 'ถอด VIP' : 'ให้ VIP'}
+                      </button>
+                      <button
+                        onClick={() => handleToggleTiPicks(u.email, u.isTiPicks)}
+                        className={`font-bold px-2 py-1 rounded text-[10px] transition-colors cursor-pointer border ${
+                          u.isTiPicks 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                        }`}
+                      >
+                        {u.isTiPicks ? 'ถอด TI' : 'ให้ TI'}
+                      </button>
+                      <button
+                        onClick={() => handleToggleAlphaPicks(u.email, u.isAlphaPicks)}
+                        className={`font-bold px-2 py-1 rounded text-[10px] transition-colors cursor-pointer border ${
+                          u.isAlphaPicks 
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600' 
+                            : 'bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                        }`}
+                      >
+                        {u.isAlphaPicks ? 'ถอด Alpha' : 'ให้ Alpha'}
                       </button>
                       {u.status === 'pending' && (
                         <button
