@@ -175,8 +175,8 @@ export const subscribeToUserData = (email, callback) => {
             state.profile = { ...state.profile, ...data.profile };
             state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
             state.isVip = data.isVip || false;
-            state.isTiPicks = data.isTiPicks || false;
-            state.isAlphaPicks = data.isAlphaPicks || false;
+            state.isTiPicks = data.is_ti_picks || false;
+            state.isAlphaPicks = data.is_alpha_picks || false;
             state.status = data.status || 'approved';
             notify();
         } else {
@@ -189,8 +189,8 @@ export const subscribeToUserData = (email, callback) => {
                 accounts: state.accounts,
                 status: 'approved',
                 isVip: false,
-                isTiPicks: false,
-                isAlphaPicks: false
+                is_ti_picks: false,
+                is_alpha_picks: false
             });
             notify();
         }
@@ -344,8 +344,8 @@ export const registerUser = async (email, password, displayName) => {
         accounts: [{ id: 'default', name: 'Main Account' }],
         status: 'pending',
         isVip: false,
-        isTiPicks: false,
-        isAlphaPicks: false
+        is_ti_picks: false,
+        is_alpha_picks: false
     }).select().single();
     
     if (error) throw error;
@@ -393,12 +393,12 @@ export const toggleUserVip = async (email, isVip) => {
 
 export const toggleUserTiPicks = async (email, isTiPicks) => {
     if (!email) return;
-    await supabase.from('users').update({ isTiPicks }).eq('email', email.trim().toLowerCase());
+    await supabase.from('users').update({ is_ti_picks: isTiPicks }).eq('email', email.trim().toLowerCase());
 };
 
 export const toggleUserAlphaPicks = async (email, isAlphaPicks) => {
     if (!email) return;
-    await supabase.from('users').update({ isAlphaPicks }).eq('email', email.trim().toLowerCase());
+    await supabase.from('users').update({ is_alpha_picks: isAlphaPicks }).eq('email', email.trim().toLowerCase());
 };
 
 export const getAllUsersData = async () => {
@@ -456,8 +456,8 @@ export const getAllUsersData = async () => {
                 email: user.email,
                 status: user.status || 'approved',
                 isVip: user.isVip || false,
-                isTiPicks: user.isTiPicks || false,
-                isAlphaPicks: user.isAlphaPicks || false,
+                isTiPicks: user.is_ti_picks || false,
+                isAlphaPicks: user.is_alpha_picks || false,
                 createdAt: user.created_at,
                 tradesCount,
                 currentBal,
