@@ -72,7 +72,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
         img.src = event.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 600;
+          const MAX_WIDTH = 1600;
           let width = img.width;
           let height = img.height;
           if (width > MAX_WIDTH) {
@@ -83,7 +83,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           resolve(dataUrl);
         };
         img.onerror = (err) => reject(err);

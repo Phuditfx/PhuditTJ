@@ -202,6 +202,34 @@ export async function updateInvestmentPositionTargetAlloc(id, targetAlloc) {
   if (error) throw error;
 }
 
+export async function applyStockSplit(positionId, ratio) {
+  if (!positionId || !ratio || isNaN(ratio) || ratio <= 0) throw new Error("Invalid split ratio");
+
+  // Fetch current position
+  const { data: position, error: fetchErr } = await supabase
+    .from('investment_positions')
+    .select('total_shares, average_cost')
+    .eq('id', positionId)
+    .single();
+
+  if (fetchErr) throw fetchErr;
+
+  const newShares = parseFloat(position.total_shares) * ratio;
+  const newCost = parseFloat(position.average_cost) / ratio;
+
+  // Update position only, keep transaction history intact
+  const { error: updateErr } = await supabase
+    .from('investment_positions')
+    .update({
+      total_shares: newShares,
+      average_cost: newCost,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', positionId);
+
+  if (updateErr) throw updateErr;
+}
+
 
 // ----------------------------------------------------
 // ALPHA PICKS JOURNAL (Plan & Stats)

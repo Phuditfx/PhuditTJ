@@ -12,7 +12,8 @@ import {
   updateAlphaPicksJournalStatus,
   updateInvestmentPositionPnL,
   updateAlphaPickJournalPnL,
-  updateAlphaPicksJournalData
+  updateAlphaPicksJournalData,
+  applyStockSplit
 } from '../db/investmentDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
@@ -63,6 +64,11 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
     target: '',
     notes: ''
   });
+
+  // Stock Split State
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [splitPosition, setSplitPosition] = useState(null);
+  const [splitRatio, setSplitRatio] = useState('');
 
   const loadData = async (currentPortfolioId = selectedPortfolioId) => {
     if (!userEmail) return;
@@ -269,6 +275,21 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
       if (requestAlert) requestAlert("✅ สำเร็จ", "แก้ไขข้อมูล Journal เรียบร้อยแล้ว");
     } catch (error) {
       if (requestAlert) requestAlert("❌ ผิดพลาด", error.message);
+    }
+  };
+
+  const handleApplySplit = async (e) => {
+    e.preventDefault();
+    if (!splitPosition || !splitRatio) return;
+    try {
+      await applyStockSplit(splitPosition.id, parseFloat(splitRatio));
+      setShowSplitModal(false);
+      setSplitPosition(null);
+      setSplitRatio('');
+      loadData(selectedPortfolioId);
+      if (requestAlert) requestAlert("✅ สำเร็จ", "ปรับ Stock Split เรียบร้อยแล้ว");
+    } catch (err) {
+      if (requestAlert) requestAlert("❌ ผิดพลาด", `ไม่สามารถปรับ Stock Split ได้: ${err.message}`);
     }
   };
 
@@ -572,6 +593,9 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   <div className="flex items-center justify-center gap-2">
+                                    <button onClick={() => { setSplitPosition(pos); setShowSplitModal(true); }} className="p-1 text-slate-400 hover:text-amber-500 transition-colors" title="Stock Split">
+                                      ✂️
+                                    </button>
                                     <button onClick={() => togglePortfolioChart(pos)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold transition-colors shadow-sm" title="View Chart">
                                       <span>📈</span> ดูกราฟ
                                     </button>
@@ -916,6 +940,56 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                   className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                   บันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Split Modal */}
+      {showSplitModal && (
+        <div className="fixed inset-0 bg-slate-900/90 dark:bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>✂️ Stock Split: {splitPosition?.ticker}</span>
+              </h3>
+              <button onClick={() => { setShowSplitModal(false); setSplitPosition(null); }} className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <form onSubmit={handleApplySplit} className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Split Ratio (อัตราส่วน)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  required
+                  placeholder="e.g. 2 for 2:1, 0.5 for 1:2"
+                  value={splitRatio}
+                  onChange={(e) => setSplitRatio(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                />
+                <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                  * เช่น หุ้นแตกพาร์จาก 1 เป็น 2 หุ้น (2:1 Split) ให้ใส่ค่า <b>2</b><br/>
+                  * เช่น หุ้นรวมพาร์จาก 2 เป็น 1 หุ้น (1:2 Reverse) ให้ใส่ค่า <b>0.5</b><br/>
+                  (จำนวนหุ้นและราคาเฉลี่ยปัจจุบันจะถูกปรับตามอัตราส่วน โดยไม่เปลี่ยนประวัติเดิม)
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowSplitModal(false); setSplitPosition(null); }}
+                  className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
+                >
+                  บันทึก Split
                 </button>
               </div>
             </form>

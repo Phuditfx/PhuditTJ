@@ -313,12 +313,12 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-              {positions.length === 0 ? (
+              {positions.filter(p => parseFloat(p.shares || p.total_shares) > 0).length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-5 py-10 text-center text-slate-500 italic">No open positions found.</td>
                 </tr>
               ) : (
-                positions.map((pos) => {
+                positions.filter(p => parseFloat(p.shares || p.total_shares) > 0).map((pos) => {
                   const currentVal = parseFloat(pos.shares || pos.total_shares) * parseFloat(pos.current_price || pos.average_cost);
                   const costBasis = parseFloat(pos.shares || pos.total_shares) * parseFloat(pos.average_cost);
                   const pnl = currentVal - costBasis;
