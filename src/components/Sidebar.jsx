@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isTiPicks, isAlphaPicks, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
   const { t } = useLanguage();
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [tempMonth, setTempMonth] = useState('');
+
+  const formatMonthLabel = (val) => {
+    if (!val || !val.startsWith('MONTH-')) return 'Custom Month';
+    const parts = val.split('-');
+    if (parts.length !== 3) return 'Custom Month';
+    const date = new Date(parseInt(parts[1], 10), parseInt(parts[2], 10) - 1, 1);
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'journal', icon: '📓', label: t('app.journal', 'Trades Table').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -30,6 +41,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   };
 
   return (
+    <>
     <aside className={`w-full ${!isMobileView ? 'lg:w-64 flex-shrink-0 lg:sticky lg:top-24' : ''} flex flex-col gap-6`}>
       
       {/* Account Selector */}
@@ -78,6 +90,16 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
               {range}
             </button>
           ))}
+          <button
+            onClick={() => setShowMonthPicker(true)}
+            className={`col-span-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+              globalDateRange.startsWith('MONTH-')
+                ? 'bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {globalDateRange.startsWith('MONTH-') ? formatMonthLabel(globalDateRange) : 'Custom Month'}
+          </button>
         </div>
       </div>
       )}
@@ -174,5 +196,41 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
       </nav>
 
     </aside>
+
+      {/* Month Picker Modal */}
+      {showMonthPicker && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-fade-in">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Select Month & Year</h3>
+            <input 
+              type="month" 
+              value={tempMonth}
+              onChange={(e) => setTempMonth(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 mb-6"
+            />
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setShowMonthPicker(false)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (tempMonth) {
+                    const [year, month] = tempMonth.split('-');
+                    setGlobalDateRange(`MONTH-${year}-${month}`);
+                  }
+                  setShowMonthPicker(false);
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

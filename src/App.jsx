@@ -394,6 +394,14 @@ export default function App() {
         const startOfYear = new Date(now.getFullYear(), 0, 1);
         return tradeDate >= startOfYear;
       }
+      if (globalDateRange.startsWith('MONTH-')) {
+        const parts = globalDateRange.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[1], 10);
+          const month = parseInt(parts[2], 10);
+          return tradeDate.getFullYear() === year && tradeDate.getMonth() === month - 1;
+        }
+      }
       return true;
     });
   }, [trades, accountId, globalDateRange]);
