@@ -4,7 +4,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isTiPicks, isAlphaPicks, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
   const { t } = useLanguage();
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [tempMonth, setTempMonth] = useState('');
+  const [tempSelectedYear, setTempSelectedYear] = useState('');
+  const [tempSelectedMonth, setTempSelectedMonth] = useState('');
 
   const formatMonthLabel = (val) => {
     if (!val || !val.startsWith('MONTH-')) return 'Custom Month';
@@ -91,7 +92,17 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             </button>
           ))}
           <button
-            onClick={() => setShowMonthPicker(true)}
+            onClick={() => {
+              if (globalDateRange.startsWith('MONTH-')) {
+                const parts = globalDateRange.split('-');
+                setTempSelectedYear(parts[1]);
+                setTempSelectedMonth(parts[2].padStart(2, '0'));
+              } else {
+                setTempSelectedYear(new Date().getFullYear().toString());
+                setTempSelectedMonth((new Date().getMonth() + 1).toString().padStart(2, '0'));
+              }
+              setShowMonthPicker(true);
+            }}
             className={`col-span-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
               globalDateRange.startsWith('MONTH-')
                 ? 'bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 shadow-sm'
@@ -202,12 +213,29 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-fade-in">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Select Month & Year</h3>
-            <input 
-              type="month" 
-              value={tempMonth}
-              onChange={(e) => setTempMonth(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 mb-6"
-            />
+            <div className="flex gap-3 mb-6">
+              <select
+                value={tempSelectedMonth}
+                onChange={(e) => setTempSelectedMonth(e.target.value)}
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 cursor-pointer"
+              >
+                {Array.from({ length: 12 }, (_, i) => {
+                  const m = (i + 1).toString().padStart(2, '0');
+                  const date = new Date(2000, i, 1);
+                  return <option key={m} value={m}>{date.toLocaleDateString('en-US', { month: 'long' })}</option>;
+                })}
+              </select>
+              <select
+                value={tempSelectedYear}
+                onChange={(e) => setTempSelectedYear(e.target.value)}
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 cursor-pointer"
+              >
+                {Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => {
+                  const y = (2020 + i).toString();
+                  return <option key={y} value={y}>{y}</option>;
+                })}
+              </select>
+            </div>
             <div className="flex justify-end gap-2">
               <button 
                 onClick={() => setShowMonthPicker(false)}
@@ -217,9 +245,8 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
               </button>
               <button 
                 onClick={() => {
-                  if (tempMonth) {
-                    const [year, month] = tempMonth.split('-');
-                    setGlobalDateRange(`MONTH-${year}-${month}`);
+                  if (tempSelectedYear && tempSelectedMonth) {
+                    setGlobalDateRange(`MONTH-${tempSelectedYear}-${tempSelectedMonth}`);
                   }
                   setShowMonthPicker(false);
                 }}
