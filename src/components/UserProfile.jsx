@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCircle2, Clock, ArrowLeft, Crown, BarChart2, FileText, MessageSquare } from 'lucide-react';
+import { UserCircle2, Clock, ArrowLeft, Crown, BarChart2, FileText, MessageSquare, Download } from 'lucide-react';
 
 function ImageLightbox({ src, onClose }) {
   React.useEffect(() => {
@@ -19,12 +19,44 @@ function ImageLightbox({ src, onClose }) {
           alt="Full size"
           className="w-full h-auto max-h-[90vh] object-contain rounded-xl shadow-2xl"
         />
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors text-lg font-bold"
-        >
-          ✕
-        </button>
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch(src);
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Image_${new Date().toISOString().split('T')[0]}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error('Failed to download image', err);
+                const a = document.createElement('a');
+                a.href = src;
+                a.download = `Image_${new Date().toISOString().split('T')[0]}.png`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }
+            }}
+            className="bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors shadow-lg"
+            title="Download Image"
+          >
+            <Download size={18} />
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors text-lg font-bold shadow-lg"
+            title="ปิด (ESC)"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     </div>
   );

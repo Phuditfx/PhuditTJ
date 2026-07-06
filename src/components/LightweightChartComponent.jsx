@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { createChart, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
 import { fetchHistoricalData } from '../api/priceApi';
 
@@ -61,12 +61,21 @@ const parseToTimestamp = (dateStr) => {
   return Math.floor(timeMs / 1000);
 };
 
-export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status, actualExitPrice, customMarkers = [] }) {
+export default forwardRef(function LightweightChartComponent({ symbol, entry, stopLoss, tp1, tp2, tp3, direction = 'Long', entryTime, exitTime, status, actualExitPrice, customMarkers = [] }, ref) {
   const chartContainerRef = useRef(null);
   const chartInstance = useRef(null);
   const seriesInstance = useRef(null);
   const markersPluginRef = useRef(null);
   const [loading, setLoading] = useState(true);
+
+  useImperativeHandle(ref, () => ({
+    takeScreenshot: () => {
+      if (chartInstance.current) {
+        return chartInstance.current.takeScreenshot();
+      }
+      return null;
+    }
+  }));
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -361,4 +370,4 @@ export default function LightweightChartComponent({ symbol, entry, stopLoss, tp1
       <div ref={chartContainerRef} className="w-full h-full min-h-[400px]" />
     </div>
   );
-}
+});

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { simulateAIAssessment } from '../db/journalDB';
 import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Download } from 'lucide-react';
 
 const TradeRow = React.memo(({
   trade,
@@ -901,6 +902,20 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   // สถานะสำหรับ Modal ปิดออเดอร์และดูกราฟ
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [chartModalTrade, setChartModalTrade] = useState(null);
+  
+  const chartRef = useRef(null);
+  const handleDownloadChart = () => {
+    if (chartRef.current && chartModalTrade) {
+      const canvas = chartRef.current.takeScreenshot();
+      if (canvas) {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${chartModalTrade.symbol}_${new Date().toISOString().split('T')[0]}.png`;
+        a.click();
+      }
+    }
+  };
+
   const [editingOpenTrade, setEditingOpenTrade] = useState(null);
   const [exitPrice, setExitPrice] = useState('');
   const [editExitTime, setEditExitTime] = useState('');
@@ -1917,16 +1932,26 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   Dir: {chartModalTrade.direction} | Entry: ${chartModalTrade.entryPrice} | SL: ${chartModalTrade.stopLoss} | TP: ${chartModalTrade.takeProfit}
                 </p>
               </div>
-              <button 
-                onClick={() => setChartModalTrade(null)} 
-                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 font-black cursor-pointer text-sm"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleDownloadChart}
+                  title="Download Chart"
+                  className="p-2 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Download size={20} />
+                </button>
+                <button 
+                  onClick={() => setChartModalTrade(null)} 
+                  className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-400 font-black cursor-pointer text-sm p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             
             <div className="flex-1 min-h-[300px] w-full rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0a0a] relative">
               <LightweightChartComponent 
+                ref={chartRef}
                 symbol={chartModalTrade.symbol}
                 entry={chartModalTrade.entryPrice}
                 stopLoss={chartModalTrade.stopLoss}

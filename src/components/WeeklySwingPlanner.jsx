@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie } from 'recharts';
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick, updateWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
+import { Download } from 'lucide-react';
 
 export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
   const { t } = useLanguage();
@@ -54,6 +55,20 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
   const closeChart = () => {
     setSelectedChartPick(null);
+  };
+
+  const chartRef = useRef(null);
+
+  const handleDownloadChart = () => {
+    if (chartRef.current && selectedChartPick) {
+      const canvas = chartRef.current.takeScreenshot();
+      if (canvas) {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${selectedChartPick.ticker}_${new Date().toISOString().split('T')[0]}.png`;
+        a.click();
+      }
+    }
   };
 
   const loadPicks = async () => {
@@ -902,17 +917,27 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={closeChart}
-                className="absolute sm:relative top-4 right-4 sm:top-auto sm:right-auto p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
+              <div className="absolute sm:relative top-4 right-4 sm:top-auto sm:right-auto flex items-center gap-2">
+                <button 
+                  onClick={handleDownloadChart}
+                  title="Download Chart"
+                  className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <Download size={20} />
+                </button>
+                <button 
+                  onClick={closeChart}
+                  className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
             </div>
             
             {/* Modal Body */}
             <div className="p-2 sm:p-4 h-[65vh] min-h-[400px] w-full bg-slate-50 dark:bg-slate-900">
               <LightweightChartComponent 
+                ref={chartRef}
                 symbol={selectedChartPick.ticker} 
                 entry={selectedChartPick.entry_alert_price} 
                 stopLoss={selectedChartPick.stop_loss_price} 
