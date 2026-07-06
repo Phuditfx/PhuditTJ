@@ -102,6 +102,51 @@ export default function Dashboard({
   const averageLoss = lossesCount > 0 ? grossLoss / lossesCount : 0;
   const avgExitEfficiency = efficiencyCount > 0 ? (totalEfficiency / efficiencyCount) : 0;
 
+  // --- New Quantitative Metrics Calculations ---
+  const winRateNum = totalClosed > 0 ? (wins.length / totalClosed) : 0;
+  const lossRateNum = totalClosed > 0 ? (lossesCount / totalClosed) : 0;
+
+  const winsRR = wins.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
+  const avgWinRR = wins.length > 0 ? winsRR / wins.length : 0;
+  
+  const lossesArr = sortedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0);
+  const lossesRR = lossesArr.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
+  const avgLossRR = lossesCount > 0 ? lossesRR / lossesCount : 0;
+
+  let largestWinRR = 0;
+  let largestLossRR = 0;
+  wins.forEach(t => {
+    const rr = parseFloat(t.actualRR) || 0;
+    if (rr > largestWinRR) largestWinRR = rr;
+  });
+  lossesArr.forEach(t => {
+    const rr = parseFloat(t.actualRR) || 0;
+    if (rr < largestLossRR) largestLossRR = rr;
+  });
+
+  const expectancyPnL = (winRateNum * averageWin) - (lossRateNum * Math.abs(averageLoss));
+  const expectancyRR = (winRateNum * avgWinRR) - (lossRateNum * Math.abs(avgLossRR));
+
+  const planAdherenceTrades = closedTrades.filter(t => t.planAdherenceScore === 100).length;
+  const planAdherencePct = totalClosed > 0 ? (planAdherenceTrades / totalClosed) * 100 : 0;
+  const planAdherenceStr = totalClosed > 0 ? `${planAdherencePct.toFixed(1)}% (${planAdherenceTrades}/${totalClosed})` : '0% (0/0)';
+
+  let peakBalance = initialBalance;
+  let currentSimBalance = initialBalance;
+  let maxDrawdownPct = 0;
+
+  sortedTrades.forEach(t => {
+    currentSimBalance += (parseFloat(t.pnl) || 0);
+    if (currentSimBalance > peakBalance) {
+      peakBalance = currentSimBalance;
+    }
+    const drawdownPct = peakBalance > 0 ? ((peakBalance - currentSimBalance) / peakBalance) * 100 : 0;
+    if (drawdownPct > maxDrawdownPct) {
+      maxDrawdownPct = drawdownPct;
+    }
+  });
+  // ---------------------------------------------
+
   let totalHoldingMs = 0;
   let holdCount = 0;
   closedTrades.forEach(t => {
@@ -442,25 +487,56 @@ export default function Dashboard({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* ROW 1 */}
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between col-span-2">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">NET R-MULTIPLE</span>
+          <span className={`text-3xl font-mono font-black mt-2 block ${achievedRR >= 0 ? 'text-[#2EBD85]' : 'text-[#F6465D]'}`}>
+            {achievedRR > 0 ? '+' : ''}{achievedRR.toFixed(2)} R
+          </span>
+        </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.profitFactor')}</span>
           <span className="text-xl font-mono font-bold text-sky-500 mt-2 block">{profitFactor === Infinity ? 'MAX' : profitFactor.toFixed(2)}</span>
         </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between group">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block flex items-center gap-1">
+            EXPECTANCY
+            <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400" title="Avg profit per trade">?</span>
+          </span>
+          <span className={`text-xl font-mono font-bold mt-2 block ${
+            (pnlDisplayMode === 'pnl' ? expectancyPnL : expectancyRR) >= 0 ? 'text-[#2EBD85]' : 'text-[#F6465D]'
+          }`}>
+            {(pnlDisplayMode === 'pnl' ? expectancyPnL : expectancyRR) > 0 ? '+' : ''}
+            {pnlDisplayMode === 'pnl' ? '$' : ''}
+            {Math.abs(pnlDisplayMode === 'pnl' ? expectancyPnL : expectancyRR).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {pnlDisplayMode === 'rr' ? ' R' : ''}
+          </span>
+        </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.avgWin')}</span>
-          <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">${averageWin.toFixed(2)}</span>
+          <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">
+            {pnlDisplayMode === 'pnl' ? `$${averageWin.toFixed(2)}` : `+${avgWinRR.toFixed(2)} R`}
+          </span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.avgLoss')}</span>
-          <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">-${averageLoss.toFixed(2)}</span>
+          <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">
+            {pnlDisplayMode === 'pnl' ? `-$${averageLoss.toFixed(2)}` : `${avgLossRR.toFixed(2)} R`}
+          </span>
         </div>
+
+        {/* ROW 2 */}
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.largestWin')}</span>
-          <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">${largestWin.toFixed(2)}</span>
+          <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">
+            {pnlDisplayMode === 'pnl' ? `$${largestWin.toFixed(2)}` : `+${largestWinRR.toFixed(2)} R`}
+          </span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.largestLoss')}</span>
-          <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">-${Math.abs(largestLoss).toFixed(2)}</span>
+          <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">
+            {pnlDisplayMode === 'pnl' ? `-$${Math.abs(largestLoss).toFixed(2)}` : `${largestLossRR.toFixed(2)} R`}
+          </span>
         </div>
         <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">{t('dashboard.streaks')}</span>
@@ -485,7 +561,27 @@ export default function Dashboard({
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Avg Hold Time</span>
           <span className="text-xl font-mono font-bold text-indigo-500 mt-2 block">{avgHoldStr}</span>
         </div>
-        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between lg:col-span-3">
+
+        {/* ROW 3 */}
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between col-span-2">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">PLAN ADHERENCE</span>
+          <span className={`text-2xl font-mono font-bold mt-2 block ${
+            planAdherencePct >= 90 ? 'text-[#2EBD85]' : planAdherencePct >= 70 ? 'text-yellow-500' : 'text-[#F6465D]'
+          }`}>
+            {planAdherenceStr}
+          </span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">TOTAL TRADES</span>
+          <span className="text-2xl font-mono font-bold text-slate-700 dark:text-slate-200 mt-2 block">{totalClosed}</span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between">
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">MAX DRAWDOWN</span>
+          <span className="text-2xl font-mono font-bold text-[#F6465D] mt-2 block">
+            -{maxDrawdownPct.toFixed(2)}%
+          </span>
+        </div>
+        <div className="crypto-card p-4 relative overflow-hidden flex flex-col justify-between lg:col-span-2">
           <span className="text-[10px] text-indigo-500 uppercase font-black tracking-wider block flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
             AI Behavioral Insights
