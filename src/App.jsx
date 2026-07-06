@@ -1613,6 +1613,49 @@ export default function App() {
                       <h4 className="font-bold text-amber-500 dark:text-amber-400 text-base mb-1">6. {t('manual.weeklyPlanner', 'TI Weekly Swing Planner (PRO)')}</h4>
                       <p>{t('manual.weeklyPlannerDesc', 'Plan your swing trades logically. Log your Entry Alert and Stop Loss. You can now click the Chart Icon 📈 to view the historical OHLC chart with automated markers pointing precisely to the date you logged the pick.')}</p>
                     </div>
+
+                    <div>
+                      <h4 className="font-bold text-sky-500 text-base mb-2 mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">7. 📊 Dashboard Metrics Guide (คู่มือตัวชี้วัด)</h4>
+                      
+                      <div className="space-y-4 pl-2 border-l-2 border-slate-200 dark:border-slate-800">
+                        <div>
+                          <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">หมวดผลตอบแทนและความเสี่ยง (Performance & Risk)</h5>
+                          <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            <li><strong>Net R-Multiple:</strong> ผลรวมของความคุ้มค่า (Risk/Reward) ที่ทำได้จริงจากทุกออเดอร์</li>
+                            <li><strong>Profit Factor:</strong> กำไรรวมหารด้วยขาดทุนรวม (ควรมากกว่า 1.0)</li>
+                            <li><strong>Max Drawdown:</strong> เปอร์เซ็นต์การขาดทุนสะสมสูงสุดจากจุดสูงสุดของพอร์ต</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">หมวดสถิติการทำกำไร (Trade Analytics)</h5>
+                          <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            <li><strong>Expectancy:</strong> ค่าเฉลี่ยผลกำไร/ขาดทุนต่อ 1 การเทรด (บอกว่าในระยะยาวระบบมีกำไรหรือไม่)</li>
+                            <li><strong>Avg Win / Avg Loss:</strong> กำไรเฉลี่ยต่อไม้ที่ชนะ / ขาดทุนเฉลี่ยต่อไม้ที่แพ้</li>
+                            <li><strong>Largest Win / Largest Loss:</strong> กำไรสูงสุด / ขาดทุนสูงสุดในไม้เดียว</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">หมวดความแม่นยำ (Accuracy & Edge)</h5>
+                          <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            <li><strong>Win Rate (L/S):</strong> อัตราชนะ แยกตามฝั่ง Long และ Short</li>
+                            <li><strong>Streaks (W / L):</strong> ชนะติดต่อกันสูงสุด (W) และแพ้ติดต่อกันสูงสุด (L)</li>
+                            <li><strong>Avg Exit Efficiency:</strong> ประสิทธิภาพการออกออเดอร์เทียบกับจุดที่กำไรเยอะที่สุด (MFE)</li>
+                            <li><strong>Total Trades:</strong> จำนวนออเดอร์ที่ปิดไปแล้วทั้งหมด</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">หมวดวินัยและการจัดการ (Discipline & Execution)</h5>
+                          <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            <li><strong>Plan Adherence:</strong> เปอร์เซ็นต์ของออเดอร์ที่คุณทำตามแผน 100%</li>
+                            <li><strong>Avg Hold Time:</strong> ระยะเวลาเฉลี่ยที่ถือครองสถานะก่อนปิด</li>
+                            <li><strong>AI Behavioral Insights:</strong> ข้อความแนะนำพฤติกรรมจาก AI เบื้องต้น (เช่น เตือนเรื่อง FOMO)</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
