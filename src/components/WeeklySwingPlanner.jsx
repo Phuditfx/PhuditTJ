@@ -63,9 +63,21 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     if (chartRef.current && selectedChartPick) {
       const canvas = chartRef.current.takeScreenshot();
       if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const ticker = selectedChartPick.ticker;
+        
+        ctx.save();
+        ctx.font = 'bold 120px sans-serif';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.15)'; // slate-400 with 15% opacity
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.fillText(ticker, 0, 0);
+        ctx.restore();
+
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
-        a.download = `${selectedChartPick.ticker}_${new Date().toISOString().split('T')[0]}.png`;
+        a.download = `${ticker}_${new Date().toISOString().split('T')[0]}.png`;
         a.click();
       }
     }
