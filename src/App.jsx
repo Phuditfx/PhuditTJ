@@ -528,7 +528,11 @@ export default function App() {
   const handleDeleteTradesByDateRange = (startDate, endDate) => {
     const updatedTrades = trades.filter(t => {
       if (!t.dateTime) return true;
-      const tradeDateStr = t.dateTime.split('T')[0];
+      const d = new Date(t.dateTime);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const tradeDateStr = `${year}-${month}-${day}`;
       const isInRange = tradeDateStr >= startDate && tradeDateStr <= endDate;
       return !isInRange; // เก็บไว้เฉพาะที่ 'ไม่ได้' อยู่ในช่วงที่จะลบ
     });
