@@ -524,13 +524,13 @@ export default function App() {
     saveTrades(currentUser, []);
   };
 
-  // ลบข้อมูลการเทรดรายเดือน
-  const handleDeleteTradesByMonth = (month) => {
+  // ลบข้อมูลการเทรดตามช่วงวันที่
+  const handleDeleteTradesByDateRange = (startDate, endDate) => {
     const updatedTrades = trades.filter(t => {
       if (!t.dateTime) return true;
-      const d = new Date(t.dateTime);
-      const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return mStr !== month;
+      const tradeDateStr = t.dateTime.split('T')[0];
+      const isInRange = tradeDateStr >= startDate && tradeDateStr <= endDate;
+      return !isInRange; // เก็บไว้เฉพาะที่ 'ไม่ได้' อยู่ในช่วงที่จะลบ
     });
     setTrades(updatedTrades);
     saveTrades(currentUser, updatedTrades);
@@ -980,7 +980,7 @@ export default function App() {
                 onAddTrade={handleAddTradeDirect}
                 onDeleteTrade={handleDeleteTrade}
                 onClearAllTrades={handleClearAllTrades}
-                onDeleteTradesByMonth={handleDeleteTradesByMonth}
+                onDeleteTradesByDateRange={handleDeleteTradesByDateRange}
                 onImportData={handleImportData}
                 onExportJSON={handleExportFullJSON}
                 requestConfirm={requestConfirm}

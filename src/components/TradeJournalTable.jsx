@@ -852,11 +852,12 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByMonth, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip, pnlDisplayMode = 'pnl' }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip, pnlDisplayMode = 'pnl' }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
-  const [filterMonth, setFilterMonth] = useState('All');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
   const [sortBy, setSortBy] = useState('RR'); // Date, RR
   const [livePrices, setLivePrices] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
@@ -865,7 +866,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus, filterMonth, searchSymbol, trades]);
+  }, [filterStatus, filterStartDate, filterEndDate, searchSymbol, trades]);
 
   // โหลดราคาปัจจุบันของออเดอร์ที่ยังเปิดอยู่
   useEffect(() => {
@@ -964,26 +965,21 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   // สถานะสำหรับการดูรายละเอียดข้อเสนอแนะ AI ของออเดอร์ที่ปิดแล้ว
   const [activeFeedbackTradeId, setActiveFeedbackTradeId] = useState(null);
 
-  // คำนวณเดือนทั้งหมดที่มีข้อมูล
-  const availableMonths = [...new Set(trades.map(t => {
-    if (!t.dateTime) return null;
-    const d = new Date(t.dateTime);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  }).filter(Boolean))].sort().reverse();
+
 
   // ตัวกรองและค้นหาข้อมูล
   const baseFilteredTrades = trades.filter(trade => {
     const matchesStatus = filterStatus === 'All' || trade.status === filterStatus;
     const matchesSearch = trade.symbol.toLowerCase().includes(searchSymbol.toLowerCase());
     
-    let matchesMonth = true;
-    if (filterMonth !== 'All' && trade.dateTime) {
-      const d = new Date(trade.dateTime);
-      const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      matchesMonth = mStr === filterMonth;
+    let matchesDateRange = true;
+    if ((filterStartDate || filterEndDate) && trade.dateTime) {
+      const tradeDateStr = trade.dateTime.split('T')[0];
+      if (filterStartDate && tradeDateStr < filterStartDate) matchesDateRange = false;
+      if (filterEndDate && tradeDateStr > filterEndDate) matchesDateRange = false;
     }
     
-    return matchesStatus && matchesSearch && matchesMonth;
+    return matchesStatus && matchesSearch && matchesDateRange;
   });
 
   const getTradeRR = (trade) => {
@@ -1361,37 +1357,59 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             className="bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-3 py-1.5 font-mono text-sm text-indigo-600 dark:text-indigo-300 focus:outline-none focus:border-indigo-500 uppercase placeholder-slate-400 dark:placeholder-slate-600 sm:w-40"
           />
 
-          {/* ฟิลเตอร์เดือน */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer h-[32px]"
-            >
-              <option value="All">ทุกเดือน</option>
-              {availableMonths.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+          {/* ฟิลเตอร์วันที่ (Start Date - End Date) */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            <div className="flex items-center gap-1 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-2 h-[32px]">
+              <span className="text-[10px] text-slate-500 font-bold uppercase">From</span>
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+              />
+            </div>
+            <div className="flex items-center gap-1 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-2 h-[32px]">
+              <span className="text-[10px] text-slate-500 font-bold uppercase">To</span>
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+              />
+            </div>
 
-            {filterMonth !== 'All' && (
+            {(filterStartDate || filterEndDate) && (
+              <button
+                onClick={() => {
+                  setFilterStartDate('');
+                  setFilterEndDate('');
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-bold px-1"
+                title="ล้างตัวกรองวันที่"
+              >
+                ✕
+              </button>
+            )}
+
+            {(filterStartDate && filterEndDate) && (
               <button
                 onClick={() => {
                   requestConfirm(
-                    "ลบข้อมูลทั้งเดือน",
-                    `⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth} อย่างถาวร? (ไม่สามารถกู้คืนได้)`,
+                    "ลบข้อมูลตามช่วงเวลา",
+                    `⚠️ ยืนยันการลบประวัติการเทรดทั้งหมดตั้งแต่ ${filterStartDate} ถึง ${filterEndDate} อย่างถาวร? (ไม่สามารถกู้คืนได้)`,
                     () => {
-                      if (onDeleteTradesByMonth) {
-                        onDeleteTradesByMonth(filterMonth);
-                        setFilterMonth('All');
+                      if (onDeleteTradesByDateRange) {
+                        onDeleteTradesByDateRange(filterStartDate, filterEndDate);
+                        setFilterStartDate('');
+                        setFilterEndDate('');
                       }
                     }
                   );
                 }}
                 className="bg-rose-600 hover:bg-rose-500 text-white border border-rose-500/20 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer h-[32px] flex items-center gap-1 shadow-sm"
-                title={`ลบประวัติการเทรดทั้งหมดของเดือน ${filterMonth}`}
+                title={`ลบประวัติการเทรดตั้งแต่ ${filterStartDate} ถึง ${filterEndDate}`}
               >
-                🗑️ ลบเดือน {filterMonth}
+                🗑️ ลบช่วงนี้
               </button>
             )}
           </div>
