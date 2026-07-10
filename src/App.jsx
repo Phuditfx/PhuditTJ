@@ -1036,7 +1036,7 @@ export default function App() {
                 </div>
                 {activeTab === 'calendar' && (
                   isVip || isTiPicks
-                    ? <CalendarView trades={trades} pnlDisplayMode={pnlDisplayMode} />
+                    ? <CalendarView trades={trades.filter(t => (t.accountId || 'default') === accountId)} pnlDisplayMode={pnlDisplayMode} />
                     : <VipLockScreen featureName="Calendar" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'plans' && (
