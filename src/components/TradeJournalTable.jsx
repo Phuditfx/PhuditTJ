@@ -1370,7 +1370,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 type="date"
                 value={filterStartDate}
                 onChange={(e) => setFilterStartDate(e.target.value)}
-                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+                onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer w-[110px]"
               />
             </div>
             <div className="flex items-center gap-1 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-2 h-[32px]">
@@ -1379,7 +1380,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 type="date"
                 value={filterEndDate}
                 onChange={(e) => setFilterEndDate(e.target.value)}
-                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+                onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer w-[110px]"
               />
             </div>
 
