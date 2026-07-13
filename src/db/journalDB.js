@@ -175,7 +175,13 @@ export const subscribeToUserData = (email, callback) => {
             state.targetRR = data.targetRR !== undefined ? data.targetRR : 20;
             state.profile = { ...state.profile, ...data.profile };
             state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
-            state.customSetups = data.customSetups || ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
+            state.customSetups = data.customSetups || (() => {
+                try {
+                    const localSetups = localStorage.getItem(`phudit_setups_${cleanEmail}`);
+                    if (localSetups) return JSON.parse(localSetups);
+                } catch (e) {}
+                return ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
+            })();
             state.isVip = data.isVip || false;
             state.isTiPicks = data.is_ti_picks || false;
             state.isAlphaPicks = data.is_alpha_picks || false;
@@ -257,6 +263,7 @@ export const saveInitialBalance = (email, initialBalances) => {
 
 export const saveCustomSetups = (email, customSetups) => {
     updateMainDoc(email, { customSetups });
+    try { localStorage.setItem(`phudit_setups_${email.toLowerCase()}`, JSON.stringify(customSetups)); } catch (e) {}
 };
 
 export const saveTargetRR = (email, targetRR) => {

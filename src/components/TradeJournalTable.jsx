@@ -950,7 +950,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [editMood, setEditMood] = useState('');
 
   const SETUP_OPTIONS = setups && setups.length > 0 ? setups : ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
-  const MOOD_OPTIONS = ['🟢 In the Zone (Flow)', '🔵 Objective/Neutral', '🔴 Frustrated/Angry', '🟣 Anxious/Fearful', '🟠 Tired/Exhausted'];
+  const MOOD_OPTIONS = ['🟢 มั่นใจ/ทำตามแผน', '🔵 ปกติ/เป็นกลาง', '🔴 ใช้อารมณ์/FOMO', '🟣 กังวล/ลังเล', '🟠 เหนื่อยล้า/พักผ่อนน้อย'];
   
   // Context Score Survey States
   const [qMarketTrend, setQMarketTrend] = useState(1); 
