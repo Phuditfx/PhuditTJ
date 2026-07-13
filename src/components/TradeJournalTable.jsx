@@ -1058,17 +1058,31 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
   // Export to JSON
   const handleExportJSON = () => {
-    if (onExportJSON) {
-      onExportJSON();
+    const doExport = () => {
+      if (onExportJSON) {
+        onExportJSON();
+      } else {
+        // Fallback just in case
+        const dataStr = JSON.stringify(filteredTrades, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const exportFileDefaultName = 'TradeJournal_Backup.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+      }
+    };
+
+    if (requestConfirm) {
+      requestConfirm(
+        "ยืนยันการดาวน์โหลด Backup",
+        "ไฟล์ JSON นี้คือ 'Full Backup' ซึ่งจะรวมข้อมูลของ 'ทุกบัญชี (พอร์ต)' และ 'ทุกช่วงเวลา' เพื่อใช้สำหรับการสำรองและกู้คืนระบบ (ไม่ได้กรองข้อมูลตามตาราง)\n\nคุณต้องการดาวน์โหลดไฟล์นี้ใช่หรือไม่?",
+        () => doExport()
+      );
     } else {
-      // Fallback just in case
-      const dataStr = JSON.stringify(filteredTrades, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-      const exportFileDefaultName = 'TradeJournal_Backup.json';
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
+      if (window.confirm("ไฟล์ JSON นี้คือ 'Full Backup' ซึ่งจะรวมข้อมูลของทุกพอร์ตและทุกช่วงเวลา\n\nคุณต้องการดาวน์โหลดใช่หรือไม่?")) {
+        doExport();
+      }
     }
   };
 
@@ -1464,7 +1478,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               className="bg-sky-50 dark:bg-sky-600/20 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 hover:bg-sky-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
               title="ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ JSON เพื่อสำรองข้อมูล"
             >
-              📥 JSON
+              📥 Backup All (JSON)
             </button>
             <button
               onClick={handleExportCSV}
@@ -1483,9 +1497,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
             <button
               onClick={() => fileInputRef.current.click()}
               className="bg-amber-50 dark:bg-amber-600/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
-              title="อัปโหลดไฟล์ JSON กลับเข้ามาในระบบ"
+              title="อัปโหลดไฟล์ JSON กลับเข้ามาในระบบเพื่อกู้คืนข้อมูล"
             >
-              📤 Import
+              📤 Restore Backup
             </button>
           </div>
 
