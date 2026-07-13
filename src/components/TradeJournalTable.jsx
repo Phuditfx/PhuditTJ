@@ -852,7 +852,7 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], isVip, pnlDisplayMode = 'pnl' }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl' }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -949,18 +949,20 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [editSetup, setEditSetup] = useState('');
   const [editMood, setEditMood] = useState('');
 
-  const SETUP_OPTIONS = ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
-  const MOOD_OPTIONS = ['🧘‍♂️ Calm/Focused', '😬 FOMO/Chasing', '😡 Revenge Trading', '🥱 Bored/Overtrading', '🤩 Overconfident'];
+  const SETUP_OPTIONS = setups && setups.length > 0 ? setups : ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
+  const MOOD_OPTIONS = ['🟢 In the Zone (Flow)', '🔵 Objective/Neutral', '🔴 Frustrated/Angry', '🟣 Anxious/Fearful', '🟠 Tired/Exhausted'];
   
   // Context Score Survey States
-  const [qMarketTrend, setQMarketTrend] = useState(1); // 0, 1, 3
-  const [qRelativeStrength, setQRelativeStrength] = useState(1); // 0, 1, 3
-  const [qSetupQuality, setQSetupQuality] = useState(2); // 1, 2, 4
+  const [qMarketTrend, setQMarketTrend] = useState(1); 
+  const [qRelativeStrength, setQRelativeStrength] = useState(1); 
+  const [qSetupQuality, setQSetupQuality] = useState(1); 
+  const [qVolumeLiquidity, setQVolumeLiquidity] = useState(1); 
+  const [qCatalystNews, setQCatalystNews] = useState(1); 
   
-  const [planAdherence, setPlanAdherence] = useState("ตามแผนส่วนตัว (+100%)");
+  const [planAdherence, setPlanAdherence] = useState("100% (Perfect Execution: ทำตามแผนเป๊ะ)");
   const [aiResult, setAiResult] = useState(null); // { aiScore, aiFeedback }
 
-  const calculateContextScore = () => Math.min(10, Math.max(1, qMarketTrend + qRelativeStrength + qSetupQuality));
+  const calculateContextScore = () => Math.min(10, Math.max(0, qMarketTrend + qRelativeStrength + qSetupQuality + qVolumeLiquidity + qCatalystNews));
 
   // สถานะสำหรับการดูรายละเอียดข้อเสนอแนะ AI ของออเดอร์ที่ปิดแล้ว
   const [activeFeedbackTradeId, setActiveFeedbackTradeId] = useState(null);
@@ -1204,11 +1206,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
     // คิดคะแนนวินัยตามข้อเลือก
     let score = 100;
-    if (planAdherence.includes("FOMO") || planAdherence.includes("อารมณ์")) {
-      score = 0;
-    } else if (planAdherence.includes("บางส่วน")) {
-      score = 50;
-    }
+    if (planAdherence.includes("100%")) score = 100;
+    else if (planAdherence.includes("80%")) score = 80;
+    else if (planAdherence.includes("50%")) score = 50;
+    else if (planAdherence.includes("20%")) score = 20;
+    else score = 0;
 
     // คำนวณ PnL ล่วงหน้าเพื่อนำไปประเมิน
     const shares = parseFloat(closeShares) || parseFloat(selectedTrade.shares);
@@ -1242,11 +1244,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
     // คิดคะแนนวินัยตามข้อเลือก
     let score = 100;
-    if (planAdherence.includes("FOMO") || planAdherence.includes("อารมณ์")) {
-      score = 0;
-    } else if (planAdherence.includes("บางส่วน")) {
-      score = 50;
-    }
+    if (planAdherence.includes("100%")) score = 100;
+    else if (planAdherence.includes("80%")) score = 80;
+    else if (planAdherence.includes("50%")) score = 50;
+    else if (planAdherence.includes("20%")) score = 20;
+    else score = 0;
 
     const sharesToClose = parseFloat(closeShares) || 0;
     const originalShares = parseFloat(selectedTrade.shares);
@@ -1794,25 +1796,19 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     <label className="text-[10px] text-slate-550 dark:text-slate-400 font-bold uppercase tracking-wider">
                       1. แนวโน้มตลาด (Market Trend)
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { label: 'ขาลง (Bearish) (+0)', value: 0 },
-                        { label: 'ไซด์เวย์ (Sideways) (+1)', value: 1 },
-                        { label: 'ขาขึ้น (Bullish) (+3)', value: 3 }
-                      ].map((opt) => {
-                        const active = qMarketTrend === opt.value;
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[0, 0.5, 1, 1.5, 2].map((val) => {
+                        const active = qMarketTrend === val;
                         return (
                           <button
-                            key={opt.value}
+                            key={val}
                             type="button"
-                            onClick={() => { setQMarketTrend(opt.value); setAiResult(null); }}
-                            className={`py-2 px-1 rounded-lg text-[10.5px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[38px] ${
-                              active
-                                ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.01]'
-                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                            onClick={() => { setQMarketTrend(val); setAiResult(null); }}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[30px] ${
+                              active ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.05]' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800'
                             }`}
                           >
-                            {opt.label}
+                            {val}
                           </button>
                         );
                       })}
@@ -1821,28 +1817,22 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
                   {/* Relative Strength */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-555 dark:text-slate-400 font-bold uppercase tracking-wider">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-400 font-bold uppercase tracking-wider">
                       2. ความแข็งแกร่ง (Relative Strength)
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { label: 'อ่อนแอกว่าตลาด (+0)', value: 0 },
-                        { label: 'ตามตลาด (In-line) (+1)', value: 1 },
-                        { label: 'แข็งแกร่งกว่าตลาด (+3)', value: 3 }
-                      ].map((opt) => {
-                        const active = qRelativeStrength === opt.value;
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[0, 0.5, 1, 1.5, 2].map((val) => {
+                        const active = qRelativeStrength === val;
                         return (
                           <button
-                            key={opt.value}
+                            key={val}
                             type="button"
-                            onClick={() => { setQRelativeStrength(opt.value); setAiResult(null); }}
-                            className={`py-2 px-1 rounded-lg text-[10.5px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[38px] ${
-                              active
-                                ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.01]'
-                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                            onClick={() => { setQRelativeStrength(val); setAiResult(null); }}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[30px] ${
+                              active ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.05]' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800'
                             }`}
                           >
-                            {opt.label}
+                            {val}
                           </button>
                         );
                       })}
@@ -1851,28 +1841,70 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
                   {/* Setup Quality */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-555 dark:text-slate-400 font-bold uppercase tracking-wider">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-400 font-bold uppercase tracking-wider">
                       3. รูปแบบกราฟ (Setup Quality)
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { label: 'ไม่ชัดเจน (C) (+1)', value: 1 },
-                        { label: 'พอใช้ได้ (B) (+2)', value: 2 },
-                        { label: 'สวยงามมาก (A+) (+4)', value: 4 }
-                      ].map((opt) => {
-                        const active = qSetupQuality === opt.value;
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[0, 0.5, 1, 1.5, 2].map((val) => {
+                        const active = qSetupQuality === val;
                         return (
                           <button
-                            key={opt.value}
+                            key={val}
                             type="button"
-                            onClick={() => { setQSetupQuality(opt.value); setAiResult(null); }}
-                            className={`py-2 px-1 rounded-lg text-[10.5px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[38px] ${
-                              active
-                                ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.01]'
-                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                            onClick={() => { setQSetupQuality(val); setAiResult(null); }}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[30px] ${
+                              active ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.05]' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800'
                             }`}
                           >
-                            {opt.label}
+                            {val}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Volume/Liquidity */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      4. ปริมาณการซื้อขาย (Volume/Liquidity)
+                    </label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[0, 0.5, 1, 1.5, 2].map((val) => {
+                        const active = qVolumeLiquidity === val;
+                        return (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => { setQVolumeLiquidity(val); setAiResult(null); }}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[30px] ${
+                              active ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.05]' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {val}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Catalyst/News */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      5. ปัจจัยหนุน (Catalyst/News)
+                    </label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[0, 0.5, 1, 1.5, 2].map((val) => {
+                        const active = qCatalystNews === val;
+                        return (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => { setQCatalystNews(val); setAiResult(null); }}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] transition-all font-sans cursor-pointer border text-center flex items-center justify-center min-h-[30px] ${
+                              active ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-400 dark:border-indigo-500/50 shadow-sm font-bold scale-[1.05]' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-450 border-slate-200 dark:border-slate-800/80 hover:bg-slate-55 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {val}
                           </button>
                         );
                       })}
@@ -1882,7 +1914,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
 
               {/* Plan Adherence Selection (Dropdown) */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 mt-2">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Plan Adherence (วินัยการเล่น)</label>
                 <select
                   value={planAdherence}
@@ -1892,10 +1924,11 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   }}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
-                  <option value="เทรดตาม Teacher's (Ajarn) Live (+100%)">เทรดตาม Teacher's (Ajarn) Live (ถือว่าทำตามแผน 100%)</option>
-                  <option value="ตามแผนส่วนตัว (+100%)">ตามแผนการเทรดส่วนตัว (ทำตามลิมิตและเป้าหมาย 100%)</option>
-                  <option value="ตามแผนบ้างบางส่วน (+50%)">ตามแผนบ้างบางส่วน (มีแหกกฎลิมิตเล็กน้อย 50%)</option>
-                  <option value="เทรดด้วยอารมณ์/FOMO (0%)">เทรดหลุดแผน/เทรดด้วยอารมณ์ FOMO ไล่ราคา (0%)</option>
+                  <option value="100% (Perfect Execution: ทำตามแผนเป๊ะ)">100% (Perfect Execution: ทำตามแผนเป๊ะ)</option>
+                  <option value="80% (Minor Deviation: ผิดแผนเล็กน้อยแต่รับได้)">80% (Minor Deviation: ผิดแผนเล็กน้อยแต่รับได้)</option>
+                  <option value="50% (Half Plan/Half Emotion: ครึ่งตามแผน ครึ่งใช้อารมณ์)">50% (Half Plan/Half Emotion: ครึ่งตามแผน ครึ่งใช้อารมณ์)</option>
+                  <option value="20% (Mostly Emotion: ใช้อารมณ์เป็นหลัก)">20% (Mostly Emotion: ใช้อารมณ์เป็นหลัก)</option>
+                  <option value="0% (Pure FOMO/No Plan: เทรดมั่ว ไม่มีแผน)">0% (Pure FOMO/No Plan: เทรดมั่ว ไม่มีแผน)</option>
                 </select>
               </div>
 

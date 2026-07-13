@@ -1,9 +1,28 @@
 import React, { useState } from 'react';
 
-export default function TradingPlans({ plans = [], onSavePlan, onDeletePlan }) {
+export default function TradingPlans({ plans = [], setups = [], onSavePlan, onDeletePlan, onSaveSetups, requestConfirm, requestAlert }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanRules, setNewPlanRules] = useState('');
+  
+  // Custom Setups State
+  const [showAddSetup, setShowAddSetup] = useState(false);
+  const [newSetupName, setNewSetupName] = useState('');
+
+  const handleAddSetup = () => {
+    if (!newSetupName.trim()) return;
+    if (setups.includes(newSetupName.trim())) {
+      if (requestAlert) requestAlert("Warning", "Setup name already exists!");
+      return;
+    }
+    onSaveSetups([...setups, newSetupName.trim()]);
+    setNewSetupName('');
+    setShowAddSetup(false);
+  };
+
+  const handleDeleteSetup = (setupName) => {
+    onSaveSetups(setups.filter(s => s !== setupName));
+  };
 
   const handleSave = () => {
     if (!newPlanName.trim()) return;
@@ -107,6 +126,71 @@ export default function TradingPlans({ plans = [], onSavePlan, onDeletePlan }) {
         )}
 
       </div>
+
+      {/* --- Custom Setups Section --- */}
+      <div className="crypto-card p-6 flex flex-col gap-6 relative overflow-hidden mt-2">
+        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-850 pb-4">
+          <div>
+            <h2 className="text-xl font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+              🎯 Custom Setups & Strategies
+            </h2>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">Manage your personal setups for context tracking</p>
+          </div>
+          <button 
+            onClick={() => setShowAddSetup(!showAddSetup)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors cursor-pointer"
+          >
+            {showAddSetup ? 'Cancel' : '+ New Setup'}
+          </button>
+        </div>
+
+        {showAddSetup && (
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">Setup Name</label>
+              <input 
+                type="text" 
+                value={newSetupName}
+                onChange={(e) => setNewSetupName(e.target.value)}
+                placeholder="e.g. VCP Breakout, Moving Average Bounce..."
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded focus:outline-none focus:border-indigo-500 text-sm"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button onClick={handleAddSetup} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-lg text-sm cursor-pointer shadow-sm">
+                Save Setup
+              </button>
+            </div>
+          </div>
+        )}
+
+        {setups.length === 0 && !showAddSetup ? (
+          <div className="text-center py-10">
+            <h3 className="text-slate-600 dark:text-slate-400 font-bold">No Custom Setups</h3>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {setups.map(setup => (
+              <div key={setup} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-2 px-4 rounded-lg flex items-center gap-3 group transition-colors hover:border-indigo-300 dark:hover:border-indigo-700">
+                <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{setup}</span>
+                <button 
+                  onClick={() => {
+                    if(requestConfirm) {
+                      requestConfirm("ลบ Setup", `Are you sure you want to delete '${setup}'?`, () => handleDeleteSetup(setup));
+                    } else if(window.confirm(`Are you sure you want to delete '${setup}'?`)) {
+                      handleDeleteSetup(setup);
+                    }
+                  }}
+                  className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

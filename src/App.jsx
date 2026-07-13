@@ -15,7 +15,8 @@ import {
   subscribeToUserData,
   saveAccounts,
   subscribeToGlobalFeed,
-  addGlobalFeedPost
+  addGlobalFeedPost,
+  saveCustomSetups
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
 import Dashboard from './components/Dashboard';
@@ -68,6 +69,7 @@ export default function App() {
   const [targetRR, setTargetRRState] = useState(20);
   const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
   const [plans, setPlans] = useState([]);
+  const [setups, setSetups] = useState([]);
   const [dividends, setDividends] = useState([]);
   const [fundingHistory, setFundingHistory] = useState([]);
   const [accounts, setAccounts] = useState([{ id: 'default', name: 'Main Account' }]);
@@ -206,6 +208,7 @@ export default function App() {
         setTargetRRState(data.targetRR || 20);
         setProfile(data.profile);
         setPlans(data.plans || []);
+        setSetups(data.customSetups || ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading']);
         setDividends(data.dividends || []);
         setFundingHistory(data.fundingHistory || []);
         setAccounts(data.accounts || [{ id: 'default', name: 'Main Account' }]);
@@ -218,6 +221,7 @@ export default function App() {
     } else {
       setTrades([]);
       setPlans([]);
+      setSetups([]);
       setDividends([]);
       setFundingHistory([]);
       setIsVip(false);
@@ -464,6 +468,12 @@ export default function App() {
     const updatedPlans = plans.filter(p => p.id !== id);
     setPlans(updatedPlans);
     savePlans(currentUser, updatedPlans);
+  };
+
+  // จัดการ Setups
+  const handleSaveSetups = (updatedSetups) => {
+    setSetups(updatedSetups);
+    saveCustomSetups(currentUser, updatedSetups);
   };
 
   // จัดการ Dividends
@@ -991,6 +1001,7 @@ export default function App() {
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}
                 plans={plans}
+                setups={setups}
                 isVip={isVip || isTiPicks || isAlphaPicks}
                 pnlDisplayMode={pnlDisplayMode}
               />
@@ -1047,8 +1058,10 @@ export default function App() {
                   isVip || isTiPicks || isAlphaPicks ? (
                     <TradingPlans
                       plans={plans}
+                      setups={setups}
                       onSavePlan={handleSavePlan}
                       onDeletePlan={handleDeletePlan}
+                      onSaveSetups={handleSaveSetups}
                       requestConfirm={requestConfirm}
                       requestAlert={requestAlert}
                     />

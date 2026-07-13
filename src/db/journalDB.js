@@ -151,6 +151,7 @@ export const subscribeToUserData = (email, callback) => {
         targetRR: 20,
         profile: { name: cleanEmail.split('@')[0], photo: '', fontSize: 'normal' },
         accounts: [{ id: 'default', name: 'Main Account' }],
+        customSetups: ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'], // Default Setups
         isVip: false,
         isTiPicks: false,
         isAlphaPicks: false,
@@ -174,6 +175,7 @@ export const subscribeToUserData = (email, callback) => {
             state.targetRR = data.targetRR !== undefined ? data.targetRR : 20;
             state.profile = { ...state.profile, ...data.profile };
             state.accounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
+            state.customSetups = data.customSetups || ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
             state.isVip = data.isVip || false;
             state.isTiPicks = data.is_ti_picks || false;
             state.isAlphaPicks = data.is_alpha_picks || false;
@@ -187,6 +189,7 @@ export const subscribeToUserData = (email, callback) => {
                 initialBalances: state.initialBalances,
                 targetRR: state.targetRR,
                 accounts: state.accounts,
+                customSetups: state.customSetups,
                 status: 'approved',
                 isVip: false,
                 is_ti_picks: false,
@@ -250,6 +253,10 @@ const updateMainDoc = async (email, data) => {
 export const saveInitialBalance = (email, initialBalances) => {
     updateMainDoc(email, { initialBalances });
     try { localStorage.setItem(`phudit_balance_${email.toLowerCase()}`, JSON.stringify(initialBalances)); } catch (e) {}
+};
+
+export const saveCustomSetups = (email, customSetups) => {
+    updateMainDoc(email, { customSetups });
 };
 
 export const saveTargetRR = (email, targetRR) => {
@@ -499,7 +506,8 @@ export const simulateAIAssessment = (trade) => {
     let feedback = "";
 
     if (scorePlan === 100) aiScore += 2;
-    else if (scorePlan === 0) aiScore -= 2;
+    else if (scorePlan >= 80) aiScore += 1;
+    else if (scorePlan <= 20) aiScore -= 2;
 
     if (scoreContext >= 8) aiScore += 1;
     else if (scoreContext <= 4) aiScore -= 1;
@@ -526,17 +534,29 @@ export const simulateAIAssessment = (trade) => {
         } else {
             feedback = `👍 ขาดทุนแต่สมบูรณ์แบบ! แม้ไม้นี้จะแพ้ไป แต่วินัย 100% ในแผน "${planName}" คือเกราะคุ้มกันที่ทรงพลังที่สุด การตัดขาดทุนตรงเวลาคือหัวใจของการอยู่รอด${contextStr}`;
         }
+    } else if (scorePlan === 80) {
+        if (isWin) {
+            feedback = `✅ ทำได้ดีมากครับคุณทำตามแผน "${planName}" ได้เกือบสมบูรณ์แบบ อาจมีจังหวะผิดเพี้ยนไปเล็กน้อยแต่ยังรักษาเป้าหมายไว้ได้ดีเยี่ยม ค่อยๆ ปรับปรุงให้เป็น 100% ต่อไปครับ${contextStr}`;
+        } else {
+            feedback = `🛡️ เสียหายอยู่ในระดับควบคุมได้! แม้จะมีข้อผิดพลาดในแผนเล็กน้อย แต่การมีวินัยที่ระดับ 80% ยังถือว่าปลอดภัยและช่วยตัดขาดทุนได้ดี เรียนรู้จากข้อผิดพลาดและไปต่อครับ${contextStr}`;
+        }
     } else if (scorePlan === 50) {
         if (isWin) {
             feedback = `⚠️ กำไรแต่อันตราย! คุณทำตามแผน "${planName}" ได้เพียงครึ่งเดียว อาจมีอาการลังเลหรือข้ามเช็คลิสต์บางอย่างไป ควรกลับไปทบทวนเพื่อลดความเสี่ยงในครั้งหน้า${contextStr}`;
         } else {
             feedback = `❌ ความล้มเหลวจากการไร้วินัย! ออเดอร์นี้หลุดเช็คลิสต์ของแผน "${planName}" ไปเยอะ ทำให้เกิดความเสียหายขึ้น ควรควบคุมตัวเองให้ดีขึ้นกว่านี้${contextStr}`;
         }
+    } else if (scorePlan === 20) {
+        if (isWin) {
+            feedback = `⚠️ กำไรเพราะโชคช่วยล้วนๆ! คุณใช้อารมณ์ในการตัดสินใจเป็นหลักในไม้ "${planName}" นี้ โปรดระวังนิสัยแบบนี้จะทำให้พอร์ตเสียหายในระยะยาว${contextStr}`;
+        } else {
+            feedback = `⛔ เสียหายหนักเพราะขาดสติ! ออเดอร์นี้คุณแทบจะไม่ทำตามแผนเลย มีแต่อารมณ์ล้วนๆ นี่คือจุดอ่อนสำคัญที่คุณต้องรีบแก้ไขก่อนที่พอร์ตจะล้าง${contextStr}`;
+        }
     } else {
         if (isWin) {
             feedback = `🚨 ดวงดีเท่านั้น! การที่คุณเข้ามาเทรดโดยไร้แผนและแหกกฎ 100% แล้วได้กำไร ถือเป็นโชคร้ายระยะยาว เพราะมันจะหล่อหลอมนิสัยเสีย ระวังการเข้าด้วยท่า "${setup}" แบบไร้แผนจะทำให้พอร์ตพังในที่สุด${contextStr}`;
         } else {
-            feedback = `🚨 พังพินาศจากการใช้อารมณ์! นี่คือผลลัพธ์ของการเทรดนอกแผน 100% ความพ่ายแพ้ครั้งนี้ควรเป็นบทเรียนให้คุณเลิกใช้อารมณ์นำทางเด็ดขาด${contextStr}`;
+            feedback = `🚨 พังพินาศจากการใช้อารมณ์และ FOMO! นี่คือผลลัพธ์ของการเทรดนอกแผน 100% ความพ่ายแพ้ครั้งนี้ควรเป็นบทเรียนให้คุณเลิกใช้อารมณ์นำทางเด็ดขาด${contextStr}`;
         }
     }
 
