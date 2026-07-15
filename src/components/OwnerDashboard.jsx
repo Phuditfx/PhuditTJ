@@ -235,6 +235,7 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                   </td>
                 </tr>
               ))
+            )}
           </tbody>
         </table>
       </div>
