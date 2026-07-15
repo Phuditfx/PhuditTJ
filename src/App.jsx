@@ -25,6 +25,7 @@ import FighterComponent from './components/FighterComponent';
 import TradeJournalTable from './components/TradeJournalTable';
 import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';
+import PennyStocksTab from './components/PennyStocksTab';
 import CalendarView from './components/CalendarView';
 import TradingPlans from './components/TradingPlans';
 import DividendTracker from './components/DividendTracker';
@@ -78,6 +79,7 @@ export default function App() {
   const [isVip, setIsVip] = useState(false);
   const [isTiPicks, setIsTiPicks] = useState(false);
   const [isAlphaPicks, setIsAlphaPicks] = useState(false);
+  const [isPennyStocks, setIsPennyStocks] = useState(false);
   const [activeTab, setActiveTabRaw] = useState(() => localStorage.getItem('phudit_active_tab') || 'dashboard');
   const [profileTab, setProfileTab] = useState(null); // email of user being viewed
   
@@ -215,6 +217,7 @@ export default function App() {
         setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
         setIsTiPicks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isTiPicks);
         setIsAlphaPicks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isAlphaPicks);
+        setIsPennyStocks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isPennyStocks || data.is_penny_stocks);
         
         setDataLoading(false);
       });
@@ -227,6 +230,7 @@ export default function App() {
       setIsVip(false);
       setIsTiPicks(false);
       setIsAlphaPicks(false);
+      setIsPennyStocks(false);
       setDataLoading(false);
     }
 
@@ -1124,6 +1128,11 @@ export default function App() {
                     ? <AlphaPickPlanner userEmail={currentUser} isVip={isVip || isAlphaPicks} requestAlert={requestAlert} requestConfirm={requestConfirm} />
                     : <VipLockScreen featureName="Alpha Picks Investment" onBack={() => setActiveTab('dashboard')} />
                 )}
+                {activeTab === 'pennyStocks' && (
+                  isVip || isPennyStocks || currentUser === 'phudit.mahawongsanan@gmail.com'
+                    ? <PennyStocksTab userEmail={currentUser} requestAlert={requestAlert} requestConfirm={requestConfirm} />
+                    : <VipLockScreen featureName="Penny Stocks Pro" onBack={() => setActiveTab('dashboard')} />
+                )}
                 {activeTab === 'owner' && currentUser === 'phudit.mahawongsanan@gmail.com' && (
                   <OwnerDashboard
                     currentUser={currentUser}
@@ -1244,6 +1253,10 @@ export default function App() {
               <button onClick={() => setActiveTab('alphaPicks')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'alphaPicks' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">🏛️</span>
                 <span className="text-[10px] font-bold text-center leading-tight">Weekly<br/>Alpha Picks</span>
+              </button>
+              <button onClick={() => setActiveTab('pennyStocks')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'pennyStocks' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                <span className="text-2xl mb-1">🔥</span>
+                <span className="text-[10px] font-bold text-center leading-tight">Penny<br/>Stocks Pro</span>
               </button>
               <button onClick={() => setActiveTab('plans')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'plans' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">📝</span>

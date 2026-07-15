@@ -156,3 +156,20 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_alpha_picks BOOLEAN DEFAULT
 -- Feed Post Category (General, TI Picks, Alpha Picks)
 ALTER TABLE public.feed_posts ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';
 ALTER TABLE public.global_feed_posts ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';
+
+-- Penny Stocks Pro Feature
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_penny_stocks BOOLEAN DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS public.penny_stocks_posts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    author_email TEXT NOT NULL,
+    title TEXT NOT NULL,
+    analysis_text TEXT,
+    chart_image TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.penny_stocks_posts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all operations" ON public.penny_stocks_posts;
+CREATE POLICY "Allow all operations" ON public.penny_stocks_posts FOR ALL USING (true) WITH CHECK (true);

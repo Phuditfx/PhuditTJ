@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAllUsersData, approveUser, deleteUser, toggleUserVip, toggleUserTiPicks, toggleUserAlphaPicks } from '../db/journalDB';
+import { getAllUsersData, approveUser, deleteUser, toggleUserVip, toggleUserTiPicks, toggleUserAlphaPicks, toggleUserPennyStocks } from '../db/journalDB';
+import OwnerPennyStocksManager from './OwnerPennyStocksManager';
 
 export default function OwnerDashboard({ currentUser, requestConfirm, requestAlert }) {
   const [users, setUsers] = useState([]);
@@ -62,6 +63,11 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
 
   const handleToggleAlphaPicks = async (email, currentVal) => {
     await toggleUserAlphaPicks(email, !currentVal);
+    await fetchUsers();
+  };
+
+  const handleTogglePennyStocks = async (email, currentVal) => {
+    await toggleUserPennyStocks(email, !currentVal);
     await fetchUsers();
   };
 
@@ -153,6 +159,11 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                           🏛️ Alpha Picks
                         </span>
                       )}
+                      {u.is_penny_stocks && (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                          🔥 Penny Stocks
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="py-4 px-3 text-center text-slate-600 dark:text-slate-400 font-bold">{u.tradesCount}</td>
@@ -194,6 +205,16 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                       >
                         {u.isAlphaPicks ? 'ถอด Alpha' : 'ให้ Alpha'}
                       </button>
+                      <button
+                        onClick={() => handleTogglePennyStocks(u.email, u.is_penny_stocks)}
+                        className={`font-bold px-2 py-1 rounded text-[10px] transition-colors cursor-pointer border ${
+                          u.is_penny_stocks 
+                            ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
+                            : 'bg-transparent hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800'
+                        }`}
+                      >
+                        {u.is_penny_stocks ? 'ถอด Penny' : 'ให้ Penny'}
+                      </button>
                       {u.status === 'pending' && (
                         <button
                           onClick={() => handleApprove(u.email)}
@@ -214,10 +235,11 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                   </td>
                 </tr>
               ))
-            )}
           </tbody>
         </table>
       </div>
+
+      <OwnerPennyStocksManager currentUser={currentUser} requestAlert={requestAlert} requestConfirm={requestConfirm} />
     </div>
   );
 }

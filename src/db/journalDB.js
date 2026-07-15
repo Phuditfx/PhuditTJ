@@ -98,6 +98,24 @@ export const addGlobalFeedPost = async (post) => {
     }
 };
 
+export const toggleUserAlphaPicks = async (email, val) => {
+    try {
+        const { error } = await supabase.from('users').update({ is_alpha_picks: val }).eq('email', email);
+        if (error) throw error;
+    } catch (e) {
+        console.error("Error toggling Alpha Picks:", e);
+    }
+};
+
+export const toggleUserPennyStocks = async (email, val) => {
+    try {
+        const { error } = await supabase.from('users').update({ is_penny_stocks: val }).eq('email', email);
+        if (error) throw error;
+    } catch (e) {
+        console.error("Error toggling Penny Stocks:", e);
+    }
+};
+
 export const deleteGlobalFeedPost = async (id) => {
     try {
         await supabase.from('global_feed_posts').delete().eq('id', id);
@@ -652,3 +670,69 @@ export const deleteWeeklyPick = async (id, email) => {
     }
 };
 
+// ==========================================
+// Penny Stocks Pro Operations
+// ==========================================
+
+export const getPennyStocks = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('penny_stocks_posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data || [];
+    } catch (e) {
+        console.error("Error fetching penny stocks:", e);
+        return [];
+    }
+};
+
+export const savePennyStock = async (postData) => {
+    try {
+        const { data, error } = await supabase
+            .from('penny_stocks_posts')
+            .insert([postData])
+            .select();
+            
+        if (error) throw error;
+        return data[0];
+    } catch (e) {
+        console.error("Error saving penny stock:", e);
+        throw e;
+    }
+};
+
+export const updatePennyStock = async (id, author_email, updates) => {
+    try {
+        const { data, error } = await supabase
+            .from('penny_stocks_posts')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('author_email', author_email.trim().toLowerCase())
+            .select();
+            
+        if (error) throw error;
+        return data[0];
+    } catch (e) {
+        console.error("Error updating penny stock:", e);
+        throw e;
+    }
+};
+
+export const deletePennyStock = async (id, author_email) => {
+    if (!id || !author_email) return;
+    try {
+        const { error } = await supabase
+            .from('penny_stocks_posts')
+            .delete()
+            .eq('id', id)
+            .eq('author_email', author_email.trim().toLowerCase());
+            
+        if (error) throw error;
+    } catch (e) {
+        console.error("Error deleting penny stock:", e);
+        throw e;
+    }
+};
