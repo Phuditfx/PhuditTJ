@@ -857,6 +857,7 @@ export default function App() {
               isVip={isVip} 
               isTiPicks={isTiPicks}
               isAlphaPicks={isAlphaPicks}
+              isPennyStocks={isPennyStocks}
               isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
               accounts={accounts}
               setShowAccountModal={setShowAccountModal}
@@ -959,6 +960,7 @@ export default function App() {
             isVip={isVip} 
             isTiPicks={isTiPicks}
             isAlphaPicks={isAlphaPicks}
+            isPennyStocks={isPennyStocks}
             isOwner={currentUser === 'phudit.mahawongsanan@gmail.com'}
             accounts={accounts}
             setShowAccountModal={setShowAccountModal}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isTiPicks, isAlphaPicks, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
+export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isTiPicks, isAlphaPicks, isPennyStocks, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
   const { t } = useLanguage();
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [tempSelectedYear, setTempSelectedYear] = useState('');
@@ -32,12 +32,14 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'dividends', icon: '💰', label: t('app.dividends', 'Dividends').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'pennyStocks', icon: '🪙', label: 'Penny Stocks Pro' },
   ];
 
   const checkAccess = (tabId) => {
     if (isVip) return true;
     if (isTiPicks && ['positionSizing', 'weeklyPicks', 'swing', 'calendar', 'plans'].includes(tabId)) return true;
     if (isAlphaPicks && ['portfolioRebalancer', 'alphaPicks', 'plans', 'dividends'].includes(tabId)) return true;
+    if (tabId === 'pennyStocks') return isPennyStocks;
     return false;
   };
 

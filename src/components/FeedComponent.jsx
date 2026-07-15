@@ -212,6 +212,7 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
             <option value="General">ทั่วไป (General)</option>
             <option value="TI Picks">TI Picks</option>
             <option value="Alpha Picks">Alpha Picks</option>
+            <option value="Penny Stocks">Penny Stocks</option>
           </select>
           <input
             type="text"
@@ -374,8 +375,11 @@ export default function FeedComponent({ posts = [], onSavePost, currentUser, pro
                     <span>{post.timestamp}</span>
                   </div>
                   {post.category && post.category !== 'General' && (
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
-                      post.category === 'TI Picks' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      post.category === 'TI Picks' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      post.category === 'Alpha Picks' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                      post.category === 'Penny Stocks' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                      'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                     }`}>
                       {post.category}
                     </span>
