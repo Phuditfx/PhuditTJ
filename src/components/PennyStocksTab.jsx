@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPennyStocks } from '../db/journalDB';
 import VipLockScreen from './VipLockScreen';
+import OwnerPennyStocksManager from './OwnerPennyStocksManager';
 
 export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm }) {
   const [posts, setPosts] = useState([]);
@@ -45,6 +46,18 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
           </div>
         </div>
       </div>
+
+      {/* Owner Management Section */}
+      {userEmail === 'phudit.mahawongsanan@gmail.com' && (
+        <div className="mb-8">
+          <OwnerPennyStocksManager 
+            currentUser={userEmail} 
+            requestAlert={requestAlert} 
+            requestConfirm={requestConfirm} 
+            onUpdate={fetchPosts}
+          />
+        </div>
+      )}
 
       {/* Content */}
       <div className="space-y-6">

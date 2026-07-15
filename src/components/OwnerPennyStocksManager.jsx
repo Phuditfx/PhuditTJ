@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPennyStocks, savePennyStock, deletePennyStock } from '../db/journalDB';
 
-export default function OwnerPennyStocksManager({ currentUser, requestConfirm, requestAlert }) {
+export default function OwnerPennyStocksManager({ currentUser, requestConfirm, requestAlert, onUpdate }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -64,6 +64,7 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
       setAnalysisText('');
       handleClearImage();
       fetchPosts();
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error(error);
       requestAlert("เกิดข้อผิดพลาด", "ไม่สามารถบันทึกโพสต์ได้");
@@ -75,6 +76,7 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
       try {
         await deletePennyStock(id, currentUser);
         fetchPosts();
+        if (onUpdate) onUpdate();
       } catch (error) {
         console.error(error);
         requestAlert("เกิดข้อผิดพลาด", "ไม่สามารถลบโพสต์ได้");
