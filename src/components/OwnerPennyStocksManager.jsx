@@ -86,7 +86,7 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-lg mt-6 transition-colors duration-300">
       <div>
         <h2 className="text-xl font-bold text-amber-500 dark:text-amber-400 flex items-center gap-2">
-          <span>🔥 Penny Stocks Management</span>
+          <span>🪙 Penny Stocks Management</span>
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           จัดการโพสต์หุ้นเก็งกำไรสำหรับสมาชิก Penny Stocks Pro

@@ -161,7 +161,7 @@ export default function OwnerDashboard({ currentUser, requestConfirm, requestAle
                       )}
                       {u.is_penny_stocks && (
                         <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wide uppercase bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                          🔥 Penny Stocks
+                          🪙 Penny Stocks
                         </span>
                       )}
                     </div>

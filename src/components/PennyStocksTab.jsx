@@ -37,7 +37,7 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
               <span className="text-amber-400 text-xs font-bold uppercase tracking-wider">VIP Exclusive</span>
             </div>
             <h2 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <span className="text-4xl">🔥</span> Penny Stocks Pro
+              <span className="text-4xl">🪙</span> Penny Stocks Pro
             </h2>
             <p className="text-indigo-200 mt-2 text-sm sm:text-base max-w-xl leading-relaxed">
               โพสต์หุ้นเก็งกำไรพิเศษ (Penny Stocks) สำหรับเทรดสัปดาห์นี้หรือวันพรุ่งนี้ คัดกรองและวิเคราะห์โดย Phudit
