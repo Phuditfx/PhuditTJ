@@ -41,6 +41,7 @@ import WeeklySwingPlanner from './components/WeeklySwingPlanner';
 import AlphaPickPlanner from './components/AlphaPickPlanner';
 import PositionSizingCalculator from './components/PositionSizingCalculator';
 import PortfolioRebalancer from './components/PortfolioRebalancer';
+import DynamicRiskCalculator from './components/DynamicRiskCalculator';
 
 export default function App() {
   const { t, language, toggleLanguage } = useLanguage();
@@ -1025,6 +1026,10 @@ export default function App() {
                 : <VipLockScreen featureName="Position Sizing & Risk" onBack={() => setActiveTab('dashboard')} />
             )}
 
+            {activeTab === 'calculator' && (
+              <DynamicRiskCalculator />
+            )}
+
             {activeTab === 'portfolioRebalancer' && (
               isVip || isAlphaPicks
                 ? <PortfolioRebalancer currentUser={currentUser} requestAlert={requestAlert} />
@@ -1250,6 +1255,10 @@ export default function App() {
               <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'calendar' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">📅</span>
                 <span className="text-[10px] font-bold text-center">Cal</span>
+              </button>
+              <button onClick={() => setActiveTab('calculator')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'calculator' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                <span className="text-2xl mb-1">🧮</span>
+                <span className="text-[10px] font-bold text-center">Risk Calc</span>
               </button>
               <button onClick={() => setActiveTab('swing')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'swing' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">📐</span>
