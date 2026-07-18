@@ -1709,7 +1709,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (
         <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="crypto-card max-w-lg w-full flex flex-col relative max-h-[90vh] md:max-h-[85vh] overflow-hidden">
+          <div className="crypto-card max-w-2xl w-full flex flex-col relative max-h-[90vh] md:max-h-[85vh] overflow-hidden">
             
             {/* Header Modal */}
             <div className="p-5 md:p-6 pb-4 md:pb-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-850 shrink-0">
@@ -1731,7 +1731,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
 
             {/* Inputs Form */}
             <div className="p-5 md:p-6 py-4 md:py-5 flex-1 overflow-y-auto flex flex-col gap-4 md:gap-5">
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 {/* Actual Exit Price */}
                 <div className="flex flex-col gap-1.5 flex-1 relative">
                   <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold flex justify-between">
@@ -1794,7 +1794,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </div>
 
               {/* MFE / MAE Section */}
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex flex-col gap-1.5 flex-1 relative">
                   <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold flex justify-between" title="Maximum Favorable Excursion (ราคาสูงสุดที่ทำกำไรได้ระหว่างถือออเดอร์)">
                     <span>MFE Price ($)</span>
