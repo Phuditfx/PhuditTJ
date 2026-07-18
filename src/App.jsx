@@ -16,6 +16,7 @@ import {
   saveAccounts,
   subscribeToGlobalFeed,
   addGlobalFeedPost,
+  updateGlobalFeedPost,
   saveCustomSetups
 } from './db/journalDB';
 import { useLanguage } from './contexts/LanguageContext';
@@ -501,6 +502,11 @@ export default function App() {
     };
     setFeedPosts(prev => [postWithEmail, ...prev]); // Optimistic update
     addGlobalFeedPost(postWithEmail);
+  };
+
+  const handleUpdateFeedPost = (updatedPost) => {
+    setFeedPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+    updateGlobalFeedPost(updatedPost);
   };
 
   // ระบบ Global Confirm Modal
@@ -1093,6 +1099,7 @@ export default function App() {
                     <FeedComponent
                       posts={feedPosts}
                       onSavePost={handleSaveFeedPost}
+                      onUpdatePost={handleUpdateFeedPost}
                       currentUser={currentUser}
                       profile={profile}
                       onViewProfile={(email) => { setProfileTab(email); }}

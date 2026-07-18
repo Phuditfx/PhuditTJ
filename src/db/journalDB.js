@@ -97,6 +97,14 @@ export const addGlobalFeedPost = async (post) => {
         console.error("Error adding global feed post:", e);
     }
 };
+
+export const updateGlobalFeedPost = async (post) => {
+    try {
+        await supabase.from('global_feed_posts').upsert({ id: post.id, data: post });
+    } catch (e) {
+        console.error("Error updating global feed post:", e);
+    }
+};
 export const toggleUserPennyStocks = async (email, val) => {
     try {
         const { error } = await supabase.from('users').update({ is_penny_stocks: val }).eq('email', email);
