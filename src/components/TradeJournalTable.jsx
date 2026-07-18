@@ -962,6 +962,31 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [planAdherence, setPlanAdherence] = useState("100% (Perfect Execution: ทำตามแผนเป๊ะ)");
   const [aiResult, setAiResult] = useState(null); // { aiScore, aiFeedback }
 
+  const [costs, setCosts] = useState('');
+  const [exitReason, setExitReason] = useState('');
+  const [customExitReason, setCustomExitReason] = useState('');
+  const [mistakeTags, setMistakeTags] = useState([]);
+  const [whatWentWell, setWhatWentWell] = useState('');
+  const [lessonLearned, setLessonLearned] = useState('');
+
+  const EXIT_REASONS = ['Hit SL', 'Hit TP', 'Time Cut', 'Manual TP', 'Panic Sell', 'Other (ระบุเอง)'];
+  const MISTAKE_OPTIONS = ['None', 'FOMO', 'Chasing', 'Hesitation', 'Moved SL', 'Overleveraged', 'Revenge Trading'];
+
+  const toggleMistakeTag = (tag) => {
+    if (tag === 'None') {
+      setMistakeTags(['None']);
+      return;
+    }
+    setMistakeTags(prev => {
+      const filtered = prev.filter(t => t !== 'None');
+      if (filtered.includes(tag)) {
+        return filtered.filter(t => t !== tag);
+      } else {
+        return [...filtered, tag];
+      }
+    });
+  };
+
   const calculateContextScore = () => Math.min(10, Math.max(0, qMarketTrend + qRelativeStrength + qSetupQuality + qVolumeLiquidity + qCatalystNews));
 
   // สถานะสำหรับการดูรายละเอียดข้อเสนอแนะ AI ของออเดอร์ที่ปิดแล้ว
@@ -1182,6 +1207,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
       setEditExitTime(trade.exitDateTime ? formatDateTimeLocal(trade.exitDateTime) : formatDateTimeLocal(new Date().toISOString()));
+      
+      setCosts(trade.costs !== undefined ? trade.costs.toString() : '');
+      const isCustomReason = trade.exitReason && !EXIT_REASONS.includes(trade.exitReason);
+      setExitReason(isCustomReason ? 'Other (ระบุเอง)' : (trade.exitReason || ''));
+      setCustomExitReason(isCustomReason ? trade.exitReason : '');
+      setMistakeTags(trade.mistakeTags || []);
+      setWhatWentWell(trade.whatWentWell || '');
+      setLessonLearned(trade.lessonLearned || '');
     } else {
       setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
@@ -1197,6 +1230,12 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
       setEditExitTime(formatDateTimeLocal(new Date().toISOString()));
+      setCosts('');
+      setExitReason('');
+      setCustomExitReason('');
+      setMistakeTags([]);
+      setWhatWentWell('');
+      setLessonLearned('');
       setIsFetchingPrice(true);
       const livePrice = await fetchRealTimePrice(trade.symbol);
       setIsFetchingPrice(false);
@@ -1253,6 +1292,19 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
     if (pExit <= 0) {
       if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อน");
       else alert("กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อน");
+      return;
+    }
+
+    if (!exitReason || (exitReason === 'Other (ระบุเอง)' && !customExitReason.trim())) {
+      if (requestAlert) requestAlert("ข้อมูลไม่ครบถ้วน", "กรุณาระบุ Exit Reason");
+      else alert("กรุณาระบุ Exit Reason");
+      return;
+    }
+
+    const isPlanPerfect = planAdherence.includes("100%");
+    if (!isPlanPerfect && (mistakeTags.length === 0 || (mistakeTags.length === 1 && mistakeTags.includes('None')))) {
+      if (requestAlert) requestAlert("ข้อมูลไม่ครบถ้วน", "เมื่อทำไม่ได้ตามแผน 100% จำเป็นต้องระบุ Mistake Tags (ห้ามเป็น None)");
+      else alert("เมื่อทำไม่ได้ตามแผน 100% จำเป็นต้องระบุ Mistake Tags (ห้ามเป็น None)");
       return;
     }
 
@@ -1324,7 +1376,12 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       notes,
       planId: editPlan,
       setupName: editSetup,
-      entryMood: editMood
+      entryMood: editMood,
+      costs: costs ? parseFloat(costs) : 0,
+      exitReason: exitReason === 'Other (ระบุเอง)' ? customExitReason.trim() : exitReason,
+      mistakeTags,
+      whatWentWell,
+      lessonLearned
     };
 
     onUpdateTrade(updatedTrade);
@@ -1693,6 +1750,18 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   />
                 </div>
 
+                {/* Costs */}
+                <div className="flex flex-col gap-1.5 flex-1 relative">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Costs ($)</label>
+                  <input onFocus={(e) => e.target.select()}  
+                    type="number"
+                    value={costs}
+                    onChange={(e) => setCosts(e.target.value)}
+                    placeholder="ค่าธรรมเนียม..."
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
+                  />
+                </div>
+
                 {/* Shares to Close */}
                 <div className="flex flex-col gap-1.5 flex-1">
                   <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares to Close</label>
@@ -1755,10 +1824,10 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               {/* Context (Plan, Setup, Mood) */}
               <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                  🤖 Context (Plan, Setup, Mood)
+                  🤖 Context (Plan, Setup, Exit Reason, Mood)
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
                     <select
@@ -1784,6 +1853,17 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Exit Reason</label>
+                    <select
+                      value={exitReason}
+                      onChange={(e) => setExitReason(e.target.value)}
+                      className={`bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500 ${!exitReason ? 'border-rose-400 dark:border-rose-500/50' : ''}`}
+                    >
+                      <option value="">-- Select Reason --</option>
+                      {EXIT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Mental State</label>
                     <select
                       value={editMood}
@@ -1795,6 +1875,15 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     </select>
                   </div>
                 </div>
+                {exitReason === 'Other (ระบุเอง)' && (
+                  <input
+                    type="text"
+                    value={customExitReason}
+                    onChange={(e) => setCustomExitReason(e.target.value)}
+                    placeholder="ระบุเหตุผลในการออก..."
+                    className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500 w-full mt-1"
+                  />
+                )}
               </div>
 
               {/* Context Score Survey */}
@@ -1946,6 +2035,57 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 </select>
               </div>
 
+              {/* Mistake Tags */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold flex items-center gap-2">
+                  Mistake Tags (ข้อผิดพลาด)
+                  {!planAdherence.includes("100%") && <span className="text-[10px] text-rose-500 font-bold">*จำเป็น</span>}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {MISTAKE_OPTIONS.map(tag => {
+                    const isActive = mistakeTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleMistakeTag(tag)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border cursor-pointer ${
+                          isActive 
+                            ? tag === 'None' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700'
+                            : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Review Text Areas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">What went well (สิ่งที่ทำได้ดี)</label>
+                  <textarea 
+                    value={whatWentWell}
+                    onChange={(e) => setWhatWentWell(e.target.value)}
+                    placeholder="วันนี้คุณทำอะไรได้ดีบ้าง..."
+                    rows="2"
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-sans text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-xs resize-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Lesson Learned (บทเรียนที่ได้)</label>
+                  <textarea 
+                    value={lessonLearned}
+                    onChange={(e) => setLessonLearned(e.target.value)}
+                    placeholder="บทเรียนที่ได้จากออเดอร์นี้..."
+                    rows="2"
+                    className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-sans text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-xs resize-none"
+                  />
+                </div>
+              </div>
+
               {/* Notes Section */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Notes (หมายเหตุ)</label>
@@ -1993,7 +2133,14 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               </button>
               <button
                 onClick={handleConfirmClose}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                disabled={(() => {
+                  if (!exitPrice || parseFloat(exitPrice) <= 0) return true;
+                  if (!exitReason || (exitReason === 'Other (ระบุเอง)' && !customExitReason.trim())) return true;
+                  const isPlanPerfect = planAdherence.includes("100%");
+                  if (!isPlanPerfect && (mistakeTags.length === 0 || (mistakeTags.length === 1 && mistakeTags.includes('None')))) return true;
+                  return false;
+                })()}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 disabled:dark:bg-slate-800 disabled:cursor-not-allowed disabled:text-slate-200 dark:disabled:text-slate-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
               >
                 {selectedTrade.status === 'Closed' ? 'Save Changes 💾' : 'Confirm Close Trade 🚪'}
               </button>
