@@ -272,6 +272,7 @@ export default function PositionSizingCalculator() {
           </div>
 
         </div>
+        </div>
       ) : (
         <div className="w-full">
           <DynamicRiskCalculator />
