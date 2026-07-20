@@ -852,7 +852,7 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl' }) {
+export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl', accounts = [] }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -948,6 +948,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [editPlan, setEditPlan] = useState('');
   const [editSetup, setEditSetup] = useState('');
   const [editMood, setEditMood] = useState('');
+  const [editAccountId, setEditAccountId] = useState('default');
 
   const SETUP_OPTIONS = setups && setups.length > 0 ? setups : ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
   const MOOD_OPTIONS = ['🟢 มั่นใจ/ทำตามแผน', '🔵 ปกติ/เป็นกลาง', '🔴 ใช้อารมณ์/FOMO', '🟣 กังวล/ลังเล', '🟠 เหนื่อยล้า/พักผ่อนน้อย'];
@@ -1206,6 +1207,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setEditPlan(trade.planId || '');
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
+      setEditAccountId(trade.accountId || 'default');
       setEditExitTime(trade.exitDateTime ? formatDateTimeLocal(trade.exitDateTime) : formatDateTimeLocal(new Date().toISOString()));
       
       setCosts(trade.costs !== undefined ? trade.costs.toString() : '');
@@ -1229,6 +1231,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setEditPlan(trade.planId || '');
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
+      setEditAccountId(trade.accountId || 'default');
       setEditExitTime(formatDateTimeLocal(new Date().toISOString()));
       setCosts('');
       setExitReason('');
@@ -1374,6 +1377,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       aiScore: finalAI.aiScore,
       aiFeedback: finalAI.aiFeedback,
       notes,
+      accountId: editAccountId,
       planId: editPlan,
       setupName: editSetup,
       entryMood: editMood,
@@ -1791,6 +1795,21 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   onChange={(e) => setEditExitTime(e.target.value)}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
                 />
+              </div>
+
+              {/* Trading Account */}
+              <div className="flex flex-col gap-1.5 pt-2">
+                <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Trading Account</label>
+                <select
+                  value={editAccountId}
+                  onChange={(e) => setEditAccountId(e.target.value)}
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-sm appearance-none"
+                >
+                  <option value="default">Default Account</option>
+                  {accounts && accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                  ))}
+                </select>
               </div>
 
               {/* MFE / MAE Section */}

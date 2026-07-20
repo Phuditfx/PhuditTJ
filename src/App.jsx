@@ -1017,6 +1017,7 @@ export default function App() {
                 setups={setups}
                 isVip={isVip || isTiPicks || isAlphaPicks}
                 pnlDisplayMode={pnlDisplayMode}
+                accounts={accounts}
               />
             )}
 
