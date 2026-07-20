@@ -99,9 +99,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       const month = date.getMonth() + 1;
       const year = date.getFullYear();
       
-      const weekOfMonth = Math.ceil(date.getDate() / 7) || 1;
-      
-      const groupKey = `สัปดาห์ที่ ${weekOfMonth} / เดือน ${month} (${year})`;
+      const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const groupKey = `เดือน${monthNames[date.getMonth()]} ปี ${year}`;
       if (!groups[groupKey]) {
         groups[groupKey] = [];
       }

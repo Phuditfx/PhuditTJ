@@ -132,6 +132,41 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
     }
   };
 
+  const handleReopenTrade = (pickId) => {
+    const current = tradeRecords[pickId] || {};
+    if (!current.isClosed) return; // Already open
+
+    const realizedPnL = parseFloat(current.pnl) || 0;
+
+    const doReopen = () => {
+      // Update Trade Record
+      const updated = { ...current, isClosed: false };
+      const newRecords = { ...tradeRecords, [pickId]: updated };
+      saveTradeRecords(newRecords);
+
+      // Revert Capital (Snowball)
+      saveCapital(totalCapital - realizedPnL);
+      
+      if (requestAlert) {
+        requestAlert("🔓 Trade Reopened", `Subtracted $${realizedPnL.toFixed(2)} from your Snowball Capital to allow editing.`);
+      } else {
+        alert(`Trade reopened! Subtracted $${realizedPnL.toFixed(2)} from your Snowball Capital.`);
+      }
+    };
+
+    if (requestConfirm) {
+      requestConfirm(
+        "Confirm Edit Closed Trade", 
+        `Are you sure you want to reopen this trade? This will subtract $${realizedPnL.toFixed(2)} from your Snowball Capital.`, 
+        doReopen
+      );
+    } else {
+      if (window.confirm(`Are you sure you want to reopen this trade? This will subtract $${realizedPnL.toFixed(2)} from your Snowball Capital.`)) {
+        doReopen();
+      }
+    }
+  };
+
   // Only show Triggered-Active or completed picks in Tracker
   const trackedPicks = picks.filter(p => ['Triggered-Active', 'Win', 'Loss', 'Breakeven'].includes(p.status));
   const suggestedSize = totalCapital > 0 ? totalCapital / 5 : 0;
@@ -192,7 +227,7 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
                 <th className="p-4">Week Start</th>
                 <th className="p-4">Time Stop (4 Weeks)</th>
                 <th className="p-4">Status</th>
-                <th className="p-4 w-32">Realized PnL ($)</th>
+                <th className="p-4 w-32">Profit and Loss ($)</th>
                 <th className="p-4">Action</th>
               </tr>
             </thead>
@@ -250,7 +285,15 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
                       </td>
                       <td className="p-4">
                         {record.isClosed ? (
-                          <span className="text-emerald-500 font-bold text-xs">✓ Settled</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-500 font-bold text-xs">✓ Settled</span>
+                            <button 
+                              onClick={() => handleReopenTrade(pick.id)}
+                              className="text-[10px] text-slate-400 hover:text-indigo-500 underline transition-colors"
+                            >
+                              Edit
+                            </button>
+                          </div>
                         ) : (
                           <button 
                             onClick={() => handleCloseTrade(pick.id)}
