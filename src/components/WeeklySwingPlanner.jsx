@@ -40,6 +40,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
   const [activeTab, setActiveTab] = useState('planner'); // 'planner', 'tracker', 'rulebook'
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [expandedGroups, setExpandedGroups] = useState({});
   const [selectedChartPick, setSelectedChartPick] = useState(null);
 
@@ -99,8 +101,11 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       const month = date.getMonth() + 1;
       const year = date.getFullYear();
       
-      const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-      const groupKey = `เดือน${monthNames[date.getMonth()]} ปี ${year}`;
+      if (filterYear !== 'All' && filterYear !== year.toString()) return;
+      if (filterMonth !== 'All' && filterMonth !== month.toString()) return;
+      
+      const weekOfMonth = Math.ceil(date.getDate() / 7) || 1;
+      const groupKey = `สัปดาห์ที่ ${weekOfMonth} / เดือน ${month} (${year})`;
       if (!groups[groupKey]) {
         groups[groupKey] = [];
       }
@@ -112,6 +117,13 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
       items,
       date: new Date(items[0].week_start_date)
     })).sort((a, b) => b.date - a.date);
+  }, [picks, filterYear, filterMonth]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set(picks.map(p => new Date(p.week_start_date).getFullYear().toString()));
+    const currentYear = new Date().getFullYear().toString();
+    if (!years.has(currentYear)) years.add(currentYear);
+    return Array.from(years).sort((a, b) => b - a);
   }, [picks]);
 
   const SECTOR_MAP = {
@@ -757,7 +769,29 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
 
       {/* Log Table */}
       <div className="crypto-card p-6 mt-2 overflow-hidden">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">📋 Weekly Journal Log</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">📋 Weekly Journal Log</h3>
+          <div className="flex items-center gap-2">
+            <select 
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="All">All Years</option>
+              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="All">All Months</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m.toString()}>เดือน {m}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         
         {loading ? (
           <div className="animate-pulse flex space-x-4">
