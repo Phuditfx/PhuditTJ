@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Cartes
 import { getWeeklyPicks, saveWeeklyPick, updateWeeklyPickStatus, deleteWeeklyPick, updateWeeklyPick } from '../db/journalDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import LightweightChartComponent from './LightweightChartComponent';
+import { WeeklySwingTracker, WeeklySwingRulebook } from './WeeklySwingTracker';
 import { Download } from 'lucide-react';
 
 export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, requestConfirm }) {
@@ -38,7 +39,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
   };
 
   const [weekStartDate, setWeekStartDate] = useState(getStartOfWeek());
-
+  const [activeTab, setActiveTab] = useState('planner'); // 'planner', 'tracker', 'rulebook'
   const [expandedGroups, setExpandedGroups] = useState({});
   const [selectedChartPick, setSelectedChartPick] = useState(null);
 
@@ -362,31 +363,52 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           </div>
           <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Plan your swing trades logically</p>
         </div>
-        <button
-          onClick={() => setShowManual(!showManual)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors border border-slate-200 dark:border-slate-700"
-        >
-          <span>📖</span> {showManual ? 'ซ่อนคู่มือ' : 'คู่มือการใช้งาน'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('planner')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'planner'
+                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 shadow-sm'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            📋 Planner
+          </button>
+          <button
+            onClick={() => setActiveTab('tracker')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'tracker'
+                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 shadow-sm'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            📈 Tracker
+          </button>
+          <button
+            onClick={() => setActiveTab('rulebook')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'rulebook'
+                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 shadow-sm'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            📖 Rulebook
+          </button>
+        </div>
       </div>
 
-      {/* Expandable Manual */}
-      {showManual && (
-        <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-sm animate-fade-in">
-          <h3 className="font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-2">
-            <span>💡</span> คู่มือการใช้งานระบบบันทึกหุ้น (Weekly TI Swing Pick)
-          </h3>
-          <ul className="list-disc pl-5 space-y-1.5 marker:text-indigo-400">
-            <li><strong>เป้าหมาย:</strong> ใช้สำหรับวางแผน Trade Setup หุ้นรายสัปดาห์ เพื่อเตรียมความพร้อมในการเข้าเทรด</li>
-            <li><strong>สถานะ Pending:</strong> รอจุดเข้าซื้อ เมื่อราคามาถึงระดับ Entry Alert ให้เปลี่ยนสถานะเป็น Triggered-Active</li>
-            <li><strong>สถานะ Triggered-Active:</strong> หุ้นได้เข้าซื้อแล้วและกำลังวิ่งอยู่ในรอบ</li>
-            <li><strong>สถานะ Win/Loss/Breakeven:</strong> เมื่อจบรอบ ให้บันทึกผลเพื่อใช้คำนวณ Win Rate ใน Analytics ด้านบน</li>
-            <li><strong>Setup Type:</strong> การระบุรูปแบบการเข้าเทรดจะช่วยให้ระบบวิเคราะห์ได้ว่า Setup แบบไหนที่คุณเทรดแล้วได้กำไรดีที่สุด (Win Rate by Setup Type)</li>
-            <li><strong>AI Tech Score:</strong> ระบบประเมินความเสี่ยงและโอกาสคร่าวๆ ตามหลักของ TI (Trade-Ideas) จาก R-Multiple เบื้องต้นและ Float Size</li>
-          </ul>
-        </div>
+      {activeTab === 'rulebook' && <WeeklySwingRulebook />}
+      
+      {activeTab === 'tracker' && (
+        <WeeklySwingTracker 
+          userEmail={userEmail} 
+          picks={picks} 
+          onPicksChange={setPicks} 
+        />
       )}
 
+      {activeTab === 'planner' && (
+      <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Form Section */}
@@ -903,6 +925,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Chart Modal Popup */}
       {selectedChartPick && (
