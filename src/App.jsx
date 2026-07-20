@@ -1254,10 +1254,7 @@ export default function App() {
                 <span className="text-2xl mb-1">📅</span>
                 <span className="text-[10px] font-bold text-center">Cal</span>
               </button>
-              <button onClick={() => setActiveTab('calculator')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'calculator' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                <span className="text-2xl mb-1">🧮</span>
-                <span className="text-[10px] font-bold text-center">Risk Calc</span>
-              </button>
+
               <button onClick={() => setActiveTab('swing')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'swing' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">📐</span>
                 <span className="text-[10px] font-bold text-center">TI Pick</span>
