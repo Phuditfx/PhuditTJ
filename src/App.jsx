@@ -1026,9 +1026,7 @@ export default function App() {
                 : <VipLockScreen featureName="Position Sizing & Risk" onBack={() => setActiveTab('dashboard')} />
             )}
 
-            {activeTab === 'calculator' && (
-              <DynamicRiskCalculator />
-            )}
+
 
             {activeTab === 'portfolioRebalancer' && (
               isVip || isAlphaPicks

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import DynamicRiskCalculator from './DynamicRiskCalculator';
 
 export default function PositionSizingCalculator() {
+  const [activeMode, setActiveMode] = useState('position_sizing');
   const [portfolioSize, setPortfolioSize] = useState(10000);
   const [riskPercent, setRiskPercent] = useState(1.0);
   const [stopLossPercent, setStopLossPercent] = useState(5.0);
@@ -41,7 +43,7 @@ export default function PositionSizingCalculator() {
     <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 animate-fade-in text-slate-900 dark:text-slate-100">
       
       {/* Header section */}
-      <div className="mb-8 border-b-2 border-orange-500 pb-4">
+      <div className="mb-6 border-b-2 border-orange-500 pb-4">
         <h1 className="text-3xl font-extrabold flex items-center gap-3 text-slate-900 dark:text-white">
           <span className="text-orange-500">🛡️</span> Position Sizing & Risk
         </h1>
@@ -50,7 +52,31 @@ export default function PositionSizingCalculator() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="flex gap-2 mb-6 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 w-fit">
+        <button
+          onClick={() => setActiveMode('position_sizing')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeMode === 'position_sizing'
+              ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800/50'
+          }`}
+        >
+          🛡️ Position Sizing
+        </button>
+        <button
+          onClick={() => setActiveMode('advanced')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeMode === 'advanced'
+              ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800/50'
+          }`}
+        >
+          🧮 Advanced Calculator
+        </button>
+      </div>
+
+      {activeMode === 'position_sizing' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Input Form */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-6">
@@ -246,7 +272,11 @@ export default function PositionSizingCalculator() {
           </div>
 
         </div>
-      </div>
+      ) : (
+        <div className="w-full">
+          <DynamicRiskCalculator />
+        </div>
+      )}
     </div>
   );
 }

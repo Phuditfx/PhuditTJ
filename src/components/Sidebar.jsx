@@ -20,7 +20,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'journal', icon: '📓', label: t('app.journal', 'Trades Table').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'feed', icon: '📰', label: t('app.feed', 'Trading Bulletin').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'analytics', icon: '📈', label: t('app.analytics', 'Analytics & Stats').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
-    { id: 'calculator', icon: '🧮', label: t('app.calculator', 'Risk Calculator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+
     { id: 'fighter', icon: '⚡', label: t('app.fighter', 'Trade Simulator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
 
