@@ -51,7 +51,7 @@ export function WeeklySwingRulebook() {
   );
 }
 
-export function WeeklySwingTracker({ userEmail, picks, onPicksChange }) {
+export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAlert, requestConfirm }) {
   const [totalCapital, setTotalCapital] = useState(0);
   const [transactionAmount, setTransactionAmount] = useState(5);
   
@@ -103,14 +103,33 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange }) {
 
     const realizedPnL = parseFloat(current.pnl) || 0;
     
-    // Update Trade Record
-    const updated = { ...current, isClosed: true };
-    const newRecords = { ...tradeRecords, [pickId]: updated };
-    saveTradeRecords(newRecords);
+    const doClose = () => {
+      // Update Trade Record
+      const updated = { ...current, isClosed: true };
+      const newRecords = { ...tradeRecords, [pickId]: updated };
+      saveTradeRecords(newRecords);
 
-    // Update Capital (Snowball)
-    saveCapital(totalCapital + realizedPnL);
-    alert(`Trade closed! Added $${realizedPnL.toFixed(2)} to your Snowball Capital.`);
+      // Update Capital (Snowball)
+      saveCapital(totalCapital + realizedPnL);
+      
+      if (requestAlert) {
+        requestAlert("✅ Trade Closed Successfully", `Added $${realizedPnL.toFixed(2)} to your Snowball Capital.`);
+      } else {
+        alert(`Trade closed! Added $${realizedPnL.toFixed(2)} to your Snowball Capital.`);
+      }
+    };
+
+    if (requestConfirm) {
+      requestConfirm(
+        "Confirm Close Trade", 
+        `Are you sure you want to close this trade and compound $${realizedPnL.toFixed(2)} to your Snowball Capital?`, 
+        doClose
+      );
+    } else {
+      if (window.confirm(`Are you sure you want to close this trade and compound $${realizedPnL.toFixed(2)} to your Snowball Capital?`)) {
+        doClose();
+      }
+    }
   };
 
   // Only show Triggered-Active or completed picks in Tracker

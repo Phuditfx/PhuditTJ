@@ -404,6 +404,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
           userEmail={userEmail} 
           picks={picks} 
           onPicksChange={setPicks} 
+          requestAlert={requestAlert}
+          requestConfirm={requestConfirm}
         />
       )}
 
