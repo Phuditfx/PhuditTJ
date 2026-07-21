@@ -16,7 +16,8 @@ export default function Dashboard({
   setFundingHistory,
   isVip,
   onLoadSampleData,
-  pnlDisplayMode = 'pnl'
+  pnlDisplayMode = 'pnl',
+  hasTradesInAccount
 }) {
   const { t } = useLanguage();
   const [localBalance, setLocalBalance] = React.useState(initialBalance);
@@ -244,7 +245,9 @@ export default function Dashboard({
     setFundingAmount('');
   };
 
-  if (trades.length === 0) {
+  const isAccountEmpty = hasTradesInAccount !== undefined ? !hasTradesInAccount : trades.length === 0;
+
+  if (isAccountEmpty) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center">
         <div className="text-6xl mb-6">📊</div>

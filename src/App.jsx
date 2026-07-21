@@ -986,6 +986,7 @@ export default function App() {
                 targetRR={targetRR}
                 setTargetRR={setTargetRR}
                 trades={filteredGlobalTrades}
+                hasTradesInAccount={trades.some(t => (t.accountId || 'default') === accountId)}
                 currentRank={currentRank}
                 fundingHistory={fundingHistory}
                 isVip={isVip}
