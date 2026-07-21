@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [], requestAlert, requestConfirm }) {
+export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [], requestAlert, requestConfirm, currentUser }) {
   const { t } = useLanguage();
   const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
     symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: ''
@@ -21,6 +21,11 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const [selectedPlan, setSelectedPlan] = useState('');
   const [selectedSetup, setSelectedSetup] = useState('');
   const [selectedMood, setSelectedMood] = useState('');
+  
+  // Image Upload Fields
+  const [tradeImage, setTradeImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const SETUP_OPTIONS = ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
   const MOOD_OPTIONS = ['🧘‍♂️ Calm/Focused', '😬 FOMO/Chasing', '😡 Revenge Trading', '🥱 Bored/Overtrading', '🤩 Overconfident'];
@@ -91,7 +96,23 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     performSave();
   };
 
-  const performSave = () => {
+  const performSave = async () => {
+    // Upload image first if selected
+    let imageUrl = null;
+    if (tradeImage && currentUser) {
+      setIsUploading(true);
+      try {
+        const { uploadTradeImage } = await import('../db/journalDB');
+        imageUrl = await uploadTradeImage(tradeImage, currentUser.email);
+      } catch (err) {
+        if (requestAlert) requestAlert("Upload Failed", "อัปโหลดรูปภาพล้มเหลว: " + err.message);
+        else alert("อัปโหลดรูปภาพล้มเหลว: " + err.message);
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
     // สร้างข้อมูลบันทึกเข้าพอร์ต
     const tradeData = {
       symbol: symbol.toUpperCase(),
@@ -107,7 +128,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       planAdherenceScore: 100, // Default ค่อยแก้ตอนปิดดีล
       planId: selectedPlan,
       setupName: selectedSetup,
-      entryMood: selectedMood
+      entryMood: selectedMood,
+      imageUrl: imageUrl // <--- Add image URL
     };
 
     onSaveTrade(tradeData);
@@ -122,6 +144,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     setSelectedPlan('');
     setSelectedSetup('');
     setSelectedMood('');
+    setTradeImage(null);
+    setImagePreview(null);
     setShareInputMode('calculated');
     setShowConfirm(false);
   };
@@ -385,10 +409,39 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
                 </select>
               </div>
             </div>
+            
+            {/* Image Upload in Confirm Modal */}
+            <div className="mt-3 flex flex-col gap-1.5 border-t border-slate-200 dark:border-slate-800 pt-3">
+               <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">{t('quickOrder.attachImage') || 'Attach Chart Image'} <span className="text-amber-500">(Optional)</span></label>
+               <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                     const file = e.target.files[0];
+                     if (file) {
+                        setTradeImage(file);
+                        setImagePreview(URL.createObjectURL(file));
+                     }
+                  }}
+                  className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+               />
+               {imagePreview && (
+                 <div className="mt-2 relative inline-block rounded overflow-hidden border border-slate-200 dark:border-slate-700 w-full h-32 bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
+                    <img src={imagePreview} alt="Preview" className="max-h-full max-w-full object-contain" />
+                    <button 
+                       onClick={() => { setTradeImage(null); setImagePreview(null); }}
+                       className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 cursor-pointer text-xs"
+                    >
+                       ✕
+                    </button>
+                 </div>
+               )}
+            </div>
+
           </div>
 
-          <button onClick={handleSave} className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-white p-3 rounded-lg font-black text-sm shadow-md shadow-emerald-950/20 active:scale-95 transition-all">
-            🎯 บันทึกไม้เทรดเข้าพอร์ต (Save Trade)
+          <button onClick={performSave} disabled={isUploading} className={`w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-white p-3 rounded-lg font-black text-sm shadow-md shadow-emerald-950/20 active:scale-95 transition-all ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}`}>
+            {isUploading ? 'Uploading & Saving...' : '🎯 บันทึกไม้เทรดเข้าพอร์ต (Save Trade)'}
           </button>
         </div>
       )}

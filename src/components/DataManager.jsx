@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { calculateStorageUsage, deleteGlobalFeedPost, clearGlobalFeedPostsByMonth, saveTrades, savePlans, saveDividends } from '../db/journalDB';
+import { calculateStorageUsage, getSupabaseStorageUsage, deleteGlobalFeedPost, clearGlobalFeedPostsByMonth, saveTrades, savePlans, saveDividends } from '../db/journalDB';
 import { Trash2, Download, AlertTriangle, Database, HardDrive, RefreshCw, CalendarDays } from 'lucide-react';
 
 export default function DataManager({ currentUser, trades, setTrades, feedPosts, setFeedPosts, plans, setPlans, dividends, setDividends, requestConfirm, requestAlert }) {
   const [firebaseSize, setFirebaseSize] = useState(0);
+  const [supabaseSize, setSupabaseSize] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
   const [selectedFeedMonth, setSelectedFeedMonth] = useState('All');
   const [selectedTradeMonth, setSelectedTradeMonth] = useState('All');
 
   const MAX_LOCAL_SIZE = 5 * 1024 * 1024; // 5MB local storage limit
+  const MAX_CLOUD_SIZE = 1 * 1024 * 1024 * 1024; // 1GB free tier limit
 
   const refreshStorageSize = async () => {
     if (!currentUser) return;
     setIsCalculating(true);
     const size = await calculateStorageUsage(currentUser);
+    const cloudSize = await getSupabaseStorageUsage(currentUser.email).catch(() => 0);
     // Add artificial delay so the UI spins visibly
     await new Promise(resolve => setTimeout(resolve, 600));
     setFirebaseSize(size);
+    setSupabaseSize(cloudSize);
     setIsCalculating(false);
   };
 
@@ -25,6 +29,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
   }, [currentUser, trades, feedPosts, plans, dividends]);
 
   const usagePercent = Math.min((firebaseSize / MAX_LOCAL_SIZE) * 100, 100);
+  const cloudUsagePercent = Math.min((supabaseSize / MAX_CLOUD_SIZE) * 100, 100);
   
   const getStatusColor = () => {
     if (usagePercent > 90) return 'text-rose-500 bg-rose-500';
@@ -152,6 +157,30 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
           >
             <RefreshCw size={20} className={isCalculating ? 'animate-spin text-indigo-500' : ''} />
           </button>
+        </div>
+
+
+        {/* Cloud Storage Meter */}
+        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-xl mt-4">
+          <div className="flex justify-between items-end mb-2">
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Cloud Image Storage</span>
+              <span className={`text-2xl font-black ${cloudUsagePercent > 90 ? 'text-rose-500' : cloudUsagePercent > 70 ? 'text-amber-500' : 'text-sky-500'}`}>
+                {formatBytes(supabaseSize)}
+              </span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 font-medium"> / 1 GB</span>
+            </div>
+            <span className={`text-xl font-black ${cloudUsagePercent > 90 ? 'text-rose-500' : cloudUsagePercent > 70 ? 'text-amber-500' : 'text-sky-500'}`}>
+              {cloudUsagePercent.toFixed(1)}%
+            </span>
+          </div>
+          
+          <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 mb-2 overflow-hidden">
+            <div 
+              className={`h-3 rounded-full transition-all duration-500 ${cloudUsagePercent > 90 ? 'bg-rose-500' : cloudUsagePercent > 70 ? 'bg-amber-500' : 'bg-sky-500'}`}
+              style={{ width: `${cloudUsagePercent}%` }}
+            ></div>
+          </div>
         </div>
 
         {/* Storage Meter */}

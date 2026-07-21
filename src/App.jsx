@@ -1002,6 +1002,7 @@ export default function App() {
             
             {activeTab === 'journal' && (
               <TradeJournalTable 
+                currentUser={currentUser}
                 trades={filteredGlobalTrades}
                 onUpdateTrade={handleUpdateTrade}
                 onAddTrade={handleAddTradeDirect}
@@ -1011,6 +1012,7 @@ export default function App() {
                 onImportData={handleImportData}
                 onExportJSON={handleExportFullJSON}
                 requestConfirm={requestConfirm}
+            currentUser={currentUser}
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}
                 plans={plans}

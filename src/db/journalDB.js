@@ -734,3 +734,86 @@ export const deletePennyStock = async (id, author_email) => {
         throw e;
     }
 };
+
+// ==========================================
+// STORAGE UTILITIES (Images)
+// ==========================================
+export const uploadTradeImage = async (file, userEmail) => {
+    if (!file || !userEmail) return null;
+    try {
+        const cleanEmail = userEmail.trim().toLowerCase();
+        // Limit to 5MB
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error("ขนาดไฟล์เกิน 5MB (File size exceeds 5MB limit)");
+        }
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${cleanEmail}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+            .from('trade-images')
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+            
+        if (error) throw error;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('trade-images')
+            .getPublicUrl(fileName);
+            
+        return publicUrl;
+    } catch (e) {
+        console.error("Error uploading trade image:", e);
+        throw e;
+    }
+};
+
+export const deleteTradeImage = async (imageUrl) => {
+    if (!imageUrl || !imageUrl.includes('trade-images/')) return;
+    try {
+        // Extract the file path from the public URL
+        // Example URL: https://xyz.supabase.co/storage/v1/object/public/trade-images/email@example.com/123-abc.jpg
+        const urlParts = imageUrl.split('trade-images/');
+        if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            const { error } = await supabase.storage.from('trade-images').remove([filePath]);
+            if (error) throw error;
+        }
+    } catch (e) {
+        console.error("Error deleting trade image:", e);
+    }
+};
+
+export const getSupabaseStorageUsage = async (userEmail) => {
+    if (!userEmail) return 0;
+    try {
+        const cleanEmail = userEmail.trim().toLowerCase();
+        // Since Supabase JS client doesn't recursively list folder size, 
+        // we'll fetch all files in the user's folder and sum their sizes.
+        // This is a naive approach but works for reasonable numbers of files.
+        const { data, error } = await supabase.storage
+            .from('trade-images')
+            .list(cleanEmail, {
+                limit: 1000,
+                offset: 0,
+                sortBy: { column: 'created_at', order: 'asc' }
+            });
+            
+        if (error) throw error;
+        
+        let totalSize = 0;
+        if (data && data.length > 0) {
+            data.forEach(file => {
+                // Supabase metadata contains file size
+                totalSize += file.metadata?.size || 0;
+            });
+        }
+        return totalSize;
+    } catch (e) {
+        console.error("Error fetching storage usage:", e);
+        return 0;
+    }
+};

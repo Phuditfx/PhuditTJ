@@ -349,7 +349,16 @@ const TradeCard = React.memo(({
       {/* Top Row: Symbol + Direction + Date */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
-          <span className="font-black text-base text-slate-900 dark:text-white uppercase tracking-tight">{trade.symbol}</span>
+          <span className="font-black text-base text-slate-900 dark:text-white uppercase tracking-tight flex items-center">{trade.symbol}
+            {trade.imageUrl && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrl); }}
+                className="ml-1 text-slate-400 hover:text-indigo-500 transition-colors"
+                title="View Attached Image"
+              >
+                🖼️
+              </button>
+            )}</span>
           <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
             trade.direction === 'Long' 
               ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
@@ -852,7 +861,7 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl', accounts = [] }) {
+export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl', accounts = [] }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -862,6 +871,12 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   const [livePrices, setLivePrices] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+
+  // Image Upload States
+  const [tradeImage, setTradeImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
 
   // Reset page when filters change
   useEffect(() => {
@@ -1217,6 +1232,9 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setMistakeTags(trade.mistakeTags || []);
       setWhatWentWell(trade.whatWentWell || '');
       setLessonLearned(trade.lessonLearned || '');
+      
+      setTradeImage(null);
+      setImagePreview(trade.imageUrl || null);
     } else {
       setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
@@ -1239,6 +1257,10 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       setMistakeTags([]);
       setWhatWentWell('');
       setLessonLearned('');
+      
+      setTradeImage(null);
+      setImagePreview(trade.imageUrl || null);
+
       setIsFetchingPrice(true);
       const livePrice = await fetchRealTimePrice(trade.symbol);
       setIsFetchingPrice(false);
@@ -1290,7 +1312,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
   };
 
   // ยืนยันปิดออเดอร์
-  const handleConfirmClose = () => {
+  const handleConfirmClose = async () => {
     const pExit = parseFloat(exitPrice) || 0;
     if (pExit <= 0) {
       if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณากรอกราคาปิดจริง (Actual Exit Price) ให้ถูกต้องก่อน");
@@ -1326,6 +1348,22 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณากรอกจำนวนหุ้นที่ต้องการปิดให้ถูกต้อง (ต้องไม่เกินจำนวนหุ้นที่มีอยู่)");
       else alert("กรุณากรอกจำนวนหุ้นที่ต้องการปิดให้ถูกต้อง (ต้องไม่เกินจำนวนหุ้นที่มีอยู่)");
       return;
+    }
+
+    // Upload Image if new one is selected
+    let finalImageUrl = selectedTrade.imageUrl || null;
+    if (tradeImage && currentUser) {
+      setIsUploading(true);
+      try {
+        const { uploadTradeImage } = await import('../db/journalDB');
+        finalImageUrl = await uploadTradeImage(tradeImage, currentUser.email);
+      } catch (err) {
+        if (requestAlert) requestAlert("Upload Failed", "อัปโหลดรูปภาพล้มเหลว: " + err.message);
+        else alert("อัปโหลดรูปภาพล้มเหลว: " + err.message);
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
     }
 
     const entry = parseFloat(selectedTrade.entryPrice);
@@ -1385,7 +1423,8 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
       exitReason: exitReason === 'Other (ระบุเอง)' ? customExitReason.trim() : exitReason,
       mistakeTags,
       whatWentWell,
-      lessonLearned
+      lessonLearned,
+      imageUrl: finalImageUrl
     };
 
     onUpdateTrade(updatedTrade);
@@ -1604,6 +1643,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   return (
                     <TradeCard
                       key={trade.id}
+                      setViewingImage={setViewingImage}
                       trade={trade}
                       livePrice={livePrices[trade.symbol]}
                       isVip={isVip}
@@ -1633,6 +1673,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                   return (
                     <DesktopTradeCard
                       key={trade.id}
+                      setViewingImage={setViewingImage}
                       trade={trade}
                       livePrice={livePrices[trade.symbol]}
                       isVip={isVip}
@@ -1709,6 +1750,13 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
           </>
         );
       })()}
+
+      {viewingImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 animate-fade-in" onClick={() => setViewingImage(null)}>
+          <img src={viewingImage} alt="Full Size Trade" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+          <button className="absolute top-4 right-4 text-white hover:text-rose-400 font-bold text-xl cursor-pointer">✕</button>
+        </div>
+      )}
 
       {/* 🚪 MODAL ปิดออเดอร์ (Close Trade Modal) */}
       {selectedTrade && (
@@ -1902,6 +1950,55 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                     placeholder="ระบุเหตุผลในการออก..."
                     className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500 w-full mt-1"
                   />
+                )}
+              </div>
+
+              {/* Image Upload Section */}
+              <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                  📸 ภาพประกอบ (Chart Image) <span className="text-amber-500">(Optional)</span>
+                </span>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                     const file = e.target.files[0];
+                     if (file) {
+                        setTradeImage(file);
+                        setImagePreview(URL.createObjectURL(file));
+                     }
+                  }}
+                  className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                />
+                {imagePreview && (
+                  <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
+                     <img src={imagePreview} alt="Trade Preview" className="max-h-[300px] max-w-full object-contain rounded" />
+                     {tradeImage && (
+                       <button 
+                         onClick={() => { setTradeImage(null); setImagePreview(selectedTrade.imageUrl || null); }}
+                         className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg"
+                         title="ลบรูปภาพที่เลือกใหม่"
+                       >
+                         ✕
+                       </button>
+                     )}
+                     {!tradeImage && selectedTrade.imageUrl && (
+                       <button 
+                         onClick={() => {
+                           if (window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
+                             setTradeImage(null); 
+                             setImagePreview(null);
+                             // We don't remove from DB immediately, wait for Save.
+                             selectedTrade.imageUrl = null; // hacky but works for this form state
+                           }
+                         }}
+                         className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg"
+                         title="ลบรูปภาพเดิม"
+                       >
+                         ✕
+                       </button>
+                     )}
+                  </div>
                 )}
               </div>
 
@@ -2150,8 +2247,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
               >
                 Cancel
               </button>
-              <button
-                onClick={handleConfirmClose}
+              <button\n                disabled={isUploading}\n                onClick={handleConfirmClose}
                 disabled={(() => {
                   if (!exitPrice || parseFloat(exitPrice) <= 0) return true;
                   if (!exitReason || (exitReason === 'Other (ระบุเอง)' && !customExitReason.trim())) return true;
@@ -2161,7 +2257,7 @@ export default function TradeJournalTable({ trades, onUpdateTrade, onAddTrade, o
                 })()}
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 disabled:dark:bg-slate-800 disabled:cursor-not-allowed disabled:text-slate-200 dark:disabled:text-slate-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
               >
-                {selectedTrade.status === 'Closed' ? 'Save Changes 💾' : 'Confirm Close Trade 🚪'}
+                {isUploading ? 'Uploading & Saving...' : (selectedTrade.status === 'Closed' ? 'Save Changes 💾' : 'Confirm Close Trade 🚪')}
               </button>
             </div>
 
