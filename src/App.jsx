@@ -121,7 +121,12 @@ export default function App() {
     localStorage.setItem('phudit_pnl_display_mode', pnlDisplayMode);
   }, [pnlDisplayMode]);
 
-  const [accountId, setAccountId] = useState('default');
+  const [accountId, setAccountId] = useState(() => localStorage.getItem('phudit_account_id') || 'default');
+
+  useEffect(() => {
+    localStorage.setItem('phudit_account_id', accountId);
+  }, [accountId]);
+
   const [globalDateRange, setGlobalDateRange] = useState('1M');
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
@@ -215,7 +220,13 @@ export default function App() {
         setSetups(data.customSetups || ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading']);
         setDividends(data.dividends || []);
         setFundingHistory(data.fundingHistory || []);
-        setAccounts(data.accounts || [{ id: 'default', name: 'Main Account' }]);
+        const loadedAccounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
+        setAccounts(loadedAccounts);
+        
+        setAccountId(prev => {
+          const isValid = loadedAccounts.some(acc => acc.id === prev);
+          return isValid ? prev : loadedAccounts[0].id;
+        });
         setIsVip(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isVip);
         setIsTiPicks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isTiPicks);
         setIsAlphaPicks(currentUser === 'phudit.mahawongsanan@gmail.com' || data.isAlphaPicks);
