@@ -2247,8 +2247,9 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
               >
                 Cancel
               </button>
-              <button\n                disabled={isUploading}\n                onClick={handleConfirmClose}
-                disabled={(() => {
+              <button
+                onClick={handleConfirmClose}
+                disabled={isUploading || (() => {
                   if (!exitPrice || parseFloat(exitPrice) <= 0) return true;
                   if (!exitReason || (exitReason === 'Other (ระบุเอง)' && !customExitReason.trim())) return true;
                   const isPlanPerfect = planAdherence.includes("100%");
