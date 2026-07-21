@@ -38,7 +38,7 @@ const syncArrayToTable = async (email, tableName, itemsArray) => {
         const existingIds = new Set(existingData?.map(d => d.id) || []);
         const newIds = new Set();
         
-        const upsertPromises = itemsArray.map(item => {
+        const upsertData = itemsArray.map(item => {
             const itemId = item.id ? String(item.id) : Date.now().toString() + Math.random().toString();
             newIds.add(itemId);
             
@@ -50,11 +50,13 @@ const syncArrayToTable = async (email, tableName, itemsArray) => {
                     return nb;
                 });
             }
-            return supabase.from(tableName).upsert({ id: itemId, email: cleanEmail, data: cleanItem });
+            return { id: itemId, email: cleanEmail, data: cleanItem };
         });
 
-        await Promise.all(upsertPromises);
-        
+        if (upsertData.length > 0) {
+            await supabase.from(tableName).upsert(upsertData);
+        }
+
         // Delete items removed from array
         const idsToDelete = [...existingIds].filter(id => !newIds.has(id));
         if (idsToDelete.length > 0) {
