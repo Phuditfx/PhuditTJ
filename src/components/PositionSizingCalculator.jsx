@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DynamicRiskCalculator from './DynamicRiskCalculator';
+import TISwingPicksPlan from './TISwingPicksPlan';
 
 export default function PositionSizingCalculator() {
   const [activeMode, setActiveMode] = useState('position_sizing');
@@ -70,7 +71,17 @@ export default function PositionSizingCalculator() {
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800/50'
           }`}
         >
-          🧮 Advanced Calculator
+          🧮 Trading goals for survival
+        </button>
+        <button
+          onClick={() => setActiveMode('ti_swing_picks')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeMode === 'ti_swing_picks'
+              ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800/50'
+          }`}
+        >
+          🎯 TI Swing Picks Plan
         </button>
       </div>
 
@@ -174,11 +185,15 @@ export default function PositionSizingCalculator() {
           </div>
         </div>
         </div>
-      ) : (
+      ) : activeMode === 'advanced' ? (
         <div className="w-full">
           <DynamicRiskCalculator />
         </div>
-      )}
+      ) : activeMode === 'ti_swing_picks' ? (
+        <div className="w-full">
+          <TISwingPicksPlan />
+        </div>
+      ) : null}
     </div>
   );
 }
