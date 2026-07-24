@@ -24,6 +24,7 @@ ChartJS.register(
 );
 
 export default function TISwingPicksPlan() {
+  const [mode, setMode] = useState('injection');
   const [weeklyFresh, setWeeklyFresh] = useState(75);
   const [annualAdd, setAnnualAdd] = useState(0);
   const [winRate, setWinRate] = useState(50);
@@ -64,11 +65,21 @@ export default function TISwingPicksPlan() {
     let tableData = [];
 
     for (let y = 1; y <= yrs; y++) {
-      // ปีแรกใช้ทุนเริ่มต้นที่ตั้งไว้, ปีที่ 2 เป็นต้นไปใช้เงินเติมรายปีหารด้วย 52 สัปดาห์
-      let weeklyInjection = y === 1 ? wFresh : (aAdd / 52); 
-
       for (let w = 1; w <= 52; w++) {
         let pIndex = (w - 1) % 4;
+        let weeklyInjection = 0;
+
+        if (mode === 'injection') {
+          // โหมดเดิม: ปีแรกใช้ weeklyFresh ทุกสัปดาห์, ปีต่อๆ ไปหาร annualAdd เฉลี่ยรายสัปดาห์
+          weeklyInjection = y === 1 ? wFresh : (aAdd / 52);
+        } else if (mode === 'lumpsum') {
+          // โหมดใหม่: เติมเงินเฉพาะ 4 สัปดาห์แรกของปีที่ 1 เท่านั้น
+          if (y === 1 && w <= 4) {
+            weeklyInjection = wFresh;
+          } else {
+            weeklyInjection = 0;
+          }
+        }
         
         // ทุนรอบใหม่ = เงินทุนที่เติมสัปดาห์นี้ + เงินที่ครบกำหนดจากการลงทุนเมื่อ 4 สัปดาห์ก่อน
         let maturedCapital = pipelines[pIndex];
@@ -130,7 +141,7 @@ export default function TISwingPicksPlan() {
   useEffect(() => {
     calculate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeklyFresh, annualAdd, winRate, tp, sl, years]);
+  }, [mode, weeklyFresh, annualAdd, winRate, tp, sl, years]);
 
   const chartOptions = {
     responsive: true,
@@ -163,18 +174,45 @@ export default function TISwingPicksPlan() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">เงินทุนรายสัปดาห์ ปีที่ 1 ($) (ตัวอย่าง: 75$)</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">รูปแบบการลงทุน (Mode)</label>
+              <select 
+                value={mode} 
+                onChange={(e) => {
+                  setMode(e.target.value);
+                  if (e.target.value === 'lumpsum') {
+                    setWeeklyFresh(1000);
+                  } else {
+                    setWeeklyFresh(75);
+                  }
+                }}
+                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              >
+                <option value="injection">1. เติมเงินต่อเนื่อง (DCA รายสัปดาห์)</option>
+                <option value="lumpsum">2. เงินก้อนตั้งต้น (หมุนเวียนทุนเดิม)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                {mode === 'lumpsum' ? (
+                  <>เงินทุนตั้งต้นต่อสัปดาห์ (เฉพาะ 4 สัปดาห์แรก) ($)<br/><span className="text-xs font-normal text-slate-500 dark:text-slate-400">(เช่น ใส่ 1000$ = ทุนรวม 4000$)</span></>
+                ) : (
+                  'เงินทุนรายสัปดาห์ ปีที่ 1 ($) (ตัวอย่าง: 75$)'
+                )}
+              </label>
               <input type="number" 
                 value={weeklyFresh} onChange={(e) => setWeeklyFresh(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">เติมเงินเข้าพอร์ตต่อปี ตั้งแต่ปีที่ 2 เป็นต้นไป ($)<br/><span className="text-xs font-normal text-slate-500 dark:text-slate-400">(หากไม่เติมเงินเพิ่มเลย ให้ใส่ 0)</span></label>
-              <input type="number" step="100"
-                value={annualAdd} onChange={(e) => setAnnualAdd(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
-            </div>
+            {mode === 'injection' && (
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">เติมเงินเข้าพอร์ตต่อปี ตั้งแต่ปีที่ 2 เป็นต้นไป ($)<br/><span className="text-xs font-normal text-slate-500 dark:text-slate-400">(หากไม่เติมเงินเพิ่มเลย ให้ใส่ 0)</span></label>
+                <input type="number" step="100"
+                  value={annualAdd} onChange={(e) => setAnnualAdd(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Win Rate (%)</label>
