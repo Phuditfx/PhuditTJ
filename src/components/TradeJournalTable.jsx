@@ -1261,8 +1261,14 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setWhatWentWell(trade.whatWentWell || '');
       setLessonLearned(trade.lessonLearned || '');
       
+      setTradeImageBefore(null);
+      setImagePreviewBefore(trade.imageUrlBefore || trade.imageUrl || null);
+      setTradeImageAfter(null);
+      setImagePreviewAfter(trade.imageUrlAfter || null);
+      
+      // Backward compat
       setTradeImage(null);
-      setImagePreview(trade.imageUrl || null);
+      setImagePreview(trade.imageUrlBefore || trade.imageUrl || null);
     } else {
       setExitPrice('...'); // แสดงจุดไข่ปลาไว้ก่อนระหว่างโหลด
       setCloseShares(trade.shares.toString()); // ตั้งค่าเริ่มต้นเป็นจำนวนหุ้นทั้งหมด
@@ -1286,8 +1292,14 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setWhatWentWell('');
       setLessonLearned('');
       
+      setTradeImageBefore(null);
+      setImagePreviewBefore(trade.imageUrlBefore || trade.imageUrl || null);
+      setTradeImageAfter(null);
+      setImagePreviewAfter(trade.imageUrlAfter || null);
+      
+      // Backward compat
       setTradeImage(null);
-      setImagePreview(trade.imageUrl || null);
+      setImagePreview(trade.imageUrlBefore || trade.imageUrl || null);
 
       setIsFetchingPrice(true);
       const livePrice = await fetchRealTimePrice(trade.symbol);
