@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { RANK_SYSTEM } from '../db/journalDB';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import PortfolioProjection from './PortfolioProjection';
 
@@ -219,6 +219,39 @@ export default function Dashboard({
   });
 
   const monthlyData = Object.keys(monthlyMap).map(k => ({ name: k, pnl: monthlyMap[k] })).slice(-6);
+
+  // --- Pump Stage Metrics Calculations ---
+  const stageMap = {
+    'Before Pump (กราฟก่อนวิ่ง)': { wins: 0, losses: 0, total: 0, totalRR: 0 },
+    'After Pump (กราฟหลังวิ่ง)': { wins: 0, losses: 0, total: 0, totalRR: 0 },
+  };
+
+  closedTrades.forEach(t => {
+    if (!t.pumpStage) return;
+    const stage = t.pumpStage === 'Before Pump (กราฟก่อนวิ่ง)' ? 'Before Pump (กราฟก่อนวิ่ง)' : (t.pumpStage === 'After Pump (กราฟหลังวิ่ง)' ? 'After Pump (กราฟหลังวิ่ง)' : null);
+    if (!stage) return;
+    
+    stageMap[stage].total++;
+    const pnl = parseFloat(t.pnl) || 0;
+    const rr = parseFloat(t.actualRR) || 0;
+    stageMap[stage].totalRR += rr;
+    
+    if (pnl > 0) stageMap[stage].wins++;
+    else if (pnl < 0) stageMap[stage].losses++;
+  });
+
+  const pumpStageData = Object.keys(stageMap).map(stage => {
+    const data = stageMap[stage];
+    const winRate = data.total > 0 ? (data.wins / data.total) * 100 : 0;
+    const avgRR = data.total > 0 ? data.totalRR / data.total : 0;
+    return {
+      name: stage.includes('Before') ? 'Before' : 'After',
+      count: data.total,
+      winRate: parseFloat(winRate.toFixed(1)),
+      avgRR: parseFloat(avgRR.toFixed(2))
+    };
+  });
+  // ----------------------------------------
 
   const handleSaveFunding = () => {
     if (!fundingAmount || isNaN(fundingAmount) || Number(fundingAmount) <= 0) return;
@@ -673,6 +706,66 @@ export default function Dashboard({
                     <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
                   ))}
                 </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* 🚦 Pump Stage Analytics Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Distribution Chart */}
+        <div className="crypto-card p-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">🥧 Pump Stage Distribution</h3>
+          <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">สัดส่วนการเข้าเทรดระหว่าง Before Pump และ After Pump</p>
+          <div className="h-48 min-h-[192px] w-full text-xs font-mono">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie 
+                  data={pumpStageData} 
+                  dataKey="count" 
+                  nameKey="name" 
+                  cx="50%" 
+                  cy="50%" 
+                  outerRadius={70} 
+                  innerRadius={40}
+                  fill="#8884d8" 
+                  labelLine={false}
+                  label={({ name, percent }) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                >
+                  {pumpStageData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.name === 'Before' ? '#6366f1' : '#8b5cf6'} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
+                  itemStyle={{fontWeight: 'bold', color: '#ffffff'}}
+                  formatter={(value) => [value, 'Trades']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Win Rate & RR Comparison Chart */}
+        <div className="crypto-card p-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">⚔️ Pump Stage Performance</h3>
+          <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">เปรียบเทียบ Win Rate (%) และ Average RR ของแต่ละกลุ่ม</p>
+          <div className="h-48 min-h-[192px] w-full text-xs font-mono">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pumpStageData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" tickLine={false} axisLine={false} />
+                <Tooltip 
+                  cursor={{fill: '#1e293b', opacity: 0.15}}
+                  contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
+                  itemStyle={{fontWeight: 'bold', color: '#ffffff'}}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                <Bar dataKey="winRate" name="Win Rate (%)" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
+                <Bar dataKey="avgRR" name="Average RR" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
           </div>

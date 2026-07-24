@@ -354,9 +354,9 @@ const TradeCard = React.memo(({
               <button 
                 onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlBefore || trade.imageUrl); }}
                 className="ml-1 text-slate-400 hover:text-indigo-500 transition-colors"
-                title="View Before Pump Image"
+                title={trade.pumpStage === 'After Pump (กราฟหลังวิ่ง)' ? "View After Pump Image" : "View Before Pump Image"}
               >
-                🖼️
+                {trade.pumpStage === 'After Pump (กราฟหลังวิ่ง)' ? '📸' : '🖼️'}
               </button>
             )}
             {trade.imageUrlAfter && (
@@ -593,15 +593,15 @@ const DesktopTradeCard = React.memo(({
               <button 
                 onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlBefore || trade.imageUrl); }}
                 className="ml-2 text-slate-400 hover:text-indigo-500 transition-colors text-base"
-                title="View Before Pump Image"
+                title={trade.pumpStage === 'After Pump (กราฟหลังวิ่ง)' ? "View After Pump Image" : "View Before Pump Image"}
               >
-                🖼️
+                {trade.pumpStage === 'After Pump (กราฟหลังวิ่ง)' ? '📸' : '🖼️'}
               </button>
             )}
             {trade.imageUrlAfter && (
               <button 
                 onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlAfter); }}
-                className="ml-1 text-slate-400 hover:text-emerald-500 transition-colors text-base"
+                className="ml-2 text-slate-400 hover:text-emerald-500 transition-colors text-base"
                 title="View After Pump Image"
               >
                 📸
@@ -901,10 +901,6 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   const [itemsPerPage, setItemsPerPage] = useState(12);
 
   // Image Upload States
-  const [tradeImageBefore, setTradeImageBefore] = useState(null);
-  const [imagePreviewBefore, setImagePreviewBefore] = useState(null);
-  const [tradeImageAfter, setTradeImageAfter] = useState(null);
-  const [imagePreviewAfter, setImagePreviewAfter] = useState(null);
 
   // Backward compatibility
   const [tradeImage, setTradeImage] = useState(null);
@@ -997,10 +993,12 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   const [editPlan, setEditPlan] = useState('');
   const [editSetup, setEditSetup] = useState('');
   const [editMood, setEditMood] = useState('');
+  const [editPumpStage, setEditPumpStage] = useState('');
   const [editAccountId, setEditAccountId] = useState('default');
 
   const SETUP_OPTIONS = setups && setups.length > 0 ? setups : ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
   const MOOD_OPTIONS = ['🟢 มั่นใจ/ทำตามแผน', '🔵 ปกติ/เป็นกลาง', '🔴 ใช้อารมณ์/FOMO', '🟣 กังวล/ลังเล', '🟠 เหนื่อยล้า/พักผ่อนน้อย'];
+  const PUMP_STAGE_OPTIONS = ['Before Pump (กราฟก่อนวิ่ง)', 'After Pump (กราฟหลังวิ่ง)'];
   
   // Context Score Survey States
   const [qMarketTrend, setQMarketTrend] = useState(1); 
@@ -1209,6 +1207,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
     setEditPlan(trade.planId || '');
     setEditSetup(trade.setupName || '');
     setEditMood(trade.entryMood || '');
+    setEditPumpStage(trade.pumpStage || '');
   };
 
   const handleConfirmEditOpen = () => {
@@ -1225,7 +1224,8 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       shares: parseFloat(editShares),
       planId: editPlan,
       setupName: editSetup,
-      entryMood: editMood
+      entryMood: editMood,
+      pumpStage: editPumpStage
     };
     onUpdateTrade(updated);
     setEditingOpenTrade(null);
@@ -1256,6 +1256,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setEditPlan(trade.planId || '');
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
+      setEditPumpStage(trade.pumpStage || '');
       setEditAccountId(trade.accountId || 'default');
       setEditExitTime(trade.exitDateTime ? formatDateTimeLocal(trade.exitDateTime) : formatDateTimeLocal(new Date().toISOString()));
       
@@ -1267,10 +1268,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setWhatWentWell(trade.whatWentWell || '');
       setLessonLearned(trade.lessonLearned || '');
       
-      setTradeImageBefore(null);
-      setImagePreviewBefore(trade.imageUrlBefore || trade.imageUrl || null);
-      setTradeImageAfter(null);
-      setImagePreviewAfter(trade.imageUrlAfter || null);
+
       
       // Backward compat
       setTradeImage(null);
@@ -1289,6 +1287,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setEditPlan(trade.planId || '');
       setEditSetup(trade.setupName || '');
       setEditMood(trade.entryMood || '');
+      setEditPumpStage(trade.pumpStage || '');
       setEditAccountId(trade.accountId || 'default');
       setEditExitTime(formatDateTimeLocal(new Date().toISOString()));
       setCosts('');
@@ -1298,10 +1297,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setWhatWentWell('');
       setLessonLearned('');
       
-      setTradeImageBefore(null);
-      setImagePreviewBefore(trade.imageUrlBefore || trade.imageUrl || null);
-      setTradeImageAfter(null);
-      setImagePreviewAfter(trade.imageUrlAfter || null);
+
       
       // Backward compat
       setTradeImage(null);
@@ -1397,19 +1393,13 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
     }
 
     // Upload Images if new ones are selected
-    let finalImageUrlBefore = selectedTrade.imageUrlBefore || selectedTrade.imageUrl || null;
-    let finalImageUrlAfter = selectedTrade.imageUrlAfter || null;
+    let finalImageUrl = selectedTrade.imageUrl || null;
 
-    if ((tradeImageBefore || tradeImageAfter) && currentUser) {
+    if (tradeImage && currentUser) {
       setIsUploading(true);
       try {
         const { uploadTradeImage } = await import('../db/journalDB');
-        if (tradeImageBefore) {
-          finalImageUrlBefore = await uploadTradeImage(tradeImageBefore, currentUser.email);
-        }
-        if (tradeImageAfter) {
-          finalImageUrlAfter = await uploadTradeImage(tradeImageAfter, currentUser.email);
-        }
+        finalImageUrl = await uploadTradeImage(tradeImage, currentUser.email);
       } catch (err) {
         if (requestAlert) requestAlert("Upload Failed", "อัปโหลดรูปภาพล้มเหลว: " + err.message);
         else alert("อัปโหลดรูปภาพล้มเหลว: " + err.message);
@@ -1472,14 +1462,13 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       planId: editPlan,
       setupName: editSetup,
       entryMood: editMood,
+      pumpStage: editPumpStage,
       costs: costs ? parseFloat(costs) : 0,
       exitReason: exitReason === 'Other (ระบุเอง)' ? customExitReason.trim() : exitReason,
       mistakeTags,
       whatWentWell,
       lessonLearned,
-      imageUrlBefore: finalImageUrlBefore,
-      imageUrlAfter: finalImageUrlAfter,
-      imageUrl: finalImageUrlBefore // Keep for backward compatibility
+      imageUrl: finalImageUrl
     };
 
     onUpdateTrade(updatedTrade);
@@ -1943,13 +1932,13 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                 </div>
               </div>
 
-              {/* Context (Plan, Setup, Mood) */}
+              {/* Context (Plan, Setup, Mood, Stage) */}
               <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                  🤖 Context (Plan, Setup, Exit Reason, Mood)
+                  🤖 Context (Plan, Setup, Exit Reason, Mood, Stage)
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
                     <select
@@ -1996,6 +1985,17 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                       {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Pump Stage</label>
+                    <select
+                      value={editPumpStage}
+                      onChange={(e) => setEditPumpStage(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="">-- Select Stage --</option>
+                      {PUMP_STAGE_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
                 </div>
                 {exitReason === 'Other (ระบุเอง)' && (
                   <input
@@ -2009,93 +2009,48 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
               </div>
 
               {/* Context Images Upload Section (Before/After Pump) */}
+              {/* Context Images Upload Section */}
               <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
                   📸 Context Charts <span className="text-amber-500">(Optional)</span>
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Before Pump Image */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400">Before Pump (กราฟก่อนวิ่ง)</label>
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={(e) => {
-                         const file = e.target.files[0];
-                         if (file) {
-                            setTradeImageBefore(file);
-                            setImagePreviewBefore(URL.createObjectURL(file));
-                         }
-                      }}
-                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-                    />
-                    {imagePreviewBefore && (
-                      <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
-                         <img src={imagePreviewBefore} alt="Before Pump" className="max-h-[200px] max-w-full object-contain rounded" />
-                         {(tradeImageBefore || selectedTrade.imageUrlBefore || selectedTrade.imageUrl) && (
-                           <button 
-                             onClick={() => {
-                               if (!tradeImageBefore && window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
-                                 setTradeImageBefore(null); 
-                                 setImagePreviewBefore(null);
-                                 selectedTrade.imageUrlBefore = null;
-                                 selectedTrade.imageUrl = null;
-                               } else if (tradeImageBefore) {
-                                 setTradeImageBefore(null);
-                                 const existing = selectedTrade.imageUrlBefore || selectedTrade.imageUrl || null;
-                                 setImagePreviewBefore(existing);
-                               }
-                             }}
-                             className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg z-10"
-                             title="ลบรูปภาพ"
-                           >
-                             ✕
-                           </button>
-                         )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* After Pump Image */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400">After Pump (กราฟหลังวิ่ง)</label>
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={(e) => {
-                         const file = e.target.files[0];
-                         if (file) {
-                            setTradeImageAfter(file);
-                            setImagePreviewAfter(URL.createObjectURL(file));
-                         }
-                      }}
-                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-600 hover:file:bg-emerald-100"
-                    />
-                    {imagePreviewAfter && (
-                      <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
-                         <img src={imagePreviewAfter} alt="After Pump" className="max-h-[200px] max-w-full object-contain rounded" />
-                         {(tradeImageAfter || selectedTrade.imageUrlAfter) && (
-                           <button 
-                             onClick={() => {
-                               if (!tradeImageAfter && window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
-                                 setTradeImageAfter(null); 
-                                 setImagePreviewAfter(null);
-                                 selectedTrade.imageUrlAfter = null;
-                               } else if (tradeImageAfter) {
-                                 setTradeImageAfter(null);
-                                 setImagePreviewAfter(selectedTrade.imageUrlAfter || null);
-                               }
-                             }}
-                             className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg z-10"
-                             title="ลบรูปภาพ"
-                           >
-                             ✕
-                           </button>
-                         )}
-                      </div>
-                    )}
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => {
+                       const file = e.target.files[0];
+                       if (file) {
+                          setTradeImage(file);
+                          setImagePreview(URL.createObjectURL(file));
+                       }
+                    }}
+                    className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                  />
+                  {imagePreview && (
+                    <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
+                       <img src={imagePreview} alt="Trade Context" className="max-h-[200px] max-w-full object-contain rounded" />
+                       {(tradeImage || selectedTrade.imageUrl) && (
+                         <button 
+                           onClick={() => {
+                             if (!tradeImage && window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
+                               setTradeImage(null); 
+                               setImagePreview(null);
+                               selectedTrade.imageUrl = null;
+                             } else if (tradeImage) {
+                               setTradeImage(null);
+                               setImagePreview(selectedTrade.imageUrl || null);
+                             }
+                           }}
+                           className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg z-10"
+                           title="ลบรูปภาพ"
+                         >
+                           ✕
+                         </button>
+                       )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2500,10 +2455,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
               {/* AI Analytics Integration Fields */}
               <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800 mt-2">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                  🤖 Context (Plan, Setup, Mood)
+                  🤖 Context (Plan, Setup, Mood, Stage)
                 </span>
                 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Plan</label>
                     <select
@@ -2537,6 +2492,17 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                     >
                       <option value="">-- Select Mood --</option>
                       {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Pump Stage</label>
+                    <select
+                      value={editPumpStage}
+                      onChange={(e) => setEditPumpStage(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="">-- Select Stage --</option>
+                      {PUMP_STAGE_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
                 </div>
