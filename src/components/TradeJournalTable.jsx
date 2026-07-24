@@ -901,6 +901,12 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   const [itemsPerPage, setItemsPerPage] = useState(12);
 
   // Image Upload States
+  const [tradeImageBefore, setTradeImageBefore] = useState(null);
+  const [imagePreviewBefore, setImagePreviewBefore] = useState(null);
+  const [tradeImageAfter, setTradeImageAfter] = useState(null);
+  const [imagePreviewAfter, setImagePreviewAfter] = useState(null);
+
+  // Backward compatibility
   const [tradeImage, setTradeImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
