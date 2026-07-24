@@ -350,13 +350,22 @@ const TradeCard = React.memo(({
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
           <span className="font-black text-base text-slate-900 dark:text-white uppercase tracking-tight flex items-center">{trade.symbol}
-            {trade.imageUrl && (
+            {(trade.imageUrlBefore || trade.imageUrl) && (
               <button 
-                onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrl); }}
+                onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlBefore || trade.imageUrl); }}
                 className="ml-1 text-slate-400 hover:text-indigo-500 transition-colors"
-                title="View Attached Image"
+                title="View Before Pump Image"
               >
                 🖼️
+              </button>
+            )}
+            {trade.imageUrlAfter && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlAfter); }}
+                className="ml-1 text-slate-400 hover:text-emerald-500 transition-colors"
+                title="View After Pump Image"
+              >
+                📸
               </button>
             )}</span>
           <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
@@ -540,6 +549,7 @@ const DesktopTradeCard = React.memo(({
   handleOpenCloseModal,
   requestConfirm,
   onDeleteTrade,
+  setViewingImage,
   pnlDisplayMode = 'pnl'
 }) => {
   const { t } = useLanguage();
@@ -577,8 +587,26 @@ const DesktopTradeCard = React.memo(({
       {/* 🚀 Header: Symbol, Direction, Status */}
       <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/40">
         <div className="flex items-center gap-2">
-          <span className="font-extrabold text-lg text-slate-900 dark:text-white uppercase tracking-tight font-sans">
+          <span className="font-extrabold text-lg text-slate-900 dark:text-white uppercase tracking-tight font-sans flex items-center">
             {trade.symbol}
+            {(trade.imageUrlBefore || trade.imageUrl) && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlBefore || trade.imageUrl); }}
+                className="ml-2 text-slate-400 hover:text-indigo-500 transition-colors text-base"
+                title="View Before Pump Image"
+              >
+                🖼️
+              </button>
+            )}
+            {trade.imageUrlAfter && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setViewingImage(trade.imageUrlAfter); }}
+                className="ml-1 text-slate-400 hover:text-emerald-500 transition-colors text-base"
+                title="View After Pump Image"
+              >
+                📸
+              </button>
+            )}
           </span>
           <span className={`px-2 py-0.5 rounded text-[10px] font-black font-sans ${
             trade.direction === 'Long' 
@@ -1350,13 +1378,20 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       return;
     }
 
-    // Upload Image if new one is selected
-    let finalImageUrl = selectedTrade.imageUrl || null;
-    if (tradeImage && currentUser) {
+    // Upload Images if new ones are selected
+    let finalImageUrlBefore = selectedTrade.imageUrlBefore || selectedTrade.imageUrl || null;
+    let finalImageUrlAfter = selectedTrade.imageUrlAfter || null;
+
+    if ((tradeImageBefore || tradeImageAfter) && currentUser) {
       setIsUploading(true);
       try {
         const { uploadTradeImage } = await import('../db/journalDB');
-        finalImageUrl = await uploadTradeImage(tradeImage, currentUser.email);
+        if (tradeImageBefore) {
+          finalImageUrlBefore = await uploadTradeImage(tradeImageBefore, currentUser.email);
+        }
+        if (tradeImageAfter) {
+          finalImageUrlAfter = await uploadTradeImage(tradeImageAfter, currentUser.email);
+        }
       } catch (err) {
         if (requestAlert) requestAlert("Upload Failed", "อัปโหลดรูปภาพล้มเหลว: " + err.message);
         else alert("อัปโหลดรูปภาพล้มเหลว: " + err.message);
@@ -1424,7 +1459,9 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       mistakeTags,
       whatWentWell,
       lessonLearned,
-      imageUrl: finalImageUrl
+      imageUrlBefore: finalImageUrlBefore,
+      imageUrlAfter: finalImageUrlAfter,
+      imageUrl: finalImageUrlBefore // Keep for backward compatibility
     };
 
     onUpdateTrade(updatedTrade);
@@ -1753,7 +1790,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
 
       {viewingImage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 animate-fade-in" onClick={() => setViewingImage(null)}>
-          <img src={viewingImage} alt="Full Size Trade" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+          <img src={viewingImage} alt="Full Size Trade" className="w-full h-auto max-h-[95vh] object-contain rounded-lg shadow-2xl cursor-zoom-out" />
           <button className="absolute top-4 right-4 text-white hover:text-rose-400 font-bold text-xl cursor-pointer">✕</button>
         </div>
       )}
@@ -1953,53 +1990,95 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                 )}
               </div>
 
-              {/* Image Upload Section */}
+              {/* Context Images Upload Section (Before/After Pump) */}
               <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                  📸 ภาพประกอบ (Chart Image) <span className="text-amber-500">(Optional)</span>
+                  📸 Context Charts <span className="text-amber-500">(Optional)</span>
                 </span>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => {
-                     const file = e.target.files[0];
-                     if (file) {
-                        setTradeImage(file);
-                        setImagePreview(URL.createObjectURL(file));
-                     }
-                  }}
-                  className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-                />
-                {imagePreview && (
-                  <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
-                     <img src={imagePreview} alt="Trade Preview" className="max-h-[300px] max-w-full object-contain rounded" />
-                     {tradeImage && (
-                       <button 
-                         onClick={() => { setTradeImage(null); setImagePreview(selectedTrade.imageUrl || null); }}
-                         className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg"
-                         title="ลบรูปภาพที่เลือกใหม่"
-                       >
-                         ✕
-                       </button>
-                     )}
-                     {!tradeImage && selectedTrade.imageUrl && (
-                       <button 
-                         onClick={() => {
-                           if (window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
-                             setTradeImage(null); 
-                             setImagePreview(null);
-                             // We don't remove from DB immediately, wait for Save.
-                             selectedTrade.imageUrl = null; // hacky but works for this form state
-                           }
-                         }}
-                         className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg"
-                         title="ลบรูปภาพเดิม"
-                       >
-                         ✕
-                       </button>
-                     )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Before Pump Image */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400">Before Pump (กราฟก่อนวิ่ง)</label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                         const file = e.target.files[0];
+                         if (file) {
+                            setTradeImageBefore(file);
+                            setImagePreviewBefore(URL.createObjectURL(file));
+                         }
+                      }}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                    />
+                    {imagePreviewBefore && (
+                      <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
+                         <img src={imagePreviewBefore} alt="Before Pump" className="max-h-[200px] max-w-full object-contain rounded" />
+                         {(tradeImageBefore || selectedTrade.imageUrlBefore || selectedTrade.imageUrl) && (
+                           <button 
+                             onClick={() => {
+                               if (!tradeImageBefore && window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
+                                 setTradeImageBefore(null); 
+                                 setImagePreviewBefore(null);
+                                 selectedTrade.imageUrlBefore = null;
+                                 selectedTrade.imageUrl = null;
+                               } else if (tradeImageBefore) {
+                                 setTradeImageBefore(null);
+                                 const existing = selectedTrade.imageUrlBefore || selectedTrade.imageUrl || null;
+                                 setImagePreviewBefore(existing);
+                               }
+                             }}
+                             className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg z-10"
+                             title="ลบรูปภาพ"
+                           >
+                             ✕
+                           </button>
+                         )}
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* After Pump Image */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400">After Pump (กราฟหลังวิ่ง)</label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                         const file = e.target.files[0];
+                         if (file) {
+                            setTradeImageAfter(file);
+                            setImagePreviewAfter(URL.createObjectURL(file));
+                         }
+                      }}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500 w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-600 hover:file:bg-emerald-100"
+                    />
+                    {imagePreviewAfter && (
+                      <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-2">
+                         <img src={imagePreviewAfter} alt="After Pump" className="max-h-[200px] max-w-full object-contain rounded" />
+                         {(tradeImageAfter || selectedTrade.imageUrlAfter) && (
+                           <button 
+                             onClick={() => {
+                               if (!tradeImageAfter && window.confirm("ต้องการลบรูปภาพนี้ออกจากบันทึกเทรดหรือไม่? (จะต้องกดปุ่ม Save เพื่อยืนยันอีกครั้ง)")) {
+                                 setTradeImageAfter(null); 
+                                 setImagePreviewAfter(null);
+                                 selectedTrade.imageUrlAfter = null;
+                               } else if (tradeImageAfter) {
+                                 setTradeImageAfter(null);
+                                 setImagePreviewAfter(selectedTrade.imageUrlAfter || null);
+                               }
+                             }}
+                             className="absolute top-3 right-3 bg-rose-600/90 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-rose-500 cursor-pointer shadow-lg z-10"
+                             title="ลบรูปภาพ"
+                           >
+                             ✕
+                           </button>
+                         )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Context Score Survey */}

@@ -284,6 +284,7 @@ export default function FeedComponent({ posts = [], onSavePost, onUpdatePost, cu
   const [isPublishing, setIsPublishing] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleAddBlock = () => {
     setBlocks([...blocks, { id: Date.now(), text: '', image: null, previewUrl: null, base64: null }]);
@@ -517,16 +518,46 @@ export default function FeedComponent({ posts = [], onSavePost, onUpdatePost, cu
         </div>
       </div>
 
+      {/* 🔍 Search Bar */}
+      <div className="mt-4 relative">
+        <input 
+          type="text" 
+          placeholder="ค้นหาชื่อหุ้น (Ticker), วันที่ หรือเนื้อหาโพส..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-sm pl-11"
+        />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+      </div>
+
       {/* Feed List */}
       <div className="flex flex-col gap-6 mt-4">
         {(() => {
           const visiblePosts = posts.filter(post => {
-            if (isVip) return true;
-            const cat = post.category || 'General';
-            if (cat === 'General') return true;
-            if (cat === 'TI Picks' && isTiPicks) return true;
-            if (cat === 'Alpha Picks' && isAlphaPicks) return true;
-            return false;
+            // First check authorization categories
+            let isAllowed = false;
+            if (isVip) {
+              isAllowed = true;
+            } else {
+              const cat = post.category || 'General';
+              if (cat === 'General') isAllowed = true;
+              else if (cat === 'TI Picks' && isTiPicks) isAllowed = true;
+              else if (cat === 'Alpha Picks' && isAlphaPicks) isAllowed = true;
+            }
+            if (!isAllowed) return false;
+
+            // Search query logic
+            if (searchQuery) {
+              const q = searchQuery.toLowerCase().trim();
+              const titleMatch = (post.title || '').toLowerCase().includes(q);
+              const dateMatch = (post.timestamp || '').toLowerCase().includes(q);
+              const textMatch = (post.blocks || []).some(b => (b.text || '').toLowerCase().includes(q));
+              if (!titleMatch && !dateMatch && !textMatch) return false;
+            }
+            
+            return true;
           });
           
           if (visiblePosts.length === 0) {

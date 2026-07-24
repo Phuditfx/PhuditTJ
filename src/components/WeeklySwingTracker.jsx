@@ -102,6 +102,8 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
     if (current.isClosed) return; // Already closed
 
     const realizedPnL = parseFloat(current.pnl) || 0;
+    const capitalInvested = parseFloat(current.capitalInvested) || 0;
+    const totalReturn = capitalInvested + realizedPnL;
     
     const doClose = () => {
       // Update Trade Record
@@ -110,23 +112,23 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
       saveTradeRecords(newRecords);
 
       // Update Capital (Snowball)
-      saveCapital(totalCapital + realizedPnL);
+      saveCapital(totalCapital + totalReturn);
       
       if (requestAlert) {
-        requestAlert("✅ Trade Closed Successfully", `Added $${realizedPnL.toFixed(2)} to your Snowball Capital.`);
+        requestAlert("✅ Trade Closed Successfully", `Returned $${capitalInvested.toFixed(2)} capital and $${realizedPnL.toFixed(2)} P/L (Total: $${totalReturn.toFixed(2)}) to your Snowball Capital.`);
       } else {
-        alert(`Trade closed! Added $${realizedPnL.toFixed(2)} to your Snowball Capital.`);
+        alert(`Trade closed! Returned $${totalReturn.toFixed(2)} to your Snowball Capital.`);
       }
     };
 
     if (requestConfirm) {
       requestConfirm(
         "Confirm Close Trade", 
-        `Are you sure you want to close this trade and compound $${realizedPnL.toFixed(2)} to your Snowball Capital?`, 
+        `Are you sure you want to close this trade? This will return $${capitalInvested.toFixed(2)} capital + $${realizedPnL.toFixed(2)} P/L (Total $${totalReturn.toFixed(2)}) to your Snowball Capital.`, 
         doClose
       );
     } else {
-      if (window.confirm(`Are you sure you want to close this trade and compound $${realizedPnL.toFixed(2)} to your Snowball Capital?`)) {
+      if (window.confirm(`Are you sure you want to close this trade? This will return $${totalReturn.toFixed(2)} to your Snowball Capital.`)) {
         doClose();
       }
     }
@@ -137,6 +139,8 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
     if (!current.isClosed) return; // Already open
 
     const realizedPnL = parseFloat(current.pnl) || 0;
+    const capitalInvested = parseFloat(current.capitalInvested) || 0;
+    const totalReturn = capitalInvested + realizedPnL;
 
     const doReopen = () => {
       // Update Trade Record
@@ -145,23 +149,23 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
       saveTradeRecords(newRecords);
 
       // Revert Capital (Snowball)
-      saveCapital(totalCapital - realizedPnL);
+      saveCapital(totalCapital - totalReturn);
       
       if (requestAlert) {
-        requestAlert("🔓 Trade Reopened", `Subtracted $${realizedPnL.toFixed(2)} from your Snowball Capital to allow editing.`);
+        requestAlert("🔓 Trade Reopened", `Subtracted $${totalReturn.toFixed(2)} from your Snowball Capital to allow editing.`);
       } else {
-        alert(`Trade reopened! Subtracted $${realizedPnL.toFixed(2)} from your Snowball Capital.`);
+        alert(`Trade reopened! Subtracted $${totalReturn.toFixed(2)} from your Snowball Capital.`);
       }
     };
 
     if (requestConfirm) {
       requestConfirm(
         "Confirm Edit Closed Trade", 
-        `Are you sure you want to reopen this trade? This will subtract $${realizedPnL.toFixed(2)} from your Snowball Capital.`, 
+        `Are you sure you want to reopen this trade? This will subtract $${totalReturn.toFixed(2)} from your Snowball Capital.`, 
         doReopen
       );
     } else {
-      if (window.confirm(`Are you sure you want to reopen this trade? This will subtract $${realizedPnL.toFixed(2)} from your Snowball Capital.`)) {
+      if (window.confirm(`Are you sure you want to reopen this trade? This will subtract $${totalReturn.toFixed(2)} from your Snowball Capital.`)) {
         doReopen();
       }
     }
@@ -225,8 +229,8 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
               <tr>
                 <th className="p-4">Ticker</th>
                 <th className="p-4">Week Start</th>
-                <th className="p-4">Time Stop (4 Weeks)</th>
                 <th className="p-4">Status</th>
+                <th className="p-4 w-32">Capital Invested ($)</th>
                 <th className="p-4 w-32">Profit and Loss ($)</th>
                 <th className="p-4">Action</th>
               </tr>
@@ -253,15 +257,14 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
                         </div>
                       </td>
                       <td className="p-4">
-                        {pick.week_start_date}
-                      </td>
-                      <td className="p-4">
-                        {expiry ? (
-                          <div className={`flex items-center gap-1.5 ${isExpired ? 'text-rose-500 font-bold' : ''}`}>
-                            {isExpired && <span>⚠️</span>}
-                            <span>{expiry.toLocaleDateString()}</span>
-                          </div>
-                        ) : '-'}
+                        <div className="flex flex-col gap-1">
+                          <span>{pick.week_start_date}</span>
+                          {expiry && (
+                            <span className={`text-[10px] ${isExpired ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
+                              Exp: {expiry.toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -271,6 +274,17 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
                         }`}>
                           {record.isClosed ? 'CLOSED (Settled)' : pick.status}
                         </span>
+                      </td>
+                      <td className="p-4">
+                        <input 
+                          type="number"
+                          step="0.01"
+                          disabled={record.isClosed}
+                          value={record.capitalInvested !== undefined ? record.capitalInvested : ''}
+                          onChange={(e) => handleUpdateTrade(pick.id, 'capitalInvested', e.target.value)}
+                          placeholder="e.g. 1000"
+                          className="w-full px-2 py-1 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-sm disabled:opacity-50"
+                        />
                       </td>
                       <td className="p-4">
                         <input 
