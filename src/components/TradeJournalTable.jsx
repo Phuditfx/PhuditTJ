@@ -1953,6 +1953,17 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Pump Stage</label>
+                    <select
+                      value={editPumpStage}
+                      onChange={(e) => setEditPumpStage(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="">-- Select Stage --</option>
+                      {PUMP_STAGE_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Setup / Strategy</label>
                     <select
                       value={editSetup}
@@ -1983,17 +1994,6 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                     >
                       <option value="">-- Select Mood --</option>
                       {MOOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Pump Stage</label>
-                    <select
-                      value={editPumpStage}
-                      onChange={(e) => setEditPumpStage(e.target.value)}
-                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="">-- Select Stage --</option>
-                      {PUMP_STAGE_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
                 </div>
