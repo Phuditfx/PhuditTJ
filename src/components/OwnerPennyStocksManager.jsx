@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getPennyStocks, savePennyStock, deletePennyStock } from '../db/journalDB';
+import { getPennyStocks, savePennyStock, deletePennyStock, updatePennyStock } from '../db/journalDB';
 
 export default function OwnerPennyStocksManager({ currentUser, requestConfirm, requestAlert, onUpdate }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
   
   // Form state
   const [dayOfWeek, setDayOfWeek] = useState('#Mon');
@@ -16,6 +17,48 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
     description: '',
     images: []
   }]);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setDayOfWeek('#Mon');
+    setWeekOfMonth('Week1');
+    setStocks([{
+      id: Date.now().toString(),
+      ticker: '',
+      pattern: '',
+      setup: '',
+      description: '',
+      images: []
+    }]);
+  };
+
+  const handleEditClick = (post) => {
+    try {
+      if (post.analysis_text && post.analysis_text.startsWith('{')) {
+        const parsed = JSON.parse(post.analysis_text);
+        if (parsed.is_new_format) {
+          setEditingId(post.id);
+          setDayOfWeek(parsed.day_of_week || '#Mon');
+          setWeekOfMonth(parsed.week_of_month || 'Week1');
+          
+          // Ensure all stocks have images array just in case
+          const loadedStocks = parsed.stocks?.map(s => ({
+            ...s,
+            images: s.images || []
+          })) || [];
+          
+          if (loadedStocks.length > 0) {
+            setStocks(loadedStocks);
+          }
+          
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing post for edit:', e);
+      requestAlert("ข้อผิดพลาด", "ไม่สามารถเปิดโพสต์นี้เพื่อแก้ไขได้");
+    }
+  };
   
   const fetchPosts = async () => {
     setLoading(true);
@@ -147,25 +190,23 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
     const generatedAnalysisText = JSON.stringify(payload);
     
     try {
-      await savePennyStock({
-        title: generatedTitle,
-        analysis_text: generatedAnalysisText,
-        chart_image: null,
-        author_email: currentUser
-      });
-      requestAlert("สำเร็จ", "เพิ่มโพสต์ Penny Stocks เรียบร้อยแล้ว");
+      if (editingId) {
+        await updatePennyStock(editingId, currentUser, {
+          title: generatedTitle,
+          analysis_text: generatedAnalysisText,
+        });
+        requestAlert("สำเร็จ", "อัปเดตโพสต์ Penny Stocks เรียบร้อยแล้ว");
+      } else {
+        await savePennyStock({
+          title: generatedTitle,
+          analysis_text: generatedAnalysisText,
+          chart_image: null,
+          author_email: currentUser
+        });
+        requestAlert("สำเร็จ", "เพิ่มโพสต์ Penny Stocks เรียบร้อยแล้ว");
+      }
       
-      // Reset form
-      setDayOfWeek('#Mon');
-      setWeekOfMonth('Week1');
-      setStocks([{
-        id: Date.now().toString(),
-        ticker: '',
-        pattern: '',
-        setup: '',
-        description: '',
-        images: []
-      }]);
+      resetForm();
       
       fetchPosts();
       if (onUpdate) onUpdate();
@@ -223,7 +264,7 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
         {/* Form Section */}
         <div className="lg:col-span-7">
           <h3 className="font-bold text-slate-700 dark:text-slate-300 mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
-            <span>เพิ่มโพสต์ใหม่ (Multiple Stocks)</span>
+            <span>{editingId ? 'แก้ไขโพสต์ (Edit)' : 'เพิ่มโพสต์ใหม่ (Multiple Stocks)'}</span>
           </h3>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex gap-4">
@@ -363,9 +404,20 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
               <span>+ เพิ่มหุ้นอีกตัว</span>
             </button>
 
-            <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-amber-500/20 text-sm mt-4">
-              โพสต์ข้อมูล
-            </button>
+            <div className="flex gap-3 mt-4">
+              <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-amber-500/20 text-sm">
+                {editingId ? 'อัปเดตโพสต์' : 'โพสต์ข้อมูล'}
+              </button>
+              {editingId && (
+                <button 
+                  type="button" 
+                  onClick={resetForm}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-colors text-sm"
+                >
+                  ยกเลิกการแก้ไข
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -389,12 +441,22 @@ export default function OwnerPennyStocksManager({ currentUser, requestConfirm, r
                       <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
                         {post.title}
                       </h4>
-                      <button 
-                        onClick={() => handleDelete(post.id)}
-                        className="text-red-500 hover:text-white bg-red-50 dark:bg-red-900/20 hover:bg-red-500 dark:hover:bg-red-600 px-2 py-1 rounded text-xs shrink-0 transition-colors"
-                      >
-                        ลบ
-                      </button>
+                      <div className="flex gap-2 shrink-0">
+                        {info.isNew && (
+                          <button 
+                            onClick={() => handleEditClick(post)}
+                            className="text-amber-500 hover:text-white bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-500 dark:hover:bg-amber-600 px-2 py-1 rounded text-xs transition-colors"
+                          >
+                            แก้ไข
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => handleDelete(post.id)}
+                          className="text-red-500 hover:text-white bg-red-50 dark:bg-red-900/20 hover:bg-red-500 dark:hover:bg-red-600 px-2 py-1 rounded text-xs transition-colors"
+                        >
+                          ลบ
+                        </button>
+                      </div>
                     </div>
                     
                     <span className="text-[10px] text-slate-500">
