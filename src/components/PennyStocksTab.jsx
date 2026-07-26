@@ -2,10 +2,82 @@ import React, { useState, useEffect } from 'react';
 import { getPennyStocks } from '../db/journalDB';
 import VipLockScreen from './VipLockScreen';
 import OwnerPennyStocksManager from './OwnerPennyStocksManager';
+import { Download } from 'lucide-react';
+
+// ============================
+// Image Lightbox Modal
+// ============================
+function ImageLightbox({ src, onClose }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-5xl max-h-[90vh] w-full mx-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <img
+          src={src}
+          alt="Full size view"
+          className="w-full h-auto max-h-[90vh] object-contain rounded-xl shadow-2xl"
+        />
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch(src);
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Image_${new Date().toISOString().split('T')[0]}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error('Failed to download image', err);
+                const a = document.createElement('a');
+                a.href = src;
+                a.download = `Image_${new Date().toISOString().split('T')[0]}.png`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }
+            }}
+            className="bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors shadow-lg"
+            title="Download Image"
+          >
+            <Download size={18} />
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors text-lg font-bold shadow-lg"
+            title="ปิด (ESC)"
+          >
+            ✕
+          </button>
+        </div>
+        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-xs font-medium">
+          คลิกนอกรูปหรือกด ESC เพื่อปิด
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     fetchPosts();
@@ -176,7 +248,7 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
                                     src={imgUrl} 
                                     alt={`Chart ${stock.ticker} ${imgIdx+1}`}
                                     className="w-full h-auto rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-zoom-in hover:opacity-95 transition-opacity object-cover"
-                                    onClick={() => window.open(imgUrl, '_blank')}
+                                    onClick={() => setSelectedImage(imgUrl)}
                                   />
                                 </div>
                               ))}
@@ -196,7 +268,7 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
                           src={post.chart_image} 
                           alt="Chart" 
                           className="max-w-full h-auto rounded-xl shadow-md border border-slate-200 dark:border-slate-800 cursor-zoom-in hover:opacity-95 transition-opacity"
-                          onClick={() => window.open(post.chart_image, '_blank')}
+                          onClick={() => setSelectedImage(post.chart_image)}
                         />
                       </div>
                     )}
@@ -219,6 +291,10 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
           })
         )}
       </div>
+
+      {selectedImage && (
+        <ImageLightbox src={selectedImage} onClose={() => setSelectedImage(null)} />
+      )}
     </div>
   );
 }
