@@ -140,12 +140,12 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
                           <div className="flex flex-wrap gap-2">
                             {stock.pattern && (
                               <span className="text-xs font-bold px-2.5 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-md border border-purple-200 dark:border-purple-800/50">
-                                🎨 {stock.pattern}
+                                📈 {stock.pattern}
                               </span>
                             )}
                             {stock.setup && (
                               <span className="text-xs font-bold px-2.5 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-md border border-emerald-200 dark:border-emerald-800/50">
-                                🎯 {stock.setup}
+                                📋 {stock.setup}
                               </span>
                             )}
                           </div>
