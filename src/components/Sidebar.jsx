@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Sidebar({ activeTab, setActiveTab, accountId, setAccountId, globalDateRange, setGlobalDateRange, isVip, isTiPicks, isAlphaPicks, isPennyStocks, isOwner, accounts, setShowAccountModal, setShowManual, hasNewFeedPost, isMobileView }) {
@@ -6,15 +6,12 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [tempSelectedYear, setTempSelectedYear] = useState('');
   const [tempSelectedMonth, setTempSelectedMonth] = useState('');
-  const [proFirst, setProFirst] = useState(() => {
-    return localStorage.getItem('phudit_sidebar_pro_first') === 'true';
-  });
-
-  const toggleMenuOrder = () => {
-    const newVal = !proFirst;
-    setProFirst(newVal);
-    localStorage.setItem('phudit_sidebar_pro_first', String(newVal));
-  };
+  
+  const [isEditMode, setIsEditMode] = useState(false);
+  
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
+  const dragGroup = useRef(null);
 
   const formatMonthLabel = (val) => {
     if (!val || !val.startsWith('MONTH-')) return 'Custom Month';
@@ -24,16 +21,15 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  const NAV_ITEMS = [
+  const DEFAULT_NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: t('app.dashboard', 'Overview').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'journal', icon: '📓', label: t('app.journal', 'Trades Table').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'feed', icon: '📰', label: t('app.feed', 'Trading Bulletin').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'analytics', icon: '📈', label: t('app.analytics', 'Analytics & Stats').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
-
     { id: 'fighter', icon: '⚡', label: t('app.fighter', 'Trade Simulator').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
   ];
 
-  const VIP_ITEMS = [
+  const DEFAULT_VIP_ITEMS = [
     { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
     { id: 'portfolioRebalancer', icon: '⚖️', label: 'Portfolio Rebalancer' },
     { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
@@ -44,6 +40,49 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'dividends', icon: '💰', label: t('app.dividends', 'Dividends').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'pennyStocks', icon: '🪙', label: 'Penny Stocks Pro' },
   ];
+
+  const [navOrder, setNavOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('phudit_sidebar_nav_order')) || []; } catch { return []; }
+  });
+
+  const [vipOrder, setVipOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('phudit_sidebar_vip_order')) || []; } catch { return []; }
+  });
+
+  const getOrderedItems = (defaultItems, order) => {
+    let ordered = [];
+    const currentMap = new Map(defaultItems.map(i => [i.id, i]));
+    if (order.length > 0) {
+      ordered = order.map(id => currentMap.get(id)).filter(Boolean);
+    }
+    defaultItems.forEach(item => {
+      if (!ordered.find(m => m.id === item.id)) ordered.push(item);
+    });
+    return ordered;
+  };
+
+  const navItems = getOrderedItems(DEFAULT_NAV_ITEMS, navOrder);
+  const vipItems = getOrderedItems(DEFAULT_VIP_ITEMS, vipOrder);
+
+  const handleSort = (group) => {
+    if (dragGroup.current !== group || dragItem.current === null || dragOverItem.current === null) return;
+    
+    let items = group === 'nav' ? [...navItems] : [...vipItems];
+    const draggedItemContent = items[dragItem.current];
+    items.splice(dragItem.current, 1);
+    items.splice(dragOverItem.current, 0, draggedItemContent);
+    
+    const newOrder = items.map(i => i.id);
+    if (group === 'nav') {
+      setNavOrder(newOrder);
+      localStorage.setItem('phudit_sidebar_nav_order', JSON.stringify(newOrder));
+    } else {
+      setVipOrder(newOrder);
+      localStorage.setItem('phudit_sidebar_vip_order', JSON.stringify(newOrder));
+    }
+    
+    dragItem.current = dragOverItem.current;
+  };
 
   const checkAccess = (tabId) => {
     if (isVip) return true;
@@ -129,84 +168,74 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
 
       {/* Navigation */}
       <nav className="flex flex-col gap-1">
-        {(() => {
-          const renderMainMenu = (isFirst) => (
-            <>
-              <div className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-3 flex justify-between items-center group ${!isFirst ? 'mt-4' : ''}`}>
-                <span>{t('common.mainMenu', 'Main Menu')}</span>
-                <button onClick={toggleMenuOrder} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-orange-500 cursor-pointer" title="สลับตำแหน่งเมนู (Swap Order)">
-                  ↕️
-                </button>
-              </div>
-              {NAV_ITEMS.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-                    activeTab === item.id
-                      ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
-                  }`}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
-                  {item.id === 'feed' && hasNewFeedPost && (
-                    <span className="absolute top-3.5 left-8 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
-                  )}
-                </button>
-              ))}
-            </>
-          );
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-3 flex justify-between items-center group">
+          <span>{t('common.mainMenu', 'Main Menu')}</span>
+          <button 
+            onClick={() => setIsEditMode(!isEditMode)} 
+            className={`transition-opacity text-xs ${isEditMode ? 'text-orange-500 font-bold opacity-100' : 'text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100'}`} 
+            title="Edit Menu Order"
+          >
+            {isEditMode ? 'Done' : '⚙️ Edit'}
+          </button>
+        </div>
+        
+        {navItems.map((item, index) => (
+          <button
+            key={item.id}
+            draggable={isEditMode}
+            onDragStart={(e) => { dragGroup.current = 'nav'; dragItem.current = index; }}
+            onDragEnter={(e) => { if (dragGroup.current === 'nav') dragOverItem.current = index; }}
+            onDragEnd={() => { handleSort('nav'); dragGroup.current = null; dragItem.current = null; dragOverItem.current = null; }}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => { if (!isEditMode) setActiveTab(item.id); }}
+            className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${isEditMode ? 'cursor-move hover:bg-slate-100 dark:hover:bg-slate-800' : 'cursor-pointer'} ${
+              activeTab === item.id && !isEditMode
+                ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
+            }`}
+          >
+            <span className="text-lg">{item.icon}</span>
+            <span className="flex-1 text-left">{item.label}</span>
+            {item.id === 'feed' && hasNewFeedPost && !isEditMode && (
+              <span className="absolute top-3.5 left-8 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
+            )}
+            {isEditMode && <span className="text-slate-400">≡</span>}
+          </button>
+        ))}
 
-          const renderProMenu = (isFirst) => (
-            <>
-              <div className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-3 flex justify-between items-center group ${!isFirst ? 'mt-4' : ''}`}>
-                <div className="flex items-center gap-1.5">
-                  <span>👑</span>
-                  <span>Pro Features</span>
-                </div>
-                <button onClick={toggleMenuOrder} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-orange-500 cursor-pointer" title="สลับตำแหน่งเมนู (Swap Order)">
-                  ↕️
-                </button>
-              </div>
-              {VIP_ITEMS.map((item) => {
-                const hasPermission = checkAccess(item.id);
-                return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-                    activeTab === item.id
-                      ? hasPermission
-                        ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
-                        : 'bg-slate-100 text-slate-400 shadow-inner border-l-4 border-slate-300'
-                      : hasPermission
-                        ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
-                        : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-500 dark:hover:text-slate-400 border-l-4 border-transparent'
-                  }`}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {!hasPermission && (
-                    <span className="text-[10px] ml-auto opacity-60 text-amber-500">🔒</span>
-                  )}
-                </button>
-              )})}
-            </>
-          );
-
-          return proFirst ? (
-            <>
-              {renderProMenu(true)}
-              {renderMainMenu(false)}
-            </>
-          ) : (
-            <>
-              {renderMainMenu(true)}
-              {renderProMenu(false)}
-            </>
-          );
-        })()}
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 px-3 flex items-center gap-1.5">
+          <span>👑</span>
+          <span>Pro Features</span>
+        </div>
+        {vipItems.map((item, index) => {
+          const hasPermission = checkAccess(item.id);
+          return (
+          <button
+            key={item.id}
+            draggable={isEditMode}
+            onDragStart={(e) => { dragGroup.current = 'vip'; dragItem.current = index; }}
+            onDragEnter={(e) => { if (dragGroup.current === 'vip') dragOverItem.current = index; }}
+            onDragEnd={() => { handleSort('vip'); dragGroup.current = null; dragItem.current = null; dragOverItem.current = null; }}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => { if (!isEditMode) setActiveTab(item.id); }}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${isEditMode ? 'cursor-move hover:bg-slate-100 dark:hover:bg-slate-800' : 'cursor-pointer'} ${
+              activeTab === item.id && !isEditMode
+                ? hasPermission
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
+                  : 'bg-slate-100 text-slate-400 shadow-inner border-l-4 border-slate-300'
+                : hasPermission
+                  ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
+                  : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-500 dark:hover:text-slate-400 border-l-4 border-transparent'
+            }`}
+          >
+            <span className="text-lg">{item.icon}</span>
+            <span className="flex-1 text-left">{item.label}</span>
+            {!hasPermission && !isEditMode && (
+              <span className="text-[10px] ml-auto opacity-60 text-amber-500">🔒</span>
+            )}
+            {isEditMode && <span className="text-slate-400 ml-auto">≡</span>}
+          </button>
+        )})}
 
         {isOwner && (
           <>
