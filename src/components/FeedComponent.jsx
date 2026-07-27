@@ -31,14 +31,31 @@ function ImageLightbox({ src, onClose }) {
               try {
                 const response = await fetch(src);
                 const blob = await response.blob();
+                const filename = `Image_${new Date().toISOString().split('T')[0]}.png`;
+                
+                if (navigator.share) {
+                  const file = new File([blob], filename, { type: blob.type || 'image/png' });
+                  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                      await navigator.share({
+                        files: [file],
+                        title: filename,
+                      });
+                      return;
+                    } catch (shareErr) {
+                      console.log('Share cancelled or failed', shareErr);
+                    }
+                  }
+                }
+
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Image_${new Date().toISOString().split('T')[0]}.png`;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
               } catch (err) {
                 console.error('Failed to download image', err);
                 const a = document.createElement('a');
