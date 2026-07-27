@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import CustomTooltip from './Tooltip';
 import { RANK_SYSTEM } from '../db/journalDB';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -302,7 +303,7 @@ export default function Dashboard({
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.accountBalance')}<Tooltip content="ยอดเงินคงเหลือในพอร์ตปัจจุบันของคุณ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.accountBalance')}<CustomTooltip content="ยอดเงินคงเหลือในพอร์ตปัจจุบันของคุณ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           {pnlDisplayMode === 'pnl' ? (
             <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           ) : (
@@ -346,7 +347,7 @@ export default function Dashboard({
         </div>
 
         <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.winRate')}<Tooltip content="อัตราการชนะ (จำนวนครั้งที่เทรดได้กำไร เทียบกับจำนวนเทรดทั้งหมด)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.winRate')}<CustomTooltip content="อัตราการชนะ (จำนวนครั้งที่เทรดได้กำไร เทียบกับจำนวนเทรดทั้งหมด)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-3xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-2 block">{winRate.toFixed(1)}%</span>
           <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span>{t('dashboard.closedTrades')}: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalClosed}</strong></span>
@@ -355,7 +356,7 @@ export default function Dashboard({
         </div>
 
         <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<Tooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className={`text-3xl font-mono font-bold mt-2 block ${
             (pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'
           }`}>
@@ -373,7 +374,7 @@ export default function Dashboard({
         </div>
 
         <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.activeLevel')}<Tooltip content="ระดับปัจจุบันของคุณในระบบ Gamification ซึ่งเป็นตัวกำหนดเพดานความเสี่ยง (Risk Limit)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.activeLevel')}<CustomTooltip content="ระดับปัจจุบันของคุณในระบบ Gamification ซึ่งเป็นตัวกำหนดเพดานความเสี่ยง (Risk Limit)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2 block">{currentRank.name}</span>
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-450 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
             <span>{t('dashboard.level')} {currentRank.level}</span>
@@ -397,15 +398,15 @@ export default function Dashboard({
             
             <div className="mt-6 space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800/80">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400"><span className="flex items-center">{t('dashboard.riskLimit1')}:<Tooltip content="ความเสี่ยงสูงสุดที่ระบบอนุญาตต่อการเทรด 1 ไม้ (เงินที่จะเสียเมื่อโดน Stop Loss)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+                <span className="text-slate-600 dark:text-slate-400"><span className="flex items-center">{t('dashboard.riskLimit1')}:<CustomTooltip content="ความเสี่ยงสูงสุดที่ระบบอนุญาตต่อการเทรด 1 ไม้ (เงินที่จะเสียเมื่อโดน Stop Loss)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
                 <span className="font-mono font-bold text-rose-500 dark:text-rose-450">${currentRank.risk1}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400"><span className="flex items-center">{t('dashboard.maxRisk')}:<Tooltip content="ความเสี่ยงรวมสูงสุดที่อนุญาตให้มีสถานะค้างไว้พร้อมกันได้ (ช่วยป้องกันการ Overtrade)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+                <span className="text-slate-600 dark:text-slate-400"><span className="flex items-center">{t('dashboard.maxRisk')}:<CustomTooltip content="ความเสี่ยงรวมสูงสุดที่อนุญาตให้มีสถานะค้างไว้พร้อมกันได้ (ช่วยป้องกันการ Overtrade)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
                 <span className="font-mono font-bold text-red-650 dark:text-red-500">${currentRank.maxRisk}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400"><span className="flex items-center">{t('dashboard.budgetAllocation')}:<Tooltip content="สัดส่วนเงินทุนที่อนุญาตให้ใช้เทรดได้ในเลเวลปัจจุบัน"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+                <span className="text-slate-600 dark:text-slate-400"><span className="flex items-center">{t('dashboard.budgetAllocation')}:<CustomTooltip content="สัดส่วนเงินทุนที่อนุญาตให้ใช้เทรดได้ในเลเวลปัจจุบัน"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
                 <span className="font-mono font-bold text-indigo-650 dark:text-indigo-400">{currentRank.maxAlloc}%</span>
               </div>
             </div>
@@ -441,7 +442,7 @@ export default function Dashboard({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span><span className="flex items-center">🎯 {t('dashboard.monthlyRRTarget')}<Tooltip content="ตัวติดตามเป้าหมายการทำกำไรประจำเดือน (นับเป็น R) เพื่อช่วยฝึกความสม่ำเสมอ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+                  <span><span className="flex items-center">🎯 {t('dashboard.monthlyRRTarget')}<CustomTooltip content="ตัวติดตามเป้าหมายการทำกำไรประจำเดือน (นับเป็น R) เพื่อช่วยฝึกความสม่ำเสมอ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
                 </h3>
                 <p className="text-sm text-slate-550 dark:text-slate-400 mt-1">{t('dashboard.rrTrackerDesc')}</p>
               </div>
@@ -525,20 +526,20 @@ export default function Dashboard({
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* ROW 1 */}
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between col-span-2">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">NET R-MULTIPLE<Tooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">NET R-MULTIPLE<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className={`text-3xl font-mono font-black mt-2 block ${achievedRR >= 0 ? 'text-[#2EBD85]' : 'text-[#F6465D]'}`}>
             {achievedRR > 0 ? '+' : ''}{achievedRR.toFixed(2)} R
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.profitFactor')}<Tooltip content="อัตราส่วนระหว่าง 'กำไรรวม' หารด้วย 'ขาดทุนรวม' (ค่า > 1 หมายถึงระบบทำกำไรได้ดี)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.profitFactor')}<CustomTooltip content="อัตราส่วนระหว่าง 'กำไรรวม' หารด้วย 'ขาดทุนรวม' (ค่า > 1 หมายถึงระบบทำกำไรได้ดี)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold text-sky-500 mt-2 block">{profitFactor === Infinity ? 'MAX' : profitFactor.toFixed(2)}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between group">
           <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">
-            <span className="flex items-center">EXPECTANCY<Tooltip content="ค่าความคาดหวัง หรือกำไรเฉลี่ยต่อการเทรด 1 ไม้ (บอกว่าโดยเฉลี่ยเทรด 1 ครั้งจะได้กำไรหรือขาดทุนเท่าไหร่)">
+            <span className="flex items-center">EXPECTANCY<CustomTooltip content="ค่าความคาดหวัง หรือกำไรเฉลี่ยต่อการเทรด 1 ไม้ (บอกว่าโดยเฉลี่ยเทรด 1 ครั้งจะได้กำไรหรือขาดทุนเท่าไหร่)">
                 <span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span>
-            </Tooltip></span>
+            </CustomTooltip></span>
           </span>
           <span className={`text-xl font-mono font-bold mt-2 block ${
             (pnlDisplayMode === 'pnl' ? expectancyPnL : expectancyRR) >= 0 ? 'text-[#2EBD85]' : 'text-[#F6465D]'
@@ -550,13 +551,13 @@ export default function Dashboard({
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.avgWin')}<Tooltip content="ค่าเฉลี่ยของกำไร ต่อ 1 ไม้ที่ชนะ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.avgWin')}<CustomTooltip content="ค่าเฉลี่ยของกำไร ต่อ 1 ไม้ที่ชนะ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">
             {pnlDisplayMode === 'pnl' ? `$${averageWin.toFixed(2)}` : `+${avgWinRR.toFixed(2)} R`}
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.avgLoss')}<Tooltip content="ค่าเฉลี่ยของยอดขาดทุน ต่อ 1 ไม้ที่แพ้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.avgLoss')}<CustomTooltip content="ค่าเฉลี่ยของยอดขาดทุน ต่อ 1 ไม้ที่แพ้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">
             {pnlDisplayMode === 'pnl' ? `-$${averageLoss.toFixed(2)}` : `${avgLossRR.toFixed(2)} R`}
           </span>
@@ -564,44 +565,44 @@ export default function Dashboard({
 
         {/* ROW 2 */}
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.largestWin')}<Tooltip content="จำนวนกำไรที่เยอะที่สุดที่ทำได้จากการเทรด 1 ไม้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.largestWin')}<CustomTooltip content="จำนวนกำไรที่เยอะที่สุดที่ทำได้จากการเทรด 1 ไม้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold text-emerald-500 mt-2 block">
             {pnlDisplayMode === 'pnl' ? `$${largestWin.toFixed(2)}` : `+${largestWinRR.toFixed(2)} R`}
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.largestLoss')}<Tooltip content="จำนวนขาดทุนที่เยอะที่สุดจากการเทรด 1 ไม้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.largestLoss')}<CustomTooltip content="จำนวนขาดทุนที่เยอะที่สุดจากการเทรด 1 ไม้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold text-rose-500 mt-2 block">
             {pnlDisplayMode === 'pnl' ? `-$${Math.abs(largestLoss).toFixed(2)}` : `${largestLossRR.toFixed(2)} R`}
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.streaks')}<Tooltip content="สถิติชนะติดต่อกันสูงสุด (W) และแพ้ติดต่อกันสูงสุด (L)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.streaks')}<CustomTooltip content="สถิติชนะติดต่อกันสูงสุด (W) และแพ้ติดต่อกันสูงสุด (L)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold mt-2 block">
             <span className="text-emerald-500">{maxConsecutiveWins}W</span> <span className="text-slate-500">/</span> <span className="text-rose-500">{maxConsecutiveLosses}L</span>
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.exitEfficiency')}<Tooltip content="ประสิทธิภาพในการทำกำไร เทียบกับจุดที่ราคาวิ่งไปได้ไกลสุด (ยิ่งใกล้ 100% ยิ่งดี)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.exitEfficiency')}<CustomTooltip content="ประสิทธิภาพในการทำกำไร เทียบกับจุดที่ราคาวิ่งไปได้ไกลสุด (ยิ่งใกล้ 100% ยิ่งดี)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className={`text-xl font-mono font-bold mt-2 block ${avgExitEfficiency >= 80 ? 'text-emerald-500' : (avgExitEfficiency >= 50 ? 'text-amber-500' : 'text-rose-500')}`}>
             {avgExitEfficiency > 0 ? `${avgExitEfficiency.toFixed(1)}%` : 'N/A'}
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.winRateLS')}<Tooltip content="อัตราการชนะ แยกตามฝั่ง Long (ซื้อขึ้น) และ Short (ขายลง)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">{t('dashboard.winRateLS')}<CustomTooltip content="อัตราการชนะ แยกตามฝั่ง Long (ซื้อขึ้น) และ Short (ขายลง)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <div className="flex flex-col mt-2">
             <span className="text-xs font-mono font-bold text-emerald-500">{t('dashboard.long')}: {longWinRate.toFixed(0)}% ({longWins}/{longTrades.length})</span>
             <span className="text-xs font-mono font-bold text-rose-500">{t('dashboard.short')}: {shortWinRate.toFixed(0)}% ({shortWins}/{shortTrades.length})</span>
           </div>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">Avg Hold Time<Tooltip content="ระยะเวลาเฉลี่ยที่คุณถือครองสถานะเทรดแต่ละไม้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">Avg Hold Time<CustomTooltip content="ระยะเวลาเฉลี่ยที่คุณถือครองสถานะเทรดแต่ละไม้"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-xl font-mono font-bold text-indigo-500 mt-2 block">{avgHoldStr}</span>
         </div>
 
         {/* ROW 3 */}
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between col-span-2">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">PLAN ADHERENCE<Tooltip content="คะแนนความมีวินัย บ่งบอกว่าคุณทำตามแผนที่วางไว้ได้ดีแค่ไหน"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">PLAN ADHERENCE<CustomTooltip content="คะแนนความมีวินัย บ่งบอกว่าคุณทำตามแผนที่วางไว้ได้ดีแค่ไหน"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className={`text-2xl font-mono font-bold mt-2 block ${
             planAdherencePct >= 90 ? 'text-[#2EBD85]' : planAdherencePct >= 70 ? 'text-yellow-500' : 'text-[#F6465D]'
           }`}>
@@ -609,11 +610,11 @@ export default function Dashboard({
           </span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">TOTAL TRADES<Tooltip content="จำนวนไม้เทรดทั้งหมดที่คุณได้บันทึกและปิดสถานะไปแล้ว"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">TOTAL TRADES<CustomTooltip content="จำนวนไม้เทรดทั้งหมดที่คุณได้บันทึกและปิดสถานะไปแล้ว"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-2xl font-mono font-bold text-slate-700 dark:text-slate-200 mt-2 block">{totalClosed}</span>
         </div>
         <div className="crypto-card p-4 relative overflow-visible flex flex-col justify-between">
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">MAX DRAWDOWN<Tooltip content="อัตราการหดตัวสูงสุดของพอร์ตลงทุน (เปอร์เซ็นต์ที่พอร์ตเคยติดลบลึกที่สุดจากจุดยอด)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></Tooltip></span></span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block"><span className="flex items-center">MAX DRAWDOWN<CustomTooltip content="อัตราการหดตัวสูงสุดของพอร์ตลงทุน (เปอร์เซ็นต์ที่พอร์ตเคยติดลบลึกที่สุดจากจุดยอด)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className="text-2xl font-mono font-bold text-[#F6465D] mt-2 block">
             -{maxDrawdownPct.toFixed(2)}%
           </span>
