@@ -83,6 +83,19 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
     saveCapital(totalCapital + amount);
   };
 
+  const handleRemoveCapital = () => {
+    const amount = parseFloat(transactionAmount) || 0;
+    if (totalCapital - amount < 0) {
+      if (requestAlert) {
+        requestAlert("❌ Invalid Withdrawal", "You cannot withdraw more capital than you currently have available.");
+      } else {
+        alert("You cannot withdraw more capital than you currently have available.");
+      }
+      return;
+    }
+    saveCapital(totalCapital - amount);
+  };
+
   const calculateExpiry = (weekStartStr) => {
     if (!weekStartStr) return null;
     const date = new Date(weekStartStr);
@@ -192,7 +205,7 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
           </div>
           
           <div className="bg-slate-800 p-4 rounded-xl flex flex-col justify-center">
-            <label className="block text-sm font-bold text-slate-300 mb-2">Deposit Capital (e.g. Weekly Top-up)</label>
+            <label className="block text-sm font-bold text-slate-300 mb-2">Deposit / Withdraw Capital</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
@@ -210,8 +223,14 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
               >
                 + Add
               </button>
+              <button 
+                onClick={handleRemoveCapital}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg transition-colors whitespace-nowrap"
+              >
+                - Remove
+              </button>
             </div>
-            <p className="text-[10px] text-slate-400 mt-2">Added capital will be included in the compounding formula.</p>
+            <p className="text-[10px] text-slate-400 mt-2">Added or removed capital will update your compounding formula.</p>
           </div>
         </div>
       </div>
