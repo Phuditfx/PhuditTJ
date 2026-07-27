@@ -318,6 +318,8 @@ const TradeCard = React.memo(({
   handleOpenCloseModal,
   requestConfirm,
   onDeleteTrade,
+  setViewingImage,
+  setSummaryTrade,
   pnlDisplayMode = 'pnl'
 }) => {
   const isClosed = trade.status === 'Closed';
@@ -341,7 +343,9 @@ const TradeCard = React.memo(({
   }
 
   return (
-    <div className={`bg-white dark:bg-slate-900/80 border rounded-xl p-4 flex flex-col gap-3 transition-all shadow-sm hover:shadow-md ${
+    <div 
+      onClick={() => setSummaryTrade && setSummaryTrade(trade)}
+      className={`bg-white dark:bg-slate-900/80 border rounded-xl p-4 flex flex-col gap-3 transition-all shadow-sm hover:shadow-md cursor-pointer ${
       isFeedbackActive 
         ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-950/20' 
         : 'border-slate-200 dark:border-slate-800'
@@ -497,21 +501,21 @@ const TradeCard = React.memo(({
       {/* Bottom: Action Buttons */}
       <div className="flex gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
         <button
-          onClick={() => setChartModalTrade(trade)}
+          onClick={(e) => { e.stopPropagation(); setChartModalTrade(trade); }}
           className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1"
         >
           📈 Chart
         </button>
         {!isClosed && (
           <button
-            onClick={() => handleOpenEditModal(trade)}
+            onClick={(e) => { e.stopPropagation(); handleOpenEditModal(trade); }}
             className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1"
           >
             ✏️ Edit
           </button>
         )}
         <button
-          onClick={() => handleOpenCloseModal(trade)}
+          onClick={(e) => { e.stopPropagation(); handleOpenCloseModal(trade); }}
           className={`flex-1 font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1 ${
             !isClosed 
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
@@ -550,6 +554,7 @@ const DesktopTradeCard = React.memo(({
   requestConfirm,
   onDeleteTrade,
   setViewingImage,
+  setSummaryTrade,
   pnlDisplayMode = 'pnl'
 }) => {
   const { t } = useLanguage();
@@ -579,11 +584,13 @@ const DesktopTradeCard = React.memo(({
     : '-';
 
   return (
-    <div className={`bg-white dark:bg-[#0f172a]/90 border rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
-      isFeedbackActive 
-        ? 'border-indigo-500 dark:border-indigo-700 ring-2 ring-indigo-500/10' 
-        : 'border-slate-200 dark:border-slate-800/80'
-    }`}>
+    <div 
+      onClick={() => setSummaryTrade && setSummaryTrade(trade)}
+      className={`bg-white dark:bg-[#0f172a]/90 border rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer ${
+        isFeedbackActive 
+          ? 'border-indigo-500 dark:border-indigo-700 ring-2 ring-indigo-500/10' 
+          : 'border-slate-200 dark:border-slate-800/80'
+      }`}>
       {/* 🚀 Header: Symbol, Direction, Status */}
       <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/40">
         <div className="flex items-center gap-2">
@@ -762,7 +769,8 @@ const DesktopTradeCard = React.memo(({
       {/* 🛠️ Bottom Action Buttons Bar */}
       <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/40 mt-1">
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             if (!isVip) {
               if (requestAlert) requestAlert("VIP Only", "คุณสมบัตินี้สำหรับสมาชิก VIP เท่านั้น");
               else alert("คุณสมบัตินี้สำหรับสมาชิก VIP เท่านั้น");
@@ -781,7 +789,7 @@ const DesktopTradeCard = React.memo(({
         </button>
         {!isClosed && (
           <button
-            onClick={() => handleOpenEditModal(trade)}
+            onClick={(e) => { e.stopPropagation(); handleOpenEditModal(trade); }}
             className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm shadow-amber-955/20 flex items-center justify-center gap-1"
             title="แก้ไขการตั้งค่า"
           >
@@ -789,7 +797,7 @@ const DesktopTradeCard = React.memo(({
           </button>
         )}
         <button
-          onClick={() => handleOpenCloseModal(trade)}
+          onClick={(e) => { e.stopPropagation(); handleOpenCloseModal(trade); }}
           className={`flex-1 font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1 ${
             !isClosed 
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-955/20' 
@@ -980,6 +988,9 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   const [mfePrice, setMfePrice] = useState('');
   const [maePrice, setMaePrice] = useState('');
   
+  // State สำหรับ Summary Modal
+  const [summaryTrade, setSummaryTrade] = useState(null);
+
   // State สำหรับ Edit Open Trade
   const [editEntry, setEditEntry] = useState('');
   const [editSL, setEditSL] = useState('');
@@ -1393,7 +1404,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
     }
 
     // Upload Images if new ones are selected
-    let finalImageUrl = selectedTrade.imageUrl || null;
+    let finalImageUrl = selectedTrade.imageUrl || selectedTrade.imageUrlBefore || null;
 
     if (tradeImage && currentUser) {
       setIsUploading(true);
@@ -1694,6 +1705,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                       isFeedbackActive={isFeedbackActive}
                       setActiveFeedbackTradeId={setActiveFeedbackTradeId}
                       setChartModalTrade={setChartModalTrade}
+                      setSummaryTrade={setSummaryTrade}
                       handleOpenEditModal={handleOpenEditModal}
                       handleOpenCloseModal={handleOpenCloseModal}
                       requestConfirm={requestConfirm}
@@ -1724,6 +1736,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                       isFeedbackActive={isFeedbackActive}
                       setActiveFeedbackTradeId={setActiveFeedbackTradeId}
                       setChartModalTrade={setChartModalTrade}
+                      setSummaryTrade={setSummaryTrade}
                       handleOpenEditModal={handleOpenEditModal}
                       handleOpenCloseModal={handleOpenCloseModal}
                       requestConfirm={requestConfirm}
@@ -2521,6 +2534,141 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
               >
                 Save Updates 💾
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📋 Order Summary Modal */}
+      {summaryTrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSummaryTrade(null)}></div>
+          <div className="relative bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                  <span className="text-2xl">{summaryTrade.symbol}</span>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${
+                    summaryTrade.direction === 'Long' 
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
+                      : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
+                  }`}>
+                    {summaryTrade.direction}
+                  </span>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${
+                    summaryTrade.status === 'Closed'
+                      ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 animate-pulse'
+                  }`}>
+                    {summaryTrade.status}
+                  </span>
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                  {summaryTrade.dateTime ? new Date(summaryTrade.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSummaryTrade(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              
+              {/* Performance Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Entry Price</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">${parseFloat(summaryTrade.entryPrice).toFixed(4)}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Exit Price</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{summaryTrade.status === 'Closed' ? `$${parseFloat(summaryTrade.actualExitPrice || summaryTrade.entryPrice).toFixed(4)}` : '-'}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">PnL</p>
+                  <p className={`text-lg font-black ${
+                    !summaryTrade.pnl || summaryTrade.pnl == 0 ? 'text-slate-500' :
+                    parseFloat(summaryTrade.pnl) > 0 ? 'text-emerald-500' : 'text-rose-500'
+                  }`}>
+                    {summaryTrade.pnl !== undefined ? (parseFloat(summaryTrade.pnl) > 0 ? '+' : '') + `$${parseFloat(summaryTrade.pnl).toFixed(2)}` : '-'}
+                  </p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Risk / Reward</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{summaryTrade.actualRR ? `${parseFloat(summaryTrade.actualRR).toFixed(2)}R` : '-'}</p>
+                </div>
+              </div>
+
+              {/* Context & Setup */}
+              <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                <h3 className="text-sm font-black text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                  <span className="text-lg">🧠</span> Trade Context
+                </h3>
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                  <div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block mb-0.5">Setup / Strategy</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">{summaryTrade.setupName || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block mb-0.5">Mental State</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">{summaryTrade.entryMood || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block mb-0.5">Pump Stage</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">{summaryTrade.pumpStage || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block mb-0.5">Plan Adherence</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">{summaryTrade.planAdherence || '-'}</span>
+                  </div>
+                </div>
+                {summaryTrade.notes && (
+                  <div className="mt-4 pt-4 border-t border-indigo-200/50 dark:border-indigo-800/50">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Notes</span>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{summaryTrade.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Feedback */}
+              {summaryTrade.aiFeedback && (
+                <div className="bg-slate-900 dark:bg-slate-800 text-white p-5 rounded-xl border border-slate-700 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <h3 className="text-sm font-black text-indigo-300 mb-3 flex items-center gap-2">
+                    <span className="text-lg">🤖</span> AI Coach Feedback
+                  </h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-3xl font-black">{summaryTrade.aiScore}<span className="text-sm text-slate-400">/10</span></div>
+                    <div className="h-2 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${summaryTrade.aiScore >= 8 ? 'bg-emerald-500' : summaryTrade.aiScore >= 5 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                        style={{ width: `${(summaryTrade.aiScore / 10) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{summaryTrade.aiFeedback}</p>
+                </div>
+              )}
+
+              {/* Attached Image */}
+              {(summaryTrade.imageUrl || summaryTrade.imageUrlBefore) && (
+                <div>
+                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">Attached Image</h3>
+                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-zoom-in" onClick={() => setViewingImage(summaryTrade.imageUrl || summaryTrade.imageUrlBefore)}>
+                    <img 
+                      src={summaryTrade.imageUrl || summaryTrade.imageUrlBefore} 
+                      alt="Trade Chart" 
+                      className="w-full h-auto max-h-[300px] object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
