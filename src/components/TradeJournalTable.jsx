@@ -1410,7 +1410,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setIsUploading(true);
       try {
         const { uploadTradeImage } = await import('../db/journalDB');
-        finalImageUrl = await uploadTradeImage(tradeImage, currentUser.email);
+        finalImageUrl = await uploadTradeImage(tradeImage, currentUser);
       } catch (err) {
         if (requestAlert) requestAlert("Upload Failed", "อัปโหลดรูปภาพล้มเหลว: " + err.message);
         else alert("อัปโหลดรูปภาพล้มเหลว: " + err.message);

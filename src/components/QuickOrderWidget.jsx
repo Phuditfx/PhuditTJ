@@ -103,7 +103,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       setIsUploading(true);
       try {
         const { uploadTradeImage } = await import('../db/journalDB');
-        imageUrl = await uploadTradeImage(tradeImage, currentUser.email);
+        imageUrl = await uploadTradeImage(tradeImage, currentUser);
       } catch (err) {
         if (requestAlert) requestAlert("Upload Failed", "อัปโหลดรูปภาพล้มเหลว: " + err.message);
         else alert("อัปโหลดรูปภาพล้มเหลว: " + err.message);
