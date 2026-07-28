@@ -753,7 +753,7 @@ export const uploadTradeImage = async (file, userEmail) => {
         const fileName = `${cleanEmail}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
         
         const { data, error } = await supabase.storage
-            .from('TRADE-IMAGES')
+            .from('trade-images')
             .upload(fileName, file, {
                 cacheControl: '3600',
                 upsert: false
@@ -763,7 +763,7 @@ export const uploadTradeImage = async (file, userEmail) => {
         
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
-            .from('TRADE-IMAGES')
+            .from('trade-images')
             .getPublicUrl(fileName);
             
         return publicUrl;
@@ -774,14 +774,14 @@ export const uploadTradeImage = async (file, userEmail) => {
 };
 
 export const deleteTradeImage = async (imageUrl) => {
-    if (!imageUrl || !imageUrl.includes('TRADE-IMAGES/')) return;
+    if (!imageUrl || !imageUrl.includes('trade-images/')) return;
     try {
         // Extract the file path from the public URL
-        // Example URL: https://xyz.supabase.co/storage/v1/object/public/TRADE-IMAGES/email@example.com/123-abc.jpg
-        const urlParts = imageUrl.split('TRADE-IMAGES/');
+        // Example URL: https://xyz.supabase.co/storage/v1/object/public/trade-images/email@example.com/123-abc.jpg
+        const urlParts = imageUrl.split('trade-images/');
         if (urlParts.length > 1) {
             const filePath = urlParts[1];
-            const { error } = await supabase.storage.from('TRADE-IMAGES').remove([filePath]);
+            const { error } = await supabase.storage.from('trade-images').remove([filePath]);
             if (error) throw error;
         }
     } catch (e) {
@@ -797,7 +797,7 @@ export const getSupabaseStorageUsage = async (userEmail) => {
         // we'll fetch all files in the user's folder and sum their sizes.
         // This is a naive approach but works for reasonable numbers of files.
         const { data, error } = await supabase.storage
-            .from('TRADE-IMAGES')
+            .from('trade-images')
             .list(cleanEmail, {
                 limit: 1000,
                 offset: 0,
