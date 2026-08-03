@@ -429,9 +429,15 @@ export default function App() {
 
   // 📈 คำนวณยอดเงินในพอร์ตปัจจุบันแบบเรียลไทม์ (Initial Balance + ผลรวมกำไรขาดทุนของออเดอร์ที่ปิดแล้ว)
   const accountBalance = useMemo(() => {
-    const netPnL = filteredGlobalTrades.reduce((acc, t) => acc + (t.status === 'Closed' ? (parseFloat(t.pnl) || 0) : 0), 0);
+    const netPnL = trades.reduce((acc, t) => {
+      const tradeAcc = t.accountId || 'default';
+      if (tradeAcc === accountId && t.status === 'Closed') {
+        return acc + (parseFloat(t.pnl) || 0);
+      }
+      return acc;
+    }, 0);
     return Math.max(0, initialBalance + netPnL);
-  }, [filteredGlobalTrades, initialBalance]);
+  }, [trades, accountId, initialBalance]);
 
   // บันทึกออเดอร์ใหม่ (เปิดออเดอร์จาก Sidebar)
   const handleSaveTrade = (newTradeData) => {
