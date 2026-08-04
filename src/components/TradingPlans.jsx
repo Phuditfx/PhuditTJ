@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 
-export default function TradingPlans({ plans = [], setups = [], onSavePlan, onDeletePlan, onSaveSetups, requestConfirm, requestAlert }) {
+export default function TradingPlans({ plans = [], setups = [], onSavePlan, onUpdatePlan, onDeletePlan, onSaveSetups, requestConfirm, requestAlert }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanRules, setNewPlanRules] = useState('');
+  
+  // Edit State
+  const [editingPlanId, setEditingPlanId] = useState(null);
+  const [editPlanName, setEditPlanName] = useState('');
+  const [editPlanRules, setEditPlanRules] = useState('');
   
   // Custom Setups State
   const [showAddSetup, setShowAddSetup] = useState(false);
@@ -35,6 +40,23 @@ export default function TradingPlans({ plans = [], setups = [], onSavePlan, onDe
     setNewPlanName('');
     setNewPlanRules('');
     setShowAddForm(false);
+  };
+
+  const handleEditClick = (plan) => {
+    setEditingPlanId(plan.id);
+    setEditPlanName(plan.name);
+    setEditPlanRules(plan.rules);
+  };
+
+  const handleUpdate = () => {
+    if (!editPlanName.trim()) return;
+    onUpdatePlan({
+      id: editingPlanId,
+      name: editPlanName,
+      rules: editPlanRules,
+      createdAt: plans.find(p => p.id === editingPlanId)?.createdAt || new Date().toISOString()
+    });
+    setEditingPlanId(null);
   };
 
   return (
@@ -99,27 +121,64 @@ export default function TradingPlans({ plans = [], setups = [], onSavePlan, onDe
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {plans.map(plan => (
               <div key={plan.id} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col gap-3 relative group">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{plan.name}</h3>
-                  <button 
-                    onClick={() => {
-                      if(requestConfirm) {
-                        requestConfirm("ลบแผนการเทรด", "Are you sure you want to delete this plan?", () => onDeletePlan(plan.id));
-                      } else if(window.confirm('Are you sure you want to delete this plan?')) {
-                        onDeletePlan(plan.id);
-                      }
-                    }}
-                    className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-bold"
-                  >
-                    Delete
-                  </button>
-                </div>
-                <div className="bg-white dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-850/50 flex-grow">
-                  <p className="text-sm font-mono text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-words">{plan.rules}</p>
-                </div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-right">
-                  Created: {new Date(plan.createdAt).toLocaleDateString()}
-                </div>
+                {editingPlanId === plan.id ? (
+                  // Edit Mode
+                  <div className="flex flex-col gap-3">
+                    <input 
+                      type="text" 
+                      value={editPlanName}
+                      onChange={(e) => setEditPlanName(e.target.value)}
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 rounded focus:outline-none focus:border-amber-500 text-lg font-bold text-slate-800 dark:text-slate-200"
+                    />
+                    <textarea 
+                      rows="5"
+                      value={editPlanRules}
+                      onChange={(e) => setEditPlanRules(e.target.value)}
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded focus:outline-none focus:border-amber-500 text-sm font-mono whitespace-pre-wrap w-full"
+                    ></textarea>
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button onClick={() => setEditingPlanId(null)} className="px-3 py-1.5 rounded text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer">
+                        Cancel
+                      </button>
+                      <button onClick={handleUpdate} className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded text-sm font-bold shadow-sm transition-colors cursor-pointer">
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode
+                  <>
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{plan.name}</h3>
+                      <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleEditClick(plan)}
+                          className="text-slate-400 hover:text-amber-500 cursor-pointer text-xs font-bold"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if(requestConfirm) {
+                              requestConfirm("ลบแผนการเทรด", "Are you sure you want to delete this plan?", () => onDeletePlan(plan.id));
+                            } else if(window.confirm('Are you sure you want to delete this plan?')) {
+                              onDeletePlan(plan.id);
+                            }
+                          }}
+                          className="text-slate-400 hover:text-rose-500 cursor-pointer text-xs font-bold"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-850/50 flex-grow">
+                      <p className="text-sm font-mono text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-words">{plan.rules}</p>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-right">
+                      Created: {new Date(plan.createdAt).toLocaleDateString()}
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>

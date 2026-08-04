@@ -487,6 +487,12 @@ export default function App() {
     setPlans(updatedPlans);
     savePlans(currentUser, updatedPlans);
   };
+  
+  const handleUpdatePlan = (updatedPlan) => {
+    const updatedPlans = plans.map(p => p.id === updatedPlan.id ? updatedPlan : p);
+    setPlans(updatedPlans);
+    savePlans(currentUser, updatedPlans);
+  };
   const handleDeletePlan = (id) => {
     const updatedPlans = plans.filter(p => p.id !== id);
     setPlans(updatedPlans);
@@ -1096,6 +1102,7 @@ export default function App() {
                       plans={plans}
                       setups={setups}
                       onSavePlan={handleSavePlan}
+                      onUpdatePlan={handleUpdatePlan}
                       onDeletePlan={handleDeletePlan}
                       onSaveSetups={handleSaveSetups}
                       requestConfirm={requestConfirm}
