@@ -438,7 +438,6 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                   value={weekStartDate}
                   onChange={(e) => setWeekStartDate(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                  required
                 />
               </div>
               
@@ -488,7 +487,6 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                     onChange={(e) => setSector(e.target.value)}
                     placeholder="e.g. Tech"
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-mono dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                    required
                   />
                 </div>
               </div>
