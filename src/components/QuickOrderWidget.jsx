@@ -49,11 +49,12 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
 
   const gap = Math.abs(pEntry - pSl) || 0;
   
-  // คำนวณจำนวนหุ้นทศนิยม 4 ตำแหน่ง (Fractional Shares)
-  const fractionalShares = activeTab === 'fighter' 
-    ? (sharedOrder?.calculatedShares !== undefined ? sharedOrder.calculatedShares.toFixed(4) : "0.0000")
-    : (gap > 0 && pRisk > 0 ? (pRisk / gap).toFixed(4) : "0.0000");
-  const actualShares = shareInputMode === 'calculated' ? parseFloat(fractionalShares) : (parseFloat(customShares) || 0);
+  // คำนวณจำนวนหุ้นเป็นจำนวนเต็ม (ปัดเศษลง)
+  const rawShares = activeTab === 'fighter' 
+    ? (sharedOrder?.calculatedShares !== undefined ? sharedOrder.calculatedShares : 0)
+    : (gap > 0 && pRisk > 0 ? (pRisk / gap) : 0);
+  const fractionalShares = Math.floor(rawShares).toString();
+  const actualShares = shareInputMode === 'calculated' ? parseInt(fractionalShares, 10) : (parseInt(customShares, 10) || 0);
   const buyingPowerRequired = (actualShares * pEntry).toFixed(2);
 
   // คำนวณวงเงินสูงสุดของยศในการเข้าเทรด
@@ -295,10 +296,13 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           {shareInputMode === 'calculated' ? (
             <div className="text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-1 select-all">{fractionalShares}</div>
           ) : (
-            <input onFocus={(e) => e.target.select()}  
+            <input 
               type="number"
               value={customShares}
-              onChange={(e) => setCustomShares(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setCustomShares(val);
+              }}
               onFocus={(e) => e.target.select()}
               placeholder={fractionalShares}
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-2 text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-indigo-500 w-full mt-1 placeholder-emerald-600/30 dark:placeholder-emerald-400/30"
