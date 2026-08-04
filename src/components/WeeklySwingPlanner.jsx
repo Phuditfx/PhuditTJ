@@ -638,6 +638,22 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
               </div>
             </form>
           </div>
+          {/* Chart Preview Section */}
+          {ticker && ticker.trim() !== '' && (
+            <div className="crypto-card p-6 h-[400px] flex flex-col">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+                📈 {ticker.toUpperCase()} Chart Preview
+              </h3>
+              <div className="flex-1 w-full relative">
+                <LightweightChartComponent 
+                  symbol={ticker.toUpperCase()} 
+                  entry={entryPrice || undefined} 
+                  stopLoss={stopLoss || undefined} 
+                  direction="Long"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Analytics Section */}
