@@ -1219,6 +1219,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
     setEditSetup(trade.setupName || '');
     setEditMood(trade.entryMood || '');
     setEditPumpStage(trade.pumpStage || '');
+    setEditAccountId(trade.accountId || 'default');
   };
 
   const handleConfirmEditOpen = () => {
@@ -1236,7 +1237,8 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       planId: editPlan,
       setupName: editSetup,
       entryMood: editMood,
-      pumpStage: editPumpStage
+      pumpStage: editPumpStage,
+      accountId: editAccountId
     };
     onUpdateTrade(updated);
     setEditingOpenTrade(null);
@@ -2516,6 +2518,19 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                     >
                       <option value="">-- Select Stage --</option>
                       {PUMP_STAGE_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Trading Account</label>
+                    <select
+                      value={editAccountId}
+                      onChange={(e) => setEditAccountId(e.target.value)}
+                      className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="default">Default Account</option>
+                      {accounts && accounts.map(acc => (
+                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
