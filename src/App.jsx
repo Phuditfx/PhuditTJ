@@ -128,6 +128,17 @@ export default function App() {
   }, [accountId]);
 
   const [globalDateRange, setGlobalDateRange] = useState('1M');
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [tempSelectedYear, setTempSelectedYear] = useState('');
+  const [tempSelectedMonth, setTempSelectedMonth] = useState('');
+
+  const formatMonthLabel = (val) => {
+    if (!val || !val.startsWith('MONTH-')) return 'Custom Month';
+    const parts = val.split('-');
+    if (parts.length !== 3) return 'Custom Month';
+    const date = new Date(parseInt(parts[1], 10), parseInt(parts[2], 10) - 1, 1);
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [editingAccountId, setEditingAccountId] = useState(null);
@@ -959,14 +970,31 @@ export default function App() {
             ))}
           </select>
           <select 
-            value={globalDateRange}
-            onChange={(e) => setGlobalDateRange(e.target.value)}
-            className="w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
+            value={globalDateRange.startsWith('MONTH-') ? 'CUSTOM' : globalDateRange}
+            onChange={(e) => {
+              if (e.target.value === 'CUSTOM') {
+                if (globalDateRange.startsWith('MONTH-')) {
+                  const parts = globalDateRange.split('-');
+                  setTempSelectedYear(parts[1]);
+                  setTempSelectedMonth(parts[2].padStart(2, '0'));
+                } else {
+                  setTempSelectedYear(new Date().getFullYear().toString());
+                  setTempSelectedMonth((new Date().getMonth() + 1).toString().padStart(2, '0'));
+                }
+                setShowMonthPicker(true);
+              } else {
+                setGlobalDateRange(e.target.value);
+              }
+            }}
+            className="w-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
           >
             <option value="1W">1W</option>
             <option value="1M">1M</option>
             <option value="YTD">YTD</option>
             <option value="All">All</option>
+            <option value="CUSTOM">
+              {globalDateRange.startsWith('MONTH-') ? formatMonthLabel(globalDateRange) : 'Custom Month'}
+            </option>
           </select>
           </div>
           <button 
@@ -1443,6 +1471,57 @@ export default function App() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* 📅 Month Picker Modal */}
+      {showMonthPicker && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-fade-in">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Select Month & Year</h3>
+            <div className="flex gap-3 mb-6">
+              <select
+                value={tempSelectedMonth}
+                onChange={(e) => setTempSelectedMonth(e.target.value)}
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                {Array.from({ length: 12 }, (_, i) => {
+                  const m = (i + 1).toString().padStart(2, '0');
+                  const date = new Date(2000, i, 1);
+                  return <option key={m} value={m}>{date.toLocaleDateString('en-US', { month: 'long' })}</option>;
+                })}
+              </select>
+              <select
+                value={tempSelectedYear}
+                onChange={(e) => setTempSelectedYear(e.target.value)}
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                {Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => {
+                  const y = (2020 + i).toString();
+                  return <option key={y} value={y}>{y}</option>;
+                })}
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setShowMonthPicker(false)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (tempSelectedYear && tempSelectedMonth) {
+                    setGlobalDateRange(`MONTH-${tempSelectedYear}-${tempSelectedMonth}`);
+                  }
+                  setShowMonthPicker(false);
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition-colors"
+              >
+                Apply
+              </button>
+            </div>
           </div>
         </div>
       )}
