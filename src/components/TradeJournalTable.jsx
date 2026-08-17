@@ -1142,8 +1142,18 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
 
   // Export to JSON
   const handleExportJSON = () => {
+    const isFilteredByDate = filterStartDate || filterEndDate;
+    
     const doExport = () => {
-      if (onExportJSON) {
+      if (isFilteredByDate) {
+        const dataStr = JSON.stringify(filteredTrades, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const exportFileDefaultName = `TradeJournal_Export_${new Date().toISOString().split('T')[0]}.json`;
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+      } else if (onExportJSON) {
         onExportJSON();
       } else {
         // Fallback just in case
@@ -1157,15 +1167,29 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       }
     };
 
-    if (requestConfirm) {
-      requestConfirm(
-        "ยืนยันการดาวน์โหลด Backup",
-        "ไฟล์ JSON นี้คือ 'Full Backup' ซึ่งจะรวมข้อมูลของ 'ทุกบัญชี (พอร์ต)' และ 'ทุกช่วงเวลา' เพื่อใช้สำหรับการสำรองและกู้คืนระบบ (ไม่ได้กรองข้อมูลตามตาราง)\n\nคุณต้องการดาวน์โหลดไฟล์นี้ใช่หรือไม่?",
-        () => doExport()
-      );
+    if (isFilteredByDate) {
+      if (requestConfirm) {
+        requestConfirm(
+          "ยืนยันการดาวน์โหลด JSON",
+          `คุณกำลังดาวน์โหลดข้อมูลการเทรดที่ถูกกรองตามวันที่ (${filteredTrades.length} รายการ)\n\nคุณต้องการดาวน์โหลดไฟล์นี้ใช่หรือไม่?`,
+          () => doExport()
+        );
+      } else {
+        if (window.confirm(`คุณกำลังดาวน์โหลดข้อมูลการเทรดที่ถูกกรองตามวันที่ (${filteredTrades.length} รายการ)\n\nคุณต้องการดาวน์โหลดใช่หรือไม่?`)) {
+          doExport();
+        }
+      }
     } else {
-      if (window.confirm("ไฟล์ JSON นี้คือ 'Full Backup' ซึ่งจะรวมข้อมูลของทุกพอร์ตและทุกช่วงเวลา\n\nคุณต้องการดาวน์โหลดใช่หรือไม่?")) {
-        doExport();
+      if (requestConfirm) {
+        requestConfirm(
+          "ยืนยันการดาวน์โหลด Backup",
+          "ไฟล์ JSON นี้คือ 'Full Backup' ซึ่งจะรวมข้อมูลของ 'ทุกบัญชี (พอร์ต)' และ 'ทุกช่วงเวลา' เพื่อใช้สำหรับการสำรองและกู้คืนระบบ (ไม่ได้กรองข้อมูลตามตาราง)\n\nคุณต้องการดาวน์โหลดไฟล์นี้ใช่หรือไม่?",
+          () => doExport()
+        );
+      } else {
+        if (window.confirm("ไฟล์ JSON นี้คือ 'Full Backup' ซึ่งจะรวมข้อมูลของทุกพอร์ตและทุกช่วงเวลา\n\nคุณต้องการดาวน์โหลดใช่หรือไม่?")) {
+          doExport();
+        }
       }
     }
   };
@@ -1180,7 +1204,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
     if (requestConfirm) {
       requestConfirm(
         "ยืนยันการอัปโหลด",
-        "⚠️ ยืนยันการอัปโหลด? ข้อมูลการเทรดปัจจุบันจะถูก 'เขียนทับ' ด้วยข้อมูลจากไฟล์ทั้งหมด!",
+        "⚠️ ยืนยันการอัปโหลด?\n\n- หากเป็นไฟล์ Full Backup (รวมข้อมูลบัญชี/พอร์ต): ข้อมูลเดิมทั้งหมดจะถูก 'เขียนทับ'\n- หากเป็นไฟล์ข้อมูลที่ถูกกรอง (Filtered Trades): ข้อมูลจะถูก 'นำไปต่อท้าย' (Merge) กับข้อมูลเดิมโดยไม่ลบของเก่า",
         () => {
           const reader = new FileReader();
           reader.onload = (evt) => {

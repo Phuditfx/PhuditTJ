@@ -620,9 +620,12 @@ export default function App() {
         saveInitialBalance(currentUser, importedData.initialBalances);
       }
     } else if (Array.isArray(importedData)) {
-      // Legacy format (only trades array)
-      setTrades(importedData);
-      saveTrades(currentUser, importedData);
+      // Legacy format or Filtered Export (only trades array) - Merge strategy
+      const existingIds = new Set(trades.map(t => t.id));
+      const newTrades = importedData.filter(t => !existingIds.has(t.id));
+      const mergedTrades = [...trades, ...newTrades];
+      setTrades(mergedTrades);
+      saveTrades(currentUser, mergedTrades);
     }
   };
 
