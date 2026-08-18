@@ -1024,27 +1024,11 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   const [costs, setCosts] = useState('');
   const [exitReason, setExitReason] = useState('');
   const [customExitReason, setCustomExitReason] = useState('');
-  const [mistakeTags, setMistakeTags] = useState([]);
+  const [mistakeTags, setMistakeTags] = useState('');
   const [whatWentWell, setWhatWentWell] = useState('');
   const [lessonLearned, setLessonLearned] = useState('');
 
   const EXIT_REASONS = ['Hit SL', 'Hit TP', 'Time Cut', 'Manual TP', 'Panic Sell', 'Other (ระบุเอง)'];
-  const MISTAKE_OPTIONS = ['None', 'FOMO', 'Chasing', 'Hesitation', 'Moved SL', 'Overleveraged', 'Revenge Trading'];
-
-  const toggleMistakeTag = (tag) => {
-    if (tag === 'None') {
-      setMistakeTags(['None']);
-      return;
-    }
-    setMistakeTags(prev => {
-      const filtered = prev.filter(t => t !== 'None');
-      if (filtered.includes(tag)) {
-        return filtered.filter(t => t !== tag);
-      } else {
-        return [...filtered, tag];
-      }
-    });
-  };
 
   const calculateContextScore = () => Math.min(10, Math.max(0, qMarketTrend + qRelativeStrength + qSetupQuality + qVolumeLiquidity + qCatalystNews));
 
@@ -1301,7 +1285,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       const isCustomReason = trade.exitReason && !EXIT_REASONS.includes(trade.exitReason);
       setExitReason(isCustomReason ? 'Other (ระบุเอง)' : (trade.exitReason || ''));
       setCustomExitReason(isCustomReason ? trade.exitReason : '');
-      setMistakeTags(trade.mistakeTags || []);
+      setMistakeTags(Array.isArray(trade.mistakeTags) ? trade.mistakeTags.join(', ') : (trade.mistakeTags || ''));
       setWhatWentWell(trade.whatWentWell || '');
       setLessonLearned(trade.lessonLearned || '');
       
@@ -1330,7 +1314,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setCosts('');
       setExitReason('');
       setCustomExitReason('');
-      setMistakeTags([]);
+      setMistakeTags('');
       setWhatWentWell('');
       setLessonLearned('');
       
@@ -1399,16 +1383,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       return;
     }
 
-    if (!exitReason || (exitReason === 'Other (ระบุเอง)' && !customExitReason.trim())) {
-      if (requestAlert) requestAlert("ข้อมูลไม่ครบถ้วน", "กรุณาระบุ Exit Reason");
-      else alert("กรุณาระบุ Exit Reason");
-      return;
-    }
-
-    const isPlanPerfect = planAdherence.includes("100%");
-    if (!isPlanPerfect && (mistakeTags.length === 0 || (mistakeTags.length === 1 && mistakeTags.includes('None')))) {
-      if (requestAlert) requestAlert("ข้อมูลไม่ครบถ้วน", "เมื่อทำไม่ได้ตามแผน 100% จำเป็นต้องระบุ Mistake Tags (ห้ามเป็น None)");
-      else alert("เมื่อทำไม่ได้ตามแผน 100% จำเป็นต้องระบุ Mistake Tags (ห้ามเป็น None)");
+    const pShares = parseFloat(closeShares) || 0;
+    if (pShares <= 0) {
+      if (requestAlert) requestAlert("ข้อมูลไม่ถูกต้อง", "กรุณาระบุจำนวนหุ้นที่ต้องการปิด (Shares to Close)");
+      else alert("กรุณาระบุจำนวนหุ้นที่ต้องการปิด (Shares to Close)");
       return;
     }
 
@@ -2243,30 +2221,17 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
               </div>
 
               {/* Mistake Tags */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 mt-2">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold flex items-center gap-2">
                   Mistake Tags (ข้อผิดพลาด)
-                  {!planAdherence.includes("100%") && <span className="text-[10px] text-rose-500 font-bold">*จำเป็น</span>}
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {MISTAKE_OPTIONS.map(tag => {
-                    const isActive = mistakeTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleMistakeTag(tag)}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border cursor-pointer ${
-                          isActive 
-                            ? tag === 'None' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700'
-                            : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
+                <textarea 
+                  value={mistakeTags}
+                  onChange={(e) => setMistakeTags(e.target.value)}
+                  placeholder="ระบุข้อผิดพลาด (ถ้ามี)..."
+                  rows="2"
+                  className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-sans text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-xs resize-none"
+                />
               </div>
 
               {/* Review Text Areas */}
@@ -2342,9 +2307,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                 onClick={handleConfirmClose}
                 disabled={isUploading || (() => {
                   if (!exitPrice || parseFloat(exitPrice) <= 0) return true;
-                  if (!exitReason || (exitReason === 'Other (ระบุเอง)' && !customExitReason.trim())) return true;
-                  const isPlanPerfect = planAdherence.includes("100%");
-                  if (!isPlanPerfect && (mistakeTags.length === 0 || (mistakeTags.length === 1 && mistakeTags.includes('None')))) return true;
+                  if (!closeShares || parseFloat(closeShares) <= 0) return true;
                   return false;
                 })()}
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 disabled:dark:bg-slate-800 disabled:cursor-not-allowed disabled:text-slate-200 dark:disabled:text-slate-500 text-white px-5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
