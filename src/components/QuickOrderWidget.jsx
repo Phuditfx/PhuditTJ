@@ -23,16 +23,9 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const [selectedMood, setSelectedMood] = useState('');
   
   // Forward Testing Fields
-  const [broker, setBroker] = useState('');
   const [entryWindow, setEntryWindow] = useState('');
   const [orderType, setOrderType] = useState('');
   const [exitScenario, setExitScenario] = useState('');
-
-  useEffect(() => {
-    if (broker === 'Webull') {
-      setEntryWindow('19:00-19:55 ET');
-    }
-  }, [broker]);
   
   // Image Upload Fields
   const [tradeImage, setTradeImage] = useState(null);
@@ -143,7 +136,6 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       setupName: selectedSetup,
       entryMood: selectedMood,
       imageUrl: imageUrl, // <--- Add image URL
-      broker,
       entryWindow,
       orderType,
       exitScenario
@@ -161,7 +153,6 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
     setSelectedPlan('');
     setSelectedSetup('');
     setSelectedMood('');
-    setBroker('');
     setEntryWindow('');
     setOrderType('');
     setExitScenario('');
@@ -293,25 +284,18 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       {/* Forward Testing Fields */}
       <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
         <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Forward Test: Gap-Up Strategy</div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Broker</label>
-            <select value={broker} onChange={(e) => setBroker(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">
-              <option value="">-- Select --</option>
-              <option value="Webull">Webull</option>
-              <option value="Moomoo">Moomoo</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Entry Window</label>
-            <select value={entryWindow} onChange={(e) => setEntryWindow(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">
-              <option value="">-- Select --</option>
-              <option value="19:00-19:55 ET">19:00-19:55 ET</option>
-              <option value="03:30-03:59 ET" disabled={broker === 'Webull'}>03:30-03:59 ET</option>
-              <option value="Other" disabled={broker === 'Webull'}>Other</option>
-            </select>
-          </div>
+        
+        <div className="flex flex-col gap-1">
+          <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Entry Window</label>
+          <select value={entryWindow} onChange={(e) => setEntryWindow(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">
+            <option value="">-- Select --</option>
+            <option value="-RTH+Pre/Post-Mkt 4:00-20:00 ET">-RTH+Pre/Post-Mkt 4:00-20:00 ET</option>
+            <option value="-Regular trading Hours 9:30-16:00 ET">-Regular trading Hours 9:30-16:00 ET</option>
+            <option value="-Overnight Trading 20:00-4:00 (T+1) ET">-Overnight Trading 20:00-4:00 (T+1) ET</option>
+            <option value="-24 Hours Trading 20:00-20:00 (T+1) ET">-24 Hours Trading 20:00-20:00 (T+1) ET</option>
+          </select>
         </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
             <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Order Type</label>
@@ -326,12 +310,12 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Exit Scenario</label>
             <select value={exitScenario} onChange={(e) => setExitScenario(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">
               <option value="">-- Select --</option>
-              <option value="Webull: Gap Up TP">Webull: Gap Up TP</option>
-              <option value="Webull: Gap Down SL">Webull: Gap Down SL</option>
-              <option value="Webull: Survivor (Flat/Bounce)">Webull: Survivor (Flat/Bounce)</option>
-              <option value="Webull: Time Cut">Webull: Time Cut</option>
-              <option value="Moomoo: Hit TP">Moomoo: Hit TP</option>
-              <option value="Moomoo: Hit SL">Moomoo: Hit SL</option>
+              <option value="Gap Up TP">Gap Up TP</option>
+              <option value="Gap Down SL">Gap Down SL</option>
+              <option value="Survivor (Flat/Bounce)">Survivor (Flat/Bounce)</option>
+              <option value="Time Cut">Time Cut</option>
+              <option value="Hit TP">Hit TP</option>
+              <option value="Hit SL">Hit SL</option>
             </select>
           </div>
         </div>
