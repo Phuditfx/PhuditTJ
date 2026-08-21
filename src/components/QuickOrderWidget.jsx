@@ -301,9 +301,20 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Order Type</label>
             <select value={orderType} onChange={(e) => setOrderType(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">
               <option value="">-- Select --</option>
-              <option value="Limit">Limit</option>
-              <option value="Stop-Limit">Stop-Limit</option>
-              <option value="OCO">OCO</option>
+              <option value="LMT Limit">LMT Limit</option>
+              <option value="MKT Market">MKT Market</option>
+              <option value="MOC Market On Close">MOC Market On Close</option>
+              <option value="STL Stop Limit">STL Stop Limit</option>
+              <option value="STP Stop">STP Stop</option>
+              <option value="LIT Lmt-if-Touched">LIT Lmt-if-Touched</option>
+              <option value="MIT Mkt-if-Touched">MIT Mkt-if-Touched</option>
+              <option value="TSL Trailing Stop Lmt">TSL Trailing Stop Lmt</option>
+              <option value="TS Trailing Stop">TS Trailing Stop</option>
+              <option value="OCO One-Cancels-the-Other (Take Profit/Stop Loss)">OCO One-Cancels-the-Other (Take Profit/Stop Loss)</option>
+              <option value="TWAP TWAP">TWAP TWAP</option>
+              <option value="VWAP VWAP">VWAP VWAP</option>
+              <option value="POV POV">POV POV</option>
+              <option value="ICE Iceberg">ICE Iceberg</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
