@@ -643,6 +643,74 @@ export default function Dashboard({
         </div>
       </div>
 
+      {/* Advanced Analysis (System Edge) */}
+      <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-6 shadow-sm mb-6 mt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xl">🔬</span>
+          <h3 className="font-extrabold text-slate-900 dark:text-white text-lg">Advanced Analysis (System Edge)</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Risk Deviation & Loss Control */}
+          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800/60 flex flex-col gap-2">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2">Loss Control & Deviation</h4>
+            <div className="flex justify-between items-end mt-1">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Avg Loss RR</span>
+              <span className={`text-xl font-black font-mono ${advKPIs.avgLossRR < -1.2 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                {advKPIs.avgLossRR.toFixed(2)}R
+              </span>
+            </div>
+            {advKPIs.avgLossRR < -1.2 && (
+              <div className="text-[10px] text-rose-600 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded font-bold mt-1">
+                ⚠️ Warning: Average Loss drops below -1.2R benchmark (Slippage Alert)
+              </div>
+            )}
+            <div className="flex justify-between items-end mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 border-dashed">
+              <span className="text-[11px] font-semibold text-slate-500">Worst-Case Slippage</span>
+              <span className="text-[11px] font-bold font-mono text-rose-500">{advKPIs.worstSlippageRR.toFixed(2)}R</span>
+            </div>
+          </div>
+
+          {/* Fee Drag Analysis */}
+          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800/60 flex flex-col gap-2">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2">Fee Drag (Cost Efficiency)</h4>
+            <div className="flex justify-between items-end mt-1">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Profit Eaten by Fees</span>
+              <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-500">
+                {advKPIs.feeDragPercent.toFixed(2)}%
+              </span>
+            </div>
+            <div className="flex justify-between items-end mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 border-dashed">
+              <span className="text-[11px] font-semibold text-slate-500">Total Fees Paid</span>
+              <span className="text-[11px] font-bold font-mono text-amber-600">${advKPIs.totalFeesPaid.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-end mt-1">
+              <span className="text-[11px] font-semibold text-slate-500">Gross Profit Pool</span>
+              <span className="text-[11px] font-bold font-mono text-emerald-600">${advKPIs.grossProfitPool.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Net Expected Value (Net EV) */}
+          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/20 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/50 flex flex-col gap-2">
+            <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider border-b border-indigo-200 dark:border-indigo-800/50 pb-2">Net Expected Value (EV)</h4>
+            <div className="flex justify-between items-end mt-1">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">True Edge (Net EV)</span>
+              <span className={`text-2xl font-black font-mono ${advKPIs.netEV > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {advKPIs.netEV > 0 ? '+' : ''}{advKPIs.netEV.toFixed(2)}R
+              </span>
+            </div>
+            <div className="flex justify-between items-end mt-2 pt-2 border-t border-indigo-200 dark:border-indigo-800/50 border-dashed">
+              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Avg Net Win</span>
+              <span className="text-[11px] font-bold font-mono text-emerald-600">+{advKPIs.avgNetWinRR.toFixed(2)}R</span>
+            </div>
+            <div className="flex justify-between items-end mt-1">
+              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Avg Net Loss</span>
+              <span className="text-[11px] font-bold font-mono text-rose-500">-{advKPIs.avgNetLossRR.toFixed(2)}R</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 🔮 Portfolio Projection Section */}
       <div className="relative">
         <div className={!isVip ? 'blur-md pointer-events-none select-none opacity-60' : ''}>
@@ -880,73 +948,7 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Advanced Analysis (System Edge) */}
-      <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl">🔬</span>
-          <h3 className="font-extrabold text-slate-900 dark:text-white text-lg">Advanced Analysis (System Edge)</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Risk Deviation & Loss Control */}
-          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800/60 flex flex-col gap-2">
-            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2">Loss Control & Deviation</h4>
-            <div className="flex justify-between items-end mt-1">
-              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Avg Loss RR</span>
-              <span className={`text-xl font-black font-mono ${advKPIs.avgLossRR < -1.2 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>
-                {advKPIs.avgLossRR.toFixed(2)}R
-              </span>
-            </div>
-            {advKPIs.avgLossRR < -1.2 && (
-              <div className="text-[10px] text-rose-600 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded font-bold mt-1">
-                ⚠️ Warning: Average Loss drops below -1.2R benchmark (Slippage Alert)
-              </div>
-            )}
-            <div className="flex justify-between items-end mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 border-dashed">
-              <span className="text-[11px] font-semibold text-slate-500">Worst-Case Slippage</span>
-              <span className="text-[11px] font-bold font-mono text-rose-500">{advKPIs.worstSlippageRR.toFixed(2)}R</span>
-            </div>
-          </div>
 
-          {/* Fee Drag Analysis */}
-          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800/60 flex flex-col gap-2">
-            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2">Fee Drag (Cost Efficiency)</h4>
-            <div className="flex justify-between items-end mt-1">
-              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Profit Eaten by Fees</span>
-              <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-500">
-                {advKPIs.feeDragPercent.toFixed(2)}%
-              </span>
-            </div>
-            <div className="flex justify-between items-end mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 border-dashed">
-              <span className="text-[11px] font-semibold text-slate-500">Total Fees Paid</span>
-              <span className="text-[11px] font-bold font-mono text-amber-600">${advKPIs.totalFeesPaid.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-end mt-1">
-              <span className="text-[11px] font-semibold text-slate-500">Gross Profit Pool</span>
-              <span className="text-[11px] font-bold font-mono text-emerald-600">${advKPIs.grossProfitPool.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Net Expected Value (Net EV) */}
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/20 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/50 flex flex-col gap-2">
-            <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider border-b border-indigo-200 dark:border-indigo-800/50 pb-2">Net Expected Value (EV)</h4>
-            <div className="flex justify-between items-end mt-1">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">True Edge (Net EV)</span>
-              <span className={`text-2xl font-black font-mono ${advKPIs.netEV > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                {advKPIs.netEV > 0 ? '+' : ''}{advKPIs.netEV.toFixed(2)}R
-              </span>
-            </div>
-            <div className="flex justify-between items-end mt-2 pt-2 border-t border-indigo-200 dark:border-indigo-800/50 border-dashed">
-              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Avg Net Win</span>
-              <span className="text-[11px] font-bold font-mono text-emerald-600">+{advKPIs.avgNetWinRR.toFixed(2)}R</span>
-            </div>
-            <div className="flex justify-between items-end mt-1">
-              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Avg Net Loss</span>
-              <span className="text-[11px] font-bold font-mono text-rose-500">-{advKPIs.avgNetLossRR.toFixed(2)}R</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Funding Modal */}
       {showFundingModal && (
