@@ -289,10 +289,10 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Entry Window</label>
           <select value={entryWindow} onChange={(e) => setEntryWindow(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">
             <option value="">-- Select --</option>
-            <option value="-RTH+Pre/Post-Mkt 4:00-20:00 ET">-RTH+Pre/Post-Mkt 4:00-20:00 ET</option>
-            <option value="-Regular trading Hours 9:30-16:00 ET">-Regular trading Hours 9:30-16:00 ET</option>
-            <option value="-Overnight Trading 20:00-4:00 (T+1) ET">-Overnight Trading 20:00-4:00 (T+1) ET</option>
-            <option value="-24 Hours Trading 20:00-20:00 (T+1) ET">-24 Hours Trading 20:00-20:00 (T+1) ET</option>
+            <option value="RTH+Pre/Post-Mkt 4:00-20:00 ET">RTH+Pre/Post-Mkt 4:00-20:00 ET</option>
+            <option value="Regular trading Hours 9:30-16:00 ET">Regular trading Hours 9:30-16:00 ET</option>
+            <option value="Overnight Trading 20:00-4:00 (T+1) ET">Overnight Trading 20:00-4:00 (T+1) ET</option>
+            <option value="24 Hours Trading 20:00-20:00 (T+1) ET">24 Hours Trading 20:00-20:00 (T+1) ET</option>
           </select>
         </div>
 
