@@ -4,8 +4,8 @@ import { fetchATR60m } from '../api/priceApi';
 
 export default function FighterComponent({ accountBalance, sharedOrder, setSharedOrder, isVip }) {
   // Use sharedOrder state from parent (App.jsx)
-  const { symbol, tiEntryAlert, entry, stopLoss, tp1, tp2, tp3 } = sharedOrder || {
-    symbol: 'AAPL', tiEntryAlert: '', entry: 150, stopLoss: 145, tp1: 165, tp2: 180, tp3: 195
+  const { symbol, tiEntryAlert, entry, stopLoss, tp1, tp2, tp3, isGapUpStrategy } = sharedOrder || {
+    symbol: 'AAPL', tiEntryAlert: '', entry: 150, stopLoss: 145, tp1: 165, tp2: 180, tp3: 195, isGapUpStrategy: false
   };
 
   const updateShared = (key, value) => {
@@ -251,6 +251,21 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
             {isUnlocked ? '⚡ UNLOCKED' : '🔒 NORMAL'}
           </button>
         </div>
+      </div>
+
+      {/* 🚀 Forward Test Settings */}
+      <div className="flex items-center gap-3 relative z-10 mt-1 mb-2">
+        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-[#111] px-3 py-2 rounded-sm border border-slate-200 dark:border-slate-800">
+          <input 
+            type="checkbox" 
+            checked={isGapUpStrategy || false} 
+            onChange={(e) => updateShared('isGapUpStrategy', e.target.checked)} 
+            className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 bg-slate-100 border-slate-300 dark:border-slate-700 dark:bg-slate-900 cursor-pointer"
+          />
+          <span className="text-[10px] font-black tracking-wider text-slate-600 dark:text-slate-400 uppercase">
+            Forward Test: Gap-Up Strategy
+          </span>
+        </label>
       </div>
 
       {/* โหมดการเลือกคำนวณ Sizing & SL Tools */}

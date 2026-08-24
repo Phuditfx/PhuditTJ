@@ -212,6 +212,11 @@ const TradeRow = React.memo(({
                     📝
                   </span>
                 )}
+                {trade.isGapUpStrategy && (
+                  <span className="text-[9px] bg-amber-50 border border-amber-200 text-amber-600 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-400 px-1.5 py-0.5 rounded font-black ml-1 uppercase" title="Forward Test: Gap-Up Strategy">
+                    Gap-Up
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -386,6 +391,9 @@ const TradeCard = React.memo(({
           )}
           {trade.isSplit && (
             <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded font-bold">SPLIT</span>
+          )}
+          {trade.isGapUpStrategy && (
+            <span className="text-[9px] bg-amber-50 border border-amber-200 text-amber-600 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-400 px-1 rounded font-bold uppercase" title="Forward Test: Gap-Up Strategy">Gap-Up</span>
           )}
         </div>
       </div>
@@ -634,6 +642,11 @@ const DesktopTradeCard = React.memo(({
           {trade.isSplit && (
             <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold font-sans">
               SPLIT
+            </span>
+          )}
+          {trade.isGapUpStrategy && (
+            <span className="text-[9px] bg-amber-50 border border-amber-200 text-amber-600 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold font-sans uppercase" title="Forward Test: Gap-Up Strategy">
+              Gap-Up
             </span>
           )}
         </div>
@@ -1006,6 +1019,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   const [editMood, setEditMood] = useState('');
   const [editPumpStage, setEditPumpStage] = useState('');
   const [editAccountId, setEditAccountId] = useState('default');
+  const [editIsGapUpStrategy, setEditIsGapUpStrategy] = useState(false);
+  const [editEntryWindow, setEditEntryWindow] = useState('');
+  const [editOrderType, setEditOrderType] = useState('');
+  const [editExitScenario, setEditExitScenario] = useState('');
 
   const SETUP_OPTIONS = setups && setups.length > 0 ? setups : ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading'];
   const MOOD_OPTIONS = ['🟢 มั่นใจ/ทำตามแผน', '🔵 ปกติ/เป็นกลาง', '🔴 ใช้อารมณ์/FOMO', '🟣 กังวล/ลังเล', '🟠 เหนื่อยล้า/พักผ่อนน้อย'];
@@ -1228,6 +1245,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
     setEditMood(trade.entryMood || '');
     setEditPumpStage(trade.pumpStage || '');
     setEditAccountId(trade.accountId || 'default');
+    setEditIsGapUpStrategy(trade.isGapUpStrategy || false);
+    setEditEntryWindow(trade.entryWindow || '');
+    setEditOrderType(trade.orderType || '');
+    setEditExitScenario(trade.exitScenario || '');
   };
 
   const handleConfirmEditOpen = () => {
@@ -1246,7 +1267,11 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setupName: editSetup,
       entryMood: editMood,
       pumpStage: editPumpStage,
-      accountId: editAccountId
+      accountId: editAccountId,
+      isGapUpStrategy: editIsGapUpStrategy,
+      entryWindow: editEntryWindow,
+      orderType: editOrderType,
+      exitScenario: editExitScenario
     };
     onUpdateTrade(updated);
     setEditingOpenTrade(null);
@@ -1279,6 +1304,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setEditMood(trade.entryMood || '');
       setEditPumpStage(trade.pumpStage || '');
       setEditAccountId(trade.accountId || 'default');
+      setEditIsGapUpStrategy(trade.isGapUpStrategy || false);
+      setEditEntryWindow(trade.entryWindow || '');
+      setEditOrderType(trade.orderType || '');
+      setEditExitScenario(trade.exitScenario || '');
       setEditExitTime(trade.exitDateTime ? formatDateTimeLocal(trade.exitDateTime) : formatDateTimeLocal(new Date().toISOString()));
       
       setCosts(trade.costs !== undefined ? trade.costs.toString() : '');
@@ -1310,6 +1339,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setEditMood(trade.entryMood || '');
       setEditPumpStage(trade.pumpStage || '');
       setEditAccountId(trade.accountId || 'default');
+      setEditIsGapUpStrategy(trade.isGapUpStrategy || false);
+      setEditEntryWindow(trade.entryWindow || '');
+      setEditOrderType(trade.orderType || '');
+      setEditExitScenario(trade.exitScenario || '');
       setEditExitTime(formatDateTimeLocal(new Date().toISOString()));
       setCosts('');
       setExitReason('');
@@ -1478,6 +1511,10 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
       setupName: editSetup,
       entryMood: editMood,
       pumpStage: editPumpStage,
+      isGapUpStrategy: editIsGapUpStrategy,
+      entryWindow: editEntryWindow,
+      orderType: editOrderType,
+      exitScenario: editExitScenario,
       costs: costs ? parseFloat(costs) : 0,
       exitReason: exitReason === 'Other (ระบุเอง)' ? customExitReason.trim() : exitReason,
       mistakeTags,
@@ -1951,8 +1988,19 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
 
               {/* Context (Plan, Setup, Mood, Stage) */}
               <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                  🤖 Context (Plan, Setup, Exit Reason, Mood, Stage)
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center justify-between">
+                  <span>🤖 Context (Plan, Setup, Exit Reason, Mood, Stage)</span>
+                  <label className="flex items-center gap-2 cursor-pointer border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-2 py-1 rounded">
+                    <input 
+                      type="checkbox" 
+                      checked={editIsGapUpStrategy} 
+                      onChange={(e) => setEditIsGapUpStrategy(e.target.checked)} 
+                      className="w-3 h-3 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
+                    />
+                    <span className="text-[9px] font-black text-amber-700 dark:text-amber-500 uppercase tracking-wider">
+                      Forward Test: Gap-Up Strategy
+                    </span>
+                  </label>
                 </span>
                 
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -2024,6 +2072,71 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                   />
                 )}
               </div>
+
+              {/* Forward Test: Gap-Up Strategy Dropdowns */}
+              {editIsGapUpStrategy && (
+                <div className="flex flex-col gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                    🚀 Forward Test: Gap-Up Strategy
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Entry Window</label>
+                      <select
+                        value={editEntryWindow || ''}
+                        onChange={(e) => setEditEntryWindow(e.target.value)}
+                        className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="RTH+Pre/Post-Mkt 4:00-20:00 ET">RTH+Pre/Post-Mkt 4:00-20:00 ET</option>
+                        <option value="Regular trading Hours 9:30-16:00 ET">Regular trading Hours 9:30-16:00 ET</option>
+                        <option value="Overnight Trading 20:00-4:00 (T+1) ET">Overnight Trading 20:00-4:00 (T+1) ET</option>
+                        <option value="24 Hours Trading 20:00-20:00 (T+1) ET">24 Hours Trading 20:00-20:00 (T+1) ET</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Order Type</label>
+                      <select
+                        value={editOrderType || ''}
+                        onChange={(e) => setEditOrderType(e.target.value)}
+                        className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="LMT Limit">LMT Limit</option>
+                        <option value="MKT Market">MKT Market</option>
+                        <option value="MOC Market On Close">MOC Market On Close</option>
+                        <option value="STL Stop Limit">STL Stop Limit</option>
+                        <option value="STP Stop">STP Stop</option>
+                        <option value="LIT Lmt-if-Touched">LIT Lmt-if-Touched</option>
+                        <option value="MIT Mkt-if-Touched">MIT Mkt-if-Touched</option>
+                        <option value="TSL Trailing Stop Lmt">TSL Trailing Stop Lmt</option>
+                        <option value="TS Trailing Stop">TS Trailing Stop</option>
+                        <option value="OCO One-Cancels-the-Other (Take Profit/Stop Loss)">OCO One-Cancels-the-Other (Take Profit/Stop Loss)</option>
+                        <option value="TWAP TWAP">TWAP TWAP</option>
+                        <option value="VWAP VWAP">VWAP VWAP</option>
+                        <option value="POV POV">POV POV</option>
+                        <option value="ICE Iceberg">ICE Iceberg</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] text-slate-550 dark:text-slate-450 font-bold uppercase">Exit Scenario</label>
+                      <select
+                        value={editExitScenario || ''}
+                        onChange={(e) => setEditExitScenario(e.target.value)}
+                        className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="Gap Up TP">Gap Up TP</option>
+                        <option value="Gap Down SL">Gap Down SL</option>
+                        <option value="Survivor (Flat/Bounce)">Survivor (Flat/Bounce)</option>
+                        <option value="Time Cut">Time Cut</option>
+                        <option value="Hit TP">Hit TP</option>
+                        <option value="Hit SL">Hit SL</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Context Images Upload Section (Before/After Pump) */}
               {/* Context Images Upload Section */}

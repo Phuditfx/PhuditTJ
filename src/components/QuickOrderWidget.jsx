@@ -3,8 +3,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [], requestAlert, requestConfirm, currentUser }) {
   const { t } = useLanguage();
-  const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp } = sharedOrder || {
-    symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: ''
+  const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp, isGapUpStrategy } = sharedOrder || {
+    symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: '', isGapUpStrategy: false
   };
 
   const updateShared = (key, value) => {
@@ -138,7 +138,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
       imageUrl: imageUrl, // <--- Add image URL
       entryWindow,
       orderType,
-      exitScenario
+      exitScenario,
+      isGapUpStrategy: sharedOrder?.isGapUpStrategy || false
     };
 
     onSaveTrade(tradeData);
