@@ -1059,6 +1059,8 @@ export default function App() {
               <TradeJournalTable 
                 currentUser={currentUser}
                 trades={filteredGlobalTrades}
+                globalTrades={trades}
+                initialBalances={initialBalances}
                 onUpdateTrade={handleUpdateTrade}
                 onAddTrade={handleAddTradeDirect}
                 onDeleteTrade={handleDeleteTrade}
@@ -1067,7 +1069,6 @@ export default function App() {
                 onImportData={handleImportData}
                 onExportJSON={handleExportFullJSON}
                 requestConfirm={requestConfirm}
-            currentUser={currentUser}
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}
                 plans={plans}

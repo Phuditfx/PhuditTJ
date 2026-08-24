@@ -3,6 +3,7 @@ import { simulateAIAssessment } from '../db/journalDB';
 import { fetchRealTimePrice } from '../api/priceApi';
 import * as XLSX from 'xlsx';
 import LightweightChartComponent from './LightweightChartComponent';
+import CopyPositionModal from './CopyPositionModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Download } from 'lucide-react';
 
@@ -15,6 +16,7 @@ const TradeRow = React.memo(({
   setChartModalTrade,
   handleOpenEditModal,
   handleOpenCloseModal,
+  setCopyModalTrade,
   requestConfirm,
   onDeleteTrade,
   pnlDisplayMode = 'pnl'
@@ -236,6 +238,13 @@ const TradeRow = React.memo(({
             >
               Chart
             </button>
+            <button
+              onClick={() => setCopyModalTrade(trade)}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-2 py-1 rounded text-xs transition-colors cursor-pointer shadow-sm shadow-purple-900/20"
+              title="Copy Position"
+            >
+              Copy
+            </button>
             {!isClosed && (
               <button
                 onClick={() => handleOpenEditModal(trade)}
@@ -321,6 +330,7 @@ const TradeCard = React.memo(({
   setChartModalTrade,
   handleOpenEditModal,
   handleOpenCloseModal,
+  setCopyModalTrade,
   requestConfirm,
   onDeleteTrade,
   setViewingImage,
@@ -514,6 +524,12 @@ const TradeCard = React.memo(({
         >
           📈 Chart
         </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setCopyModalTrade(trade); }}
+          className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1"
+        >
+          📋 Copy
+        </button>
         {!isClosed && (
           <button
             onClick={(e) => { e.stopPropagation(); handleOpenEditModal(trade); }}
@@ -559,6 +575,7 @@ const DesktopTradeCard = React.memo(({
   setChartModalTrade,
   handleOpenEditModal,
   handleOpenCloseModal,
+  setCopyModalTrade,
   requestConfirm,
   onDeleteTrade,
   setViewingImage,
@@ -800,6 +817,13 @@ const DesktopTradeCard = React.memo(({
         >
           📈 Chart {!isVip && '🔒'}
         </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setCopyModalTrade(trade); }}
+          className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm shadow-purple-955/20 flex items-center justify-center gap-1"
+          title="คัดลอกออเดอร์"
+        >
+          📋 Copy
+        </button>
         {!isClosed && (
           <button
             onClick={(e) => { e.stopPropagation(); handleOpenEditModal(trade); }}
@@ -910,7 +934,7 @@ const DesktopTradeCard = React.memo(({
   );
 });
 
-export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl', accounts = [] }) {
+export default function TradeJournalTable({ currentUser, trades, globalTrades = [], initialBalances = {}, onUpdateTrade, onAddTrade, onDeleteTrade, onClearAllTrades, onDeleteTradesByDateRange, onImportData, onExportJSON, requestConfirm, requestPrompt, requestAlert, plans = [], setups = [], isVip, pnlDisplayMode = 'pnl', accounts = [] }) {
   const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState('Open'); // All, Open, Closed
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -969,6 +993,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
   // สถานะสำหรับ Modal ปิดออเดอร์และดูกราฟ
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [chartModalTrade, setChartModalTrade] = useState(null);
+  const [copyModalTrade, setCopyModalTrade] = useState(null);
   
   const chartRef = useRef(null);
   const handleDownloadChart = () => {
@@ -1749,6 +1774,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                       setSummaryTrade={setSummaryTrade}
                       handleOpenEditModal={handleOpenEditModal}
                       handleOpenCloseModal={handleOpenCloseModal}
+                      setCopyModalTrade={setCopyModalTrade}
                       requestConfirm={requestConfirm}
                       onDeleteTrade={onDeleteTrade}
                       pnlDisplayMode={pnlDisplayMode}
@@ -1780,6 +1806,7 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
                       setSummaryTrade={setSummaryTrade}
                       handleOpenEditModal={handleOpenEditModal}
                       handleOpenCloseModal={handleOpenCloseModal}
+                      setCopyModalTrade={setCopyModalTrade}
                       requestConfirm={requestConfirm}
                       onDeleteTrade={onDeleteTrade}
                     />
@@ -2789,6 +2816,26 @@ export default function TradeJournalTable({ currentUser, trades, onUpdateTrade, 
         </div>
       )}
 
+      {/* 📋 Copy Position Modal */}
+      {copyModalTrade && (
+        <CopyPositionModal
+          trade={copyModalTrade}
+          accounts={accounts}
+          initialBalances={initialBalances}
+          globalTrades={globalTrades}
+          onClose={() => setCopyModalTrade(null)}
+          onCopy={(newTrade) => {
+            if (onAddTrade) {
+              onAddTrade(newTrade);
+              if (requestAlert) {
+                requestAlert("Success", "คัดลอก Position สำเร็จ");
+              } else {
+                alert("คัดลอก Position สำเร็จ");
+              }
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
