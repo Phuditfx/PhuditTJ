@@ -54,11 +54,11 @@ export default function CopyPositionModal({
 
     if (pEntry > 0 && pVal > 0) {
       if (sizingMode === 'Budget') {
-        shares = Math.floor((pVal / pEntry) * 10000) / 10000;
+        shares = Math.floor(pVal / pEntry);
       } else if (sizingMode === 'Risk($)' && gapDistance > 0) {
-        shares = Math.floor((pVal / gapDistance) * 10000) / 10000;
+        shares = Math.floor(pVal / gapDistance);
       } else if (sizingMode === 'Risk(%)' && gapDistance > 0) {
-        shares = Math.floor(((targetAccountBalance * (pVal / 100)) / gapDistance) * 10000) / 10000;
+        shares = Math.floor((targetAccountBalance * (pVal / 100)) / gapDistance);
       }
 
       if ((sizingMode === 'Risk($)' || sizingMode === 'Risk(%)') && gapDistance === 0) {
@@ -219,7 +219,7 @@ export default function CopyPositionModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-[10px] font-bold text-purple-600/70 dark:text-purple-400/70 uppercase block mb-1">Shares (จำนวนหุ้น)</span>
-                <span className="font-mono font-black text-lg text-purple-700 dark:text-purple-400">{calculatedShares.toFixed(4)}</span>
+                <span className="font-mono font-black text-lg text-purple-700 dark:text-purple-400">{calculatedShares.toLocaleString()}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-purple-600/70 dark:text-purple-400/70 uppercase block mb-1">Required Budget (ทุนที่ใช้)</span>
