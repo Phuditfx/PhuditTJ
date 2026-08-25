@@ -393,14 +393,26 @@ export default function App() {
     saveTargetRR(currentUser, value);
   };
 
-  // 🏆 คำนวณยศปัจจุบันอัตโนมัติจากยอดคงเหลือในพอร์ต
+  // 📈 คำนวณยอดเงินในพอร์ตปัจจุบันแบบเรียลไทม์ (Initial Balance + ผลรวมกำไรขาดทุนของออเดอร์ที่ปิดแล้ว)
+  const accountBalance = useMemo(() => {
+    const netPnL = trades.reduce((acc, t) => {
+      const tradeAcc = t.accountId || 'default';
+      if (tradeAcc === accountId && t.status === 'Closed') {
+        return acc + (parseFloat(t.pnl) || 0);
+      }
+      return acc;
+    }, 0);
+    return Math.max(0, initialBalance + netPnL);
+  }, [trades, accountId, initialBalance]);
+
+  // 🏆 คำนวณยศปัจจุบันอัตโนมัติจากยอดคงเหลือในพอร์ต (Dynamic Rank)
   const currentRank = useMemo(() => {
     let rank = RANK_SYSTEM[0];
     for (let i = 0; i < RANK_SYSTEM.length; i++) {
-      if (initialBalance >= RANK_SYSTEM[i].minPort) rank = RANK_SYSTEM[i];
+      if (accountBalance >= RANK_SYSTEM[i].minPort) rank = RANK_SYSTEM[i];
     }
     return rank;
-  }, [initialBalance]);
+  }, [accountBalance]);
 
   // กรอง Trades ตาม Account และ Date Range
   const filteredGlobalTrades = useMemo(() => {
@@ -437,18 +449,6 @@ export default function App() {
       return true;
     });
   }, [trades, accountId, globalDateRange]);
-
-  // 📈 คำนวณยอดเงินในพอร์ตปัจจุบันแบบเรียลไทม์ (Initial Balance + ผลรวมกำไรขาดทุนของออเดอร์ที่ปิดแล้ว)
-  const accountBalance = useMemo(() => {
-    const netPnL = trades.reduce((acc, t) => {
-      const tradeAcc = t.accountId || 'default';
-      if (tradeAcc === accountId && t.status === 'Closed') {
-        return acc + (parseFloat(t.pnl) || 0);
-      }
-      return acc;
-    }, 0);
-    return Math.max(0, initialBalance + netPnL);
-  }, [trades, accountId, initialBalance]);
 
   // บันทึกออเดอร์ใหม่ (เปิดออเดอร์จาก Sidebar)
   const handleSaveTrade = (newTradeData) => {
