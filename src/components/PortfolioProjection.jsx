@@ -9,7 +9,10 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
   // --- Portfolio Growth Graph Logic ---
   const growthData = useMemo(() => {
     let data = [];
-    const sumFunding = fundingHistory.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+    const sumFunding = fundingHistory.reduce((acc, curr) => {
+      const amt = parseFloat(curr.amount) || 0;
+      return curr.type === 'withdrawal' ? acc - amt : acc + amt;
+    }, 0);
     let runningBalance = initialBalance - sumFunding;
 
     if (closedTrades.length === 0 && fundingHistory.length === 0) {
