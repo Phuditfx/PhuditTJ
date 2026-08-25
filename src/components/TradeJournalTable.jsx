@@ -2769,12 +2769,6 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                     <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">{summaryTrade.planAdherence || '-'}</span>
                   </div>
                 </div>
-                {summaryTrade.notes && (
-                  <div className="mt-4 pt-4 border-t border-indigo-200/50 dark:border-indigo-800/50">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Notes</span>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{summaryTrade.notes}</p>
-                  </div>
-                )}
               </div>
 
               {/* AI Feedback */}
@@ -2808,6 +2802,50 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                       className="w-full h-auto max-h-[300px] object-contain"
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Trade Reflection & Notes */}
+              {(summaryTrade.mistakeTags || summaryTrade.whatWentWell || summaryTrade.lessonLearned || summaryTrade.notes) && (
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-5">
+                  
+                  {summaryTrade.mistakeTags && (
+                    <div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"><span className="text-sm">🚫</span> Mistake Tags (ข้อผิดพลาด)</span>
+                      <div className="flex flex-wrap gap-2">
+                        {(Array.isArray(summaryTrade.mistakeTags) ? summaryTrade.mistakeTags : summaryTrade.mistakeTags.split(',')).map((tag, idx) => {
+                           const cleanTag = tag.trim();
+                           if (!cleanTag) return null;
+                           return (
+                             <span key={idx} className="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 px-2.5 py-1 rounded-md text-xs font-bold border border-rose-200 dark:border-rose-500/30 shadow-sm">
+                               {cleanTag}
+                             </span>
+                           );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {summaryTrade.whatWentWell && (
+                    <div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><span className="text-sm">✨</span> What went well (สิ่งที่ทำได้ดี)</span>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{summaryTrade.whatWentWell}</p>
+                    </div>
+                  )}
+
+                  {summaryTrade.lessonLearned && (
+                    <div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><span className="text-sm">📚</span> Lesson Learned (บทเรียนที่ได้)</span>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{summaryTrade.lessonLearned}</p>
+                    </div>
+                  )}
+
+                  {summaryTrade.notes && (
+                    <div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><span className="text-sm">📝</span> Notes (หมายเหตุ)</span>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{summaryTrade.notes}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
