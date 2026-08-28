@@ -741,7 +741,7 @@ const DesktopTradeCard = React.memo(({
           <div className="grid grid-cols-3 gap-2 pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800/40">
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold text-center mb-1">Net P/L</span>
-              <div className={`py-1 px-2 rounded-lg relative text-center flex items-center justify-center border ${
+              <div className={`flex-1 py-1 px-2 rounded-lg relative text-center flex items-center justify-center border ${
                 pnl !== null && pnl >= 0 
                   ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20' 
                   : pnl !== null 
@@ -774,35 +774,52 @@ const DesktopTradeCard = React.memo(({
 
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold text-center mb-1">Risk Reward</span>
-              <div className={`text-center flex justify-center items-center ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
-                {rrToShow !== null ? (
-                  <span className={`py-1 px-2 w-full rounded-lg font-black text-[13px] font-mono inline-block border ${
-                    rrToShow >= 2 
-                      ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-250/20' 
-                      : rrToShow >= 0 
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800' 
-                        : 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-250/20'
-                  }`}>
-                    {rrToShow.toFixed(2)} R
-                  </span>
-                ) : (
-                  <span className="text-slate-500 font-mono text-[13px]">-</span>
+              <div className={`flex-1 py-1 px-2 rounded-lg relative text-center flex items-center justify-center border ${
+                rrToShow >= 2 
+                  ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-250/20' 
+                  : rrToShow >= 0 
+                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800' 
+                    : 'bg-rose-50 dark:bg-rose-500/20 border-rose-250/20'
+              }`}>
+                <div className={`w-full ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
+                  {rrToShow !== null ? (
+                    <span className={`font-mono font-black text-[13px] ${
+                      rrToShow >= 2 
+                        ? 'text-emerald-600 dark:text-emerald-400' 
+                        : rrToShow >= 0 
+                          ? 'text-slate-700 dark:text-slate-300' 
+                          : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {rrToShow.toFixed(2)} R
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 font-mono text-[13px]">-</span>
+                  )}
+                </div>
+                {!isVip && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
+                    <span className="text-[10px]" title="VIP Only">🔒 VIP</span>
+                  </div>
                 )}
               </div>
-              {!isVip && (
-                <div className="text-[9px] text-slate-400 text-center font-bold mt-0.5">🔒 VIP</div>
-              )}
             </div>
 
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold text-center mb-1">1R Risk</span>
-              <div className={`text-center flex justify-center items-center ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
-                {initialRisk > 0 ? (
-                  <span className="py-1 px-2 w-full rounded-lg font-black text-[13px] font-mono inline-block border bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800">
-                    ${initialRisk.toFixed(2)}
-                  </span>
-                ) : (
-                  <span className="text-slate-500 font-mono text-[13px]">-</span>
+              <div className="flex-1 py-1 px-2 rounded-lg relative text-center flex items-center justify-center border bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800">
+                <div className={`w-full ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
+                  {initialRisk > 0 ? (
+                    <span className="font-mono font-black text-[13px] text-slate-600 dark:text-slate-300">
+                      ${initialRisk.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 font-mono text-[13px]">-</span>
+                  )}
+                </div>
+                {!isVip && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 opacity-70">
+                    <span className="text-[10px]" title="VIP Only">🔒 VIP</span>
+                  </div>
                 )}
               </div>
             </div>
