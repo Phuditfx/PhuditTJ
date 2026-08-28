@@ -594,12 +594,13 @@ const DesktopTradeCard = React.memo(({
 
   // Calculate RR
   let rrToShow = null;
+  const gap = Math.abs(trade.entryPrice - trade.stopLoss);
+  const initialRisk = trade.plannedRisk || (gap * trade.shares);
+
   if (isClosed) {
     rrToShow = trade.actualRR;
   } else if (livePrice) {
     const livePnl = trade.direction === 'Long' ? (livePrice - trade.entryPrice) * trade.shares : (trade.entryPrice - livePrice) * trade.shares;
-    const gap = Math.abs(trade.entryPrice - trade.stopLoss);
-    const initialRisk = trade.plannedRisk || (gap * trade.shares);
     if (initialRisk > 0) rrToShow = livePnl / initialRisk;
   }
 
@@ -736,8 +737,8 @@ const DesktopTradeCard = React.memo(({
             </div>
           </div>
 
-          {/* Row 2: Net P/L & Risk Reward */}
-          <div className="grid grid-cols-2 gap-3 pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800/40">
+          {/* Row 2: Net P/L, Risk Reward & 1R Risk */}
+          <div className="grid grid-cols-3 gap-2 pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800/40">
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold text-center mb-1">Net P/L</span>
               <div className={`py-1 px-2 rounded-lg relative text-center flex items-center justify-center border ${
@@ -791,6 +792,19 @@ const DesktopTradeCard = React.memo(({
               {!isVip && (
                 <div className="text-[9px] text-slate-400 text-center font-bold mt-0.5">🔒 VIP</div>
               )}
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-405 dark:text-slate-500 uppercase font-semibold text-center mb-1">1R Risk</span>
+              <div className={`text-center flex justify-center items-center ${!isVip ? 'blur-sm select-none pointer-events-none' : ''}`}>
+                {initialRisk > 0 ? (
+                  <span className="py-1 px-2 w-full rounded-lg font-black text-[13px] font-mono inline-block border bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800">
+                    ${initialRisk.toFixed(2)}
+                  </span>
+                ) : (
+                  <span className="text-slate-500 font-mono text-[13px]">-</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
