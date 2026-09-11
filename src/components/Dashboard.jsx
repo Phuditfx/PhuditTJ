@@ -256,6 +256,52 @@ export default function Dashboard({
       avgRR: parseFloat(avgRR.toFixed(2))
     };
   });
+  // --- Gap-Up Scenario Metrics Calculations ---
+  const gapUpScenarios = [
+    "1.1 ราคาเด้งขึ้นไปเปิดออเดอร์ แล้ววิ่งไปชน TP",
+    "1.2 ราคาเด้งขึ้นไปเปิดออเดอร์ แล้วไซด์เวย์ ไม่วิ่งไปชน TP หรือ SL แล้วหมดเวลาถือออเดอร์ที่ 04:01 ET",
+    "1.3 ราคาเด้งไปเปิดออเดอร์ แล้ววิ่งลงไปชน SL",
+    "2.1 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์อยู่ในแดนบวก แต่ไม่ไปชน TP จนหมดเวลาถือ",
+    "2.2 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์อยู่ในแดนลบ แต่ไม่ไปชน SL จนหมดเวลาถือ",
+    "2.3 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์ลงมาชน SL",
+    "2.4 ราคาไม่เด้งไปเปิดออเดอร์ และราคาไซด์เวย์ทิ้งลงไป (ไม่ได้ของ)",
+    "3.1 ราคาไม่วิ่งไปเปิดออเดอร์แล้วร่วงลง (ไม่ได้ของ)"
+  ];
+  
+  const gapUpStats = {};
+  gapUpScenarios.forEach(sc => {
+    gapUpStats[sc] = { count: 0, wins: 0, losses: 0, totalRR: 0 };
+  });
+
+  let totalGapUpTrades = 0;
+
+  closedTrades.forEach(t => {
+    if (!t.isGapUpStrategy) return;
+    totalGapUpTrades++;
+    
+    if (t.exitScenario && gapUpStats[t.exitScenario]) {
+      gapUpStats[t.exitScenario].count++;
+      const pnl = parseFloat(t.pnl) || 0;
+      const rr = parseFloat(t.actualRR) || 0;
+      gapUpStats[t.exitScenario].totalRR += rr;
+      
+      if (pnl > 0) gapUpStats[t.exitScenario].wins++;
+      else if (pnl < 0) gapUpStats[t.exitScenario].losses++;
+    }
+  });
+
+  const gapUpScenarioData = gapUpScenarios.map(sc => {
+    const data = gapUpStats[sc];
+    const percentage = totalGapUpTrades > 0 ? (data.count / totalGapUpTrades) * 100 : 0;
+    const winRate = data.count > 0 ? (data.wins / data.count) * 100 : 0;
+    return {
+      name: sc.split(' ')[0], // e.g., "1.1"
+      fullName: sc,
+      count: data.count,
+      percentage: parseFloat(percentage.toFixed(1)),
+      winRate: parseFloat(winRate.toFixed(1))
+    };
+  }).filter(d => d.count > 0); // Only show scenarios that have occurred
   // ----------------------------------------
 
   const handleSaveFunding = () => {
@@ -845,6 +891,49 @@ export default function Dashboard({
           </div>
         </div>
       </div>
+
+      {/* 🚀 Gap-Up Strategy Analytics Section */}
+      {gapUpScenarioData.length > 0 && (
+        <div className="crypto-card p-6 mt-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">🚀 Gap-Up Strategy Scenarios</h3>
+          <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">สรุปสถิติและโอกาสปิดออเดอร์ในแต่ละรูปแบบของ Gap-Up Strategy (จากทั้งหมด {totalGapUpTrades} ออเดอร์)</p>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase">
+                  <th className="py-2 px-3 font-semibold">Scenario</th>
+                  <th className="py-2 px-3 font-semibold text-right">Trades</th>
+                  <th className="py-2 px-3 font-semibold text-right">Closing Rate (%)</th>
+                  <th className="py-2 px-3 font-semibold text-right">Win Rate (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {gapUpScenarioData.sort((a, b) => b.count - a.count).map((item, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                    <td className="py-3 px-3">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 mr-2">{item.name}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{item.fullName.substring(item.name.length + 1)}</span>
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">{item.count}</td>
+                    <td className="py-3 px-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{item.percentage}%</span>
+                        <div className="w-16 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-amber-500 h-full" style={{ width: `${item.percentage}%` }}></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {item.winRate}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 🪜 Level Rank Ladder Section (Spacious Comparison Table) */}
       <div className="crypto-card p-6">

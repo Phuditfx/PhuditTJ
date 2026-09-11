@@ -2184,12 +2184,20 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                         className="bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-amber-500"
                       >
                         <option value="">-- Select --</option>
-                        <option value="Gap Up TP">Gap Up TP</option>
-                        <option value="Gap Down SL">Gap Down SL</option>
-                        <option value="Survivor (Flat/Bounce)">Survivor (Flat/Bounce)</option>
-                        <option value="Time Cut">Time Cut</option>
-                        <option value="Hit TP">Hit TP</option>
-                        <option value="Hit SL">Hit SL</option>
+                        <optgroup label="1. ราคาเด้งขึ้นไปเปิดออเดอร์ และวิ่งไปชน TP">
+                          <option value="1.1 ราคาเด้งขึ้นไปเปิดออเดอร์ แล้ววิ่งไปชน TP">1.1 ราคาเด้งขึ้นไปเปิดออเดอร์ แล้ววิ่งไปชน TP</option>
+                          <option value="1.2 ราคาเด้งขึ้นไปเปิดออเดอร์ แล้วไซด์เวย์ ไม่วิ่งไปชน TP หรือ SL แล้วหมดเวลาถือออเดอร์ที่ 04:01 ET">1.2 ราคาเด้งขึ้นไปเปิดออเดอร์ แล้วไซด์เวย์ ไม่วิ่งไปชน TP หรือ SL แล้วหมดเวลาถือออเดอร์ที่ 04:01 ET</option>
+                          <option value="1.3 ราคาเด้งไปเปิดออเดอร์ แล้ววิ่งลงไปชน SL">1.3 ราคาเด้งไปเปิดออเดอร์ แล้ววิ่งลงไปชน SL</option>
+                        </optgroup>
+                        <optgroup label="2. ราคาทำทรง Side way อาจจะไปเปิดออเดอร์หรือไม่ไปเปิดออเดอร์ก็ได้">
+                          <option value="2.1 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์อยู่ในแดนบวก แต่ไม่ไปชน TP จนหมดเวลาถือ">2.1 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์อยู่ในแดนบวก แต่ไม่ไปชน TP จนหมดเวลาถือ</option>
+                          <option value="2.2 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์อยู่ในแดนลบ แต่ไม่ไปชน SL จนหมดเวลาถือ">2.2 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์อยู่ในแดนลบ แต่ไม่ไปชน SL จนหมดเวลาถือ</option>
+                          <option value="2.3 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์ลงมาชน SL">2.3 ราคาเด้งไปเปิดออเดอร์ และราคาไซด์เวย์ลงมาชน SL</option>
+                          <option value="2.4 ราคาไม่เด้งไปเปิดออเดอร์ และราคาไซด์เวย์ทิ้งลงไป (ไม่ได้ของ)">2.4 ราคาไม่เด้งไปเปิดออเดอร์ และราคาไซด์เวย์ทิ้งลงไป (ไม่ได้ของ)</option>
+                        </optgroup>
+                        <optgroup label="3. ราคาไม่วิ่งไปเปิดออเดอร์แล้วร่วงลง (ไม่ได้ของ)">
+                          <option value="3.1 ราคาไม่วิ่งไปเปิดออเดอร์แล้วร่วงลง (ไม่ได้ของ)">3.1 ราคาไม่วิ่งไปเปิดออเดอร์แล้วร่วงลง (ไม่ได้ของ)</option>
+                        </optgroup>
                       </select>
                     </div>
                   </div>
