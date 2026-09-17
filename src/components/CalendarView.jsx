@@ -169,18 +169,9 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl', usePercen
 
         {/* Month Summary Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-2 sm:p-3 text-center flex flex-col items-center justify-center">
-            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase flex items-center justify-center gap-1.5 mb-0.5">
+          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-2 sm:p-3 text-center">
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase block">
               Net {pnlDisplayMode === 'pnl' ? 'P/L' : 'RR'}
-              {pnlDisplayMode === 'rr' && (
-                <label className="flex items-center cursor-pointer opacity-80 hover:opacity-100 transition-opacity" title="Toggle 1% Balance = 1 RR mode" onClick={(e) => e.stopPropagation()}>
-                  <div className="relative scale-75 origin-left">
-                    <input type="checkbox" className="sr-only" checked={usePercentageRR || false} onChange={() => setUsePercentageRR(!usePercentageRR)} />
-                    <div className={`block w-6 h-3.5 rounded-full transition-colors ${usePercentageRR ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
-                    <div className={`absolute left-0.5 top-0.5 bg-white w-2.5 h-2.5 rounded-full transition transform ${usePercentageRR ? 'translate-x-2.5' : ''}`}></div>
-                  </div>
-                </label>
-              )}
             </span>
             <span className={`text-xs sm:text-sm font-black ${
               (pnlDisplayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR) >= 0 

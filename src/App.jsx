@@ -856,6 +856,16 @@ export default function App() {
               >
                 RR
               </button>
+              {pnlDisplayMode === 'rr' && (
+                <div className="flex items-center gap-1.5 ml-1 pl-2 border-l border-slate-300 dark:border-slate-600" title="คำนวณให้ 1 RR = 1% ของยอดเงินพอร์ตเสมอ">
+                  <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">1% = 1RR</span>
+                  <label className="relative flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only" checked={usePercentageRR || false} onChange={() => setUsePercentageRR(!usePercentageRR)} />
+                    <div className={`block w-6 h-3.5 rounded-full transition-colors ${usePercentageRR ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                    <div className={`absolute left-0.5 top-0.5 bg-white w-2.5 h-2.5 rounded-full transition transform ${usePercentageRR ? 'translate-x-2.5' : ''}`}></div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 ml-2">
@@ -961,6 +971,16 @@ export default function App() {
               >
                 RR
               </button>
+              {pnlDisplayMode === 'rr' && (
+                <div className="flex items-center gap-1.5 ml-1 pl-2 border-l border-slate-300 dark:border-slate-600" title="คำนวณให้ 1 RR = 1% ของยอดเงินพอร์ตเสมอ">
+                  <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">1% = 1RR</span>
+                  <label className="relative flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only" checked={usePercentageRR || false} onChange={() => setUsePercentageRR(!usePercentageRR)} />
+                    <div className={`block w-6 h-3.5 rounded-full transition-colors ${usePercentageRR ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                    <div className={`absolute left-0.5 top-0.5 bg-white w-2.5 h-2.5 rounded-full transition transform ${usePercentageRR ? 'translate-x-2.5' : ''}`}></div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex gap-2 w-full">

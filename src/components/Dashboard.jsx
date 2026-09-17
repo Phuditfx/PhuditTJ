@@ -410,19 +410,7 @@ export default function Dashboard({
         </div>
 
         <div className="crypto-card p-5 relative overflow-visible">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
-            {pnlDisplayMode === 'rr' && (
-              <label className="flex items-center cursor-pointer gap-1.5 opacity-80 hover:opacity-100 transition-opacity" title="Toggle 1% Balance = 1 RR mode">
-                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">1% = 1RR</span>
-                <div className="relative">
-                  <input type="checkbox" className="sr-only" checked={usePercentageRR || false} onChange={() => setUsePercentageRR(!usePercentageRR)} />
-                  <div className={`block w-6 h-3.5 rounded-full transition-colors ${usePercentageRR ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
-                  <div className={`absolute left-0.5 top-0.5 bg-white w-2.5 h-2.5 rounded-full transition transform ${usePercentageRR ? 'translate-x-2.5' : ''}`}></div>
-                </div>
-              </label>
-            )}
-          </div>
+          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           <span className={`text-3xl font-mono font-bold mt-2 block ${
             (pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'
           }`}>
