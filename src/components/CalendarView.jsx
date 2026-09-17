@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
+export default function CalendarView({ trades, pnlDisplayMode = 'pnl', usePercentageRR, setUsePercentageRR, accountBalance }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayTrades, setSelectedDayTrades] = useState(null);
 
@@ -33,7 +33,9 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
     let lossDays = 0;
     Object.values(tradesByDay).forEach(dayTrades => {
       const dayPnL = dayTrades.reduce((acc, t) => acc + (parseFloat(t.pnl) || 0), 0);
-      const dayRR = dayTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
+      const dayRR = usePercentageRR
+        ? (accountBalance > 0 ? (dayPnL / (accountBalance * 0.01)) : 0)
+        : dayTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
       totalPnL += dayPnL;
       totalRR += dayRR;
       totalTrades += dayTrades.length;
@@ -43,7 +45,7 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
       else if (metric < 0) lossDays++;
     });
     return { totalPnL, totalRR, totalTrades, winDays, lossDays };
-  }, [tradesByDay, pnlDisplayMode]);
+  }, [tradesByDay, pnlDisplayMode, usePercentageRR, accountBalance]);
 
   const prevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -84,7 +86,9 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
     for (let day = 1; day <= daysInMonth; day++) {
       const dayTrades = tradesByDay[day] || [];
       const totalPnL = dayTrades.reduce((acc, t) => acc + (parseFloat(t.pnl) || 0), 0);
-      const totalRR = dayTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
+      const totalRR = usePercentageRR
+        ? (accountBalance > 0 ? (totalPnL / (accountBalance * 0.01)) : 0)
+        : dayTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
       
       const displayValue = pnlDisplayMode === 'pnl' ? totalPnL : totalRR;
 
@@ -165,9 +169,18 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl' }) {
 
         {/* Month Summary Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-2 sm:p-3 text-center">
-            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase block">
+          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-2 sm:p-3 text-center flex flex-col items-center justify-center">
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase flex items-center justify-center gap-1.5 mb-0.5">
               Net {pnlDisplayMode === 'pnl' ? 'P/L' : 'RR'}
+              {pnlDisplayMode === 'rr' && (
+                <label className="flex items-center cursor-pointer opacity-80 hover:opacity-100 transition-opacity" title="Toggle 1% Balance = 1 RR mode" onClick={(e) => e.stopPropagation()}>
+                  <div className="relative scale-75 origin-left">
+                    <input type="checkbox" className="sr-only" checked={usePercentageRR || false} onChange={() => setUsePercentageRR(!usePercentageRR)} />
+                    <div className={`block w-6 h-3.5 rounded-full transition-colors ${usePercentageRR ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                    <div className={`absolute left-0.5 top-0.5 bg-white w-2.5 h-2.5 rounded-full transition transform ${usePercentageRR ? 'translate-x-2.5' : ''}`}></div>
+                  </div>
+                </label>
+              )}
             </span>
             <span className={`text-xs sm:text-sm font-black ${
               (pnlDisplayMode === 'pnl' ? monthSummary.totalPnL : monthSummary.totalRR) >= 0 

@@ -48,6 +48,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
+  const [usePercentageRR, setUsePercentageRR] = useState(false);
 
   useEffect(() => {
     const sessionEmail = localStorage.getItem('phudit_session_user');
@@ -1052,6 +1053,8 @@ export default function App() {
                 requestPrompt={requestPrompt}
                 requestAlert={requestAlert}
                 pnlDisplayMode={pnlDisplayMode}
+                usePercentageRR={usePercentageRR}
+                setUsePercentageRR={setUsePercentageRR}
               />
             )}
             
@@ -1125,7 +1128,13 @@ export default function App() {
                 </div>
                 {activeTab === 'calendar' && (
                   isVip || isTiPicks
-                    ? <CalendarView trades={trades.filter(t => (t.accountId || 'default') === accountId)} pnlDisplayMode={pnlDisplayMode} />
+                    ? <CalendarView 
+                        trades={trades.filter(t => (t.accountId || 'default') === accountId)} 
+                        pnlDisplayMode={pnlDisplayMode} 
+                        usePercentageRR={usePercentageRR}
+                        setUsePercentageRR={setUsePercentageRR}
+                        accountBalance={accountBalance}
+                      />
                     : <VipLockScreen featureName="Calendar" onBack={() => setActiveTab('dashboard')} />
                 )}
                 {activeTab === 'plans' && (

@@ -19,7 +19,9 @@ export default function Dashboard({
   isVip,
   onLoadSampleData,
   pnlDisplayMode = 'pnl',
-  hasTradesInAccount
+  hasTradesInAccount,
+  usePercentageRR,
+  setUsePercentageRR
 }) {
   const { t } = useLanguage();
   const [localBalance, setLocalBalance] = React.useState(initialBalance);
@@ -43,7 +45,9 @@ export default function Dashboard({
   const wins = closedTrades.filter(t => t.pnl > 0);
   const winRate = totalClosed > 0 ? (wins.length / totalClosed) * 100 : 0;
   const netPnL = trades.reduce((acc, t) => acc + (t.status === 'Closed' ? t.pnl : 0), 0);
-  const achievedRR = closedTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
+  const achievedRR = usePercentageRR 
+    ? (accountBalance > 0 ? (netPnL / (accountBalance * 0.01)) : 0)
+    : closedTrades.reduce((acc, t) => acc + (parseFloat(t.actualRR) || 0), 0);
   const rrProgress = targetRR > 0 ? Math.min((achievedRR / targetRR) * 100, 100) : 0;
 
   const nextRank = RANK_SYSTEM.find(r => r.level === currentRank.level + 1);
@@ -406,7 +410,19 @@ export default function Dashboard({
         </div>
 
         <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
+            {pnlDisplayMode === 'rr' && (
+              <label className="flex items-center cursor-pointer gap-1.5 opacity-80 hover:opacity-100 transition-opacity" title="Toggle 1% Balance = 1 RR mode">
+                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">1% = 1RR</span>
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={usePercentageRR || false} onChange={() => setUsePercentageRR(!usePercentageRR)} />
+                  <div className={`block w-6 h-3.5 rounded-full transition-colors ${usePercentageRR ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                  <div className={`absolute left-0.5 top-0.5 bg-white w-2.5 h-2.5 rounded-full transition transform ${usePercentageRR ? 'translate-x-2.5' : ''}`}></div>
+                </div>
+              </label>
+            )}
+          </div>
           <span className={`text-3xl font-mono font-bold mt-2 block ${
             (pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'
           }`}>
