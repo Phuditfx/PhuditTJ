@@ -269,7 +269,8 @@ const TradeRow = React.memo(({
               </button>
             )}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 requestConfirm(
                   "ลบออเดอร์",
                   "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
@@ -549,7 +550,8 @@ const TradeCard = React.memo(({
           {!isClosed ? '🚪 Close' : '✏️ Edit'}
         </button>
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             requestConfirm(
               "ลบออเดอร์",
               "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
@@ -876,7 +878,8 @@ const DesktopTradeCard = React.memo(({
           {!isClosed ? 'Close' : 'Edit'}
         </button>
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             requestConfirm(
               "ลบออเดอร์",
               "คุณแน่ใจว่าต้องการลบออเดอร์นี้จาก Journal อย่างถาวร?",
