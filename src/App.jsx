@@ -1104,7 +1104,7 @@ export default function App() {
 
             {activeTab === 'positionSizing' && (
               isVip || isTiPicks
-                ? <PositionSizingCalculator />
+                ? <PositionSizingCalculator accountBalance={accountBalance} />
                 : <VipLockScreen featureName="Position Sizing & Risk" onBack={() => setActiveTab('dashboard')} />
             )}
 

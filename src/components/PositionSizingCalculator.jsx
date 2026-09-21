@@ -2,42 +2,74 @@ import React, { useState, useEffect } from 'react';
 import DynamicRiskCalculator from './DynamicRiskCalculator';
 import TISwingPicksPlan from './TISwingPicksPlan';
 
-export default function PositionSizingCalculator() {
+export default function PositionSizingCalculator({ accountBalance = 0 }) {
   const [activeMode, setActiveMode] = useState('position_sizing');
-  const [riskPerTrade, setRiskPerTrade] = useState(1);
-  const [slDistance, setSlDistance] = useState(0.10);
+  
+  const [riskMode, setRiskMode] = useState(() => localStorage.getItem('phudit_risk_mode') || '$');
+  const [riskValue, setRiskValue] = useState(() => localStorage.getItem('phudit_risk_value') || '1');
+  const [accountSize, setAccountSize] = useState(() => localStorage.getItem('phudit_account_size') || (accountBalance > 0 ? accountBalance.toString() : '10000'));
+  const [slDistance, setSlDistance] = useState(() => localStorage.getItem('phudit_sl_distance') || '0.10');
   const [entryPrice, setEntryPrice] = useState('');
 
   const [results, setResults] = useState({
     sharesToBuy: 0,
     expectedProfit: 0,
     buyingPower: null,
+    calculatedRisk: 0,
   });
 
   useEffect(() => {
+    if (accountBalance > 0 && (!localStorage.getItem('phudit_account_size') || localStorage.getItem('phudit_account_size') === '0')) {
+      setAccountSize(accountBalance.toString());
+    }
+  }, [accountBalance]);
+
+  useEffect(() => {
+    localStorage.setItem('phudit_risk_mode', riskMode);
+    localStorage.setItem('phudit_risk_value', riskValue);
+    localStorage.setItem('phudit_account_size', accountSize.toString());
+    localStorage.setItem('phudit_sl_distance', slDistance.toString());
+  }, [riskMode, riskValue, accountSize, slDistance]);
+
+  useEffect(() => {
     // Calculations
-    const risk = parseFloat(riskPerTrade) || 0;
+    const riskVal = parseFloat(riskValue) || 0;
     const sl = parseFloat(slDistance) || 0;
     const entry = entryPrice === '' ? null : parseFloat(entryPrice);
 
+    let calculatedRisk = 0;
     let shares = 0;
-    if (sl > 0) {
-      shares = risk / sl;
+    let buyingPower = null;
+
+    if (riskMode === '$') {
+      calculatedRisk = riskVal;
+      if (sl > 0) shares = calculatedRisk / sl;
+    } else if (riskMode === '%') {
+      const accSize = parseFloat(accountSize) || 0;
+      calculatedRisk = accSize * (riskVal / 100);
+      if (sl > 0) shares = calculatedRisk / sl;
+    } else if (riskMode === 'budget') {
+      if (entry !== null && entry > 0) {
+        shares = riskVal / entry;
+        if (sl > 0) calculatedRisk = shares * sl;
+      }
     }
 
-    const expectedProfit = risk * 3; // 1:3 RR
+    const expectedProfit = calculatedRisk * 3; // 1:3 RR
     
-    let buyingPower = null;
     if (entry !== null && entry > 0) {
       buyingPower = shares * entry;
+    } else if (riskMode === 'budget') {
+      buyingPower = riskVal;
     }
 
     setResults({
       sharesToBuy: shares,
       expectedProfit: expectedProfit,
-      buyingPower: buyingPower
+      buyingPower: buyingPower,
+      calculatedRisk: calculatedRisk
     });
-  }, [riskPerTrade, slDistance, entryPrice]);
+  }, [riskMode, riskValue, accountSize, slDistance, entryPrice]);
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 animate-fade-in text-slate-900 dark:text-slate-100">
@@ -96,18 +128,64 @@ export default function PositionSizingCalculator() {
           
           <div className="space-y-6">
             
-            {/* Risk per Trade */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700/50">
+            {/* Risk Mode & Inputs */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700/50 space-y-4">
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Risk per Trade ($)<span className="text-rose-500 ml-1">*</span></label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">รูปแบบการคำนวณ (Mode)</label>
+              </div>
+              <div className="flex gap-2 bg-slate-200 dark:bg-slate-900 p-1 rounded-lg w-full">
+                <button
+                  onClick={() => setRiskMode('$')}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    riskMode === '$' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >$ (Fixed)</button>
+                <button
+                  onClick={() => setRiskMode('%')}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    riskMode === '%' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >% (Account)</button>
+                <button
+                  onClick={() => setRiskMode('budget')}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    riskMode === 'budget' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >Budget</button>
+              </div>
+
+              {/* Dynamic Inputs Based on Mode */}
+              {riskMode === '%' && (
+                <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700/50">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Account Size ($)</label>
+                  <div className="relative w-32">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                    <input onFocus={(e) => e.target.select()} 
+                      type="number"
+                      min="0"
+                      value={accountSize}
+                      onChange={(e) => setAccountSize(e.target.value)}
+                      className="w-full pl-7 pr-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-right"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700/50">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {riskMode === '$' ? 'Risk per Trade ($)' : riskMode === '%' ? 'Risk (%)' : 'Budget Amount ($)'}
+                  <span className="text-rose-500 ml-1">*</span>
+                </label>
                 <div className="relative w-32">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                    {riskMode === '%' ? '%' : '$'}
+                  </span>
                   <input onFocus={(e) => e.target.select()} 
                     type="number"
                     min="0"
-                    step="1"
-                    value={riskPerTrade}
-                    onChange={(e) => setRiskPerTrade(e.target.value)}
+                    step={riskMode === '%' ? "0.1" : "1"}
+                    value={riskValue}
+                    onChange={(e) => setRiskValue(e.target.value)}
                     className="w-full pl-7 pr-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-right"
                   />
                 </div>
@@ -135,7 +213,10 @@ export default function PositionSizingCalculator() {
             {/* Entry Price */}
             <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700/50">
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ราคาจุดเข้าเทรด ($)</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                  ราคาจุดเข้าเทรด ($)
+                  {riskMode === 'budget' && <span className="text-rose-500 ml-1">*</span>}
+                </label>
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                   <input onFocus={(e) => e.target.select()} 
@@ -144,12 +225,14 @@ export default function PositionSizingCalculator() {
                     step="0.01"
                     value={entryPrice}
                     onChange={(e) => setEntryPrice(e.target.value)}
-                    placeholder="Optional"
+                    placeholder={riskMode === 'budget' ? "Required" : "Optional"}
                     className="w-full pl-7 pr-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-right"
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-slate-500 mt-1">ใส่เฉพาะเมื่อต้องการคำนวณ Buying Power</p>
+              <p className="text-[10px] text-slate-500 mt-1">
+                {riskMode === 'budget' ? 'จำเป็นต้องใส่เพื่อคำนวณจำนวนหุ้นและ Risk' : 'ใส่เฉพาะเมื่อต้องการคำนวณ Buying Power'}
+              </p>
             </div>
 
           </div>
@@ -168,6 +251,15 @@ export default function PositionSizingCalculator() {
                 </span>
               </div>
               
+              {(riskMode === '%' || riskMode === 'budget') && (
+                <div className="flex justify-between items-end border-b border-slate-700 pb-3">
+                  <span className="text-slate-400 font-medium">ความเสี่ยงเมื่อโดน SL (Risk)</span>
+                  <span className="text-2xl font-bold text-rose-400">
+                    {results.calculatedRisk > 0 ? `-$${results.calculatedRisk.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-end border-b border-slate-700 pb-3">
                 <span className="text-slate-400 font-medium">กำไรคาดหวังที่ RR 1:3 ($)</span>
                 <span className="text-3xl font-bold text-emerald-400">
