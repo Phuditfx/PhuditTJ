@@ -7,7 +7,7 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
   
   const [riskMode, setRiskMode] = useState(() => localStorage.getItem('phudit_risk_mode') || '$');
   const [riskValue, setRiskValue] = useState(() => localStorage.getItem('phudit_risk_value') || '1');
-  const [accountSize, setAccountSize] = useState(() => localStorage.getItem('phudit_account_size') || (accountBalance > 0 ? accountBalance.toString() : '10000'));
+  const [accountSize, setAccountSize] = useState(() => accountBalance > 0 ? accountBalance.toString() : '10000');
   const [slDistance, setSlDistance] = useState(() => localStorage.getItem('phudit_sl_distance') || '0.10');
   const [entryPrice, setEntryPrice] = useState('');
 
@@ -19,7 +19,7 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
   });
 
   useEffect(() => {
-    if (accountBalance > 0 && (!localStorage.getItem('phudit_account_size') || localStorage.getItem('phudit_account_size') === '0')) {
+    if (accountBalance > 0) {
       setAccountSize(accountBalance.toString());
     }
   }, [accountBalance]);
@@ -27,9 +27,8 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
   useEffect(() => {
     localStorage.setItem('phudit_risk_mode', riskMode);
     localStorage.setItem('phudit_risk_value', riskValue);
-    localStorage.setItem('phudit_account_size', accountSize.toString());
     localStorage.setItem('phudit_sl_distance', slDistance.toString());
-  }, [riskMode, riskValue, accountSize, slDistance]);
+  }, [riskMode, riskValue, slDistance]);
 
   useEffect(() => {
     // Calculations
