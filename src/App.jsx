@@ -1088,28 +1088,38 @@ export default function App() {
         <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
           <div className="w-full">
             {activeTab === 'dashboard' && (
-              <Dashboard 
-                accountBalance={accountBalance}
-                initialBalance={initialBalance}
-                setInitialBalance={setInitialBalance}
-                targetRR={targetRR}
-                setTargetRR={setTargetRR}
-                trades={filteredGlobalTrades}
-                hasTradesInAccount={trades.some(t => (t.accountId || 'default') === accountId)}
-                currentRank={currentRank}
-                fundingHistory={fundingHistory}
-                isVip={isVip}
-                setFundingHistory={(newHistory) => {
-                  setFundingHistory(newHistory);
-                  saveFundingHistory(currentUser, newHistory);
-                }}
-                onLoadSampleData={handleLoadSampleData}
-                requestPrompt={requestPrompt}
-                requestAlert={requestAlert}
-                pnlDisplayMode={pnlDisplayMode}
-                usePercentageRR={usePercentageRR}
-                setUsePercentageRR={setUsePercentageRR}
-              />
+              <div className="flex flex-col gap-6">
+                <Dashboard 
+                  accountBalance={accountBalance}
+                  initialBalance={initialBalance}
+                  setInitialBalance={setInitialBalance}
+                  targetRR={targetRR}
+                  setTargetRR={setTargetRR}
+                  trades={filteredGlobalTrades}
+                  hasTradesInAccount={trades.some(t => (t.accountId || 'default') === accountId)}
+                  currentRank={currentRank}
+                  fundingHistory={fundingHistory}
+                  isVip={isVip}
+                  setFundingHistory={(newHistory) => {
+                    setFundingHistory(newHistory);
+                    saveFundingHistory(currentUser, newHistory);
+                  }}
+                  onLoadSampleData={handleLoadSampleData}
+                  requestPrompt={requestPrompt}
+                  requestAlert={requestAlert}
+                  pnlDisplayMode={pnlDisplayMode}
+                  usePercentageRR={usePercentageRR}
+                  setUsePercentageRR={setUsePercentageRR}
+                />
+                
+                {/* 📈 Embedded Analytics Section */}
+                <div className="w-full mt-4">
+                  {isVip || isTiPicks || isAlphaPicks
+                    ? <Analytics trades={filteredGlobalTrades} />
+                    : <VipLockScreen featureName="Analytics & Stats" />
+                  }
+                </div>
+              </div>
             )}
             
             {activeTab === 'journal' && (
@@ -1162,11 +1172,6 @@ export default function App() {
             ) : (
               <>
                 {/* ✅ Task 3: VIP-gated tabs */}
-                {activeTab === 'analytics' && (
-                  isVip || isTiPicks || isAlphaPicks
-                    ? <Analytics trades={filteredGlobalTrades} />
-                    : <VipLockScreen featureName="Analytics & Stats" onBack={() => setActiveTab('dashboard')} />
-                )}
                 <div className={activeTab === 'fighter' ? 'block' : 'hidden'}>
                   {isVip || isTiPicks || isAlphaPicks ? (
                     <FighterComponent
@@ -1358,10 +1363,7 @@ export default function App() {
               <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">✕</button>
             </div>
             <div className="grid grid-cols-4 gap-4 overflow-y-auto pb-6 px-1 custom-scrollbar">
-              <button onClick={() => setActiveTab('analytics')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'analytics' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                <span className="text-2xl mb-1">📈</span>
-                <span className="text-[10px] font-bold text-center leading-tight">Analytics</span>
-              </button>
+
               <button onClick={() => setActiveTab('positionSizing')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'positionSizing' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">🛡️</span>
                 <span className="text-[10px] font-bold text-center leading-tight">Position<br/>Sizing</span>
