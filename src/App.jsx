@@ -1812,7 +1812,18 @@ export default function App() {
                                     "เช่น 1000",
                                     (amount) => {
                                       if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                                        handleUpdateInitialBalance(acc.id, accBalance + parseFloat(amount));
+                                        const depositAmount = parseFloat(amount);
+                                        handleUpdateInitialBalance(acc.id, accBalance + depositAmount);
+                                        
+                                        const newFunding = {
+                                          id: 'f-' + Date.now(),
+                                          date: new Date().toISOString(),
+                                          amount: depositAmount,
+                                          type: 'deposit'
+                                        };
+                                        const updatedHistory = [...fundingHistory, newFunding];
+                                        setFundingHistory(updatedHistory);
+                                        saveFundingHistory(currentUser, updatedHistory);
                                       }
                                     }
                                   );
@@ -1835,6 +1846,16 @@ export default function App() {
                                             return;
                                           }
                                           handleUpdateInitialBalance(acc.id, accBalance - withdrawAmount);
+                                          
+                                          const newFunding = {
+                                            id: 'f-' + Date.now(),
+                                            date: new Date().toISOString(),
+                                            amount: withdrawAmount,
+                                            type: 'withdrawal'
+                                          };
+                                          const updatedHistory = [...fundingHistory, newFunding];
+                                          setFundingHistory(updatedHistory);
+                                          saveFundingHistory(currentUser, updatedHistory);
                                         }
                                       }
                                   );
