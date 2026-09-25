@@ -781,7 +781,7 @@ export default function App() {
 
   const handleUpdateInitialBalance = (accId, newBalance) => {
     const val = parseFloat(newBalance);
-    if (isNaN(val) || val < 0) return;
+    if (isNaN(val)) return;
     const updatedBalances = { ...initialBalances, [accId]: val };
     setInitialBalances(updatedBalances);
     saveInitialBalance(currentUser, updatedBalances);
@@ -1826,11 +1826,17 @@ export default function App() {
                                     "ถอนเงิน (Withdraw)", 
                                     `กรุณาระบุจำนวนเงินที่ต้องการถอนจากบัญชี ${acc.name}`,
                                     "เช่น 500",
-                                    (amount) => {
-                                      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                                        handleUpdateInitialBalance(acc.id, accBalance - parseFloat(amount));
+                                      (amount) => {
+                                        if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                                          const withdrawAmount = parseFloat(amount);
+                                          const totalBalance = accBalance + accPnL;
+                                          if (withdrawAmount > totalBalance) {
+                                            requestAlert("ถอนเงินไม่สำเร็จ", "จำนวนเงินที่ระบุมากกว่ายอดเงินรวมในบัญชี");
+                                            return;
+                                          }
+                                          handleUpdateInitialBalance(acc.id, accBalance - withdrawAmount);
+                                        }
                                       }
-                                    }
                                   );
                                 }}
                                 className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900 px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer"

@@ -21,7 +21,9 @@ export default function Dashboard({
   pnlDisplayMode = 'pnl',
   hasTradesInAccount,
   usePercentageRR,
-  setUsePercentageRR
+  setUsePercentageRR,
+  requestAlert,
+  requestPrompt
 }) {
   const { t } = useLanguage();
   const [localBalance, setLocalBalance] = React.useState(initialBalance);
@@ -310,6 +312,19 @@ export default function Dashboard({
 
   const handleSaveFunding = () => {
     if (!fundingAmount || isNaN(fundingAmount) || Number(fundingAmount) <= 0) return;
+    
+    if (fundingType === 'withdrawal') {
+      const withdrawAmount = parseFloat(fundingAmount);
+      if (withdrawAmount > accountBalance) {
+        if (typeof requestAlert === 'function') {
+           requestAlert("ถอนเงินไม่สำเร็จ", "จำนวนเงินที่ระบุมากกว่ายอดเงินคงเหลือในพอร์ต");
+        } else {
+           alert("ถอนเงินไม่สำเร็จ: จำนวนเงินที่ระบุมากกว่ายอดเงินคงเหลือในพอร์ต");
+        }
+        return;
+      }
+    }
+
     const newFunding = {
       id: 'f-' + Date.now(),
       date: new Date().toISOString(),
