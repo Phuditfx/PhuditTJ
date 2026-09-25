@@ -4,6 +4,8 @@ import { RANK_SYSTEM } from '../db/journalDB';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import PortfolioProjection from './PortfolioProjection';
+import Analytics from './Analytics';
+import VipLockScreen from './VipLockScreen';
 import { calculateAdvancedKPIs } from '../utils/tradingMath';
 
 export default function Dashboard({ 
@@ -17,6 +19,7 @@ export default function Dashboard({
   fundingHistory = [],
   setFundingHistory,
   isVip,
+  canViewAnalytics,
   onLoadSampleData,
   pnlDisplayMode = 'pnl',
   hasTradesInAccount,
@@ -793,6 +796,14 @@ export default function Dashboard({
             <p className="text-xs text-slate-500 font-bold bg-white/80 dark:bg-slate-900/80 px-3 py-1 rounded-full">Upgrade to unlock full analytics</p>
           </div>
         )}
+      </div>
+
+      {/* 📈 Embedded Analytics Section */}
+      <div className="w-full">
+        {canViewAnalytics
+          ? <Analytics trades={trades} />
+          : <VipLockScreen featureName="Analytics & Stats" />
+        }
       </div>
 
       {/* 📈 Analytics Charts Section */}

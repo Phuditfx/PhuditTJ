@@ -1100,6 +1100,7 @@ export default function App() {
                   currentRank={currentRank}
                   fundingHistory={fundingHistory}
                   isVip={isVip}
+                  canViewAnalytics={isVip || isTiPicks || isAlphaPicks}
                   setFundingHistory={(newHistory) => {
                     setFundingHistory(newHistory);
                     saveFundingHistory(currentUser, newHistory);
@@ -1111,14 +1112,6 @@ export default function App() {
                   usePercentageRR={usePercentageRR}
                   setUsePercentageRR={setUsePercentageRR}
                 />
-                
-                {/* 📈 Embedded Analytics Section */}
-                <div className="w-full mt-4">
-                  {isVip || isTiPicks || isAlphaPicks
-                    ? <Analytics trades={filteredGlobalTrades} />
-                    : <VipLockScreen featureName="Analytics & Stats" />
-                  }
-                </div>
               </div>
             )}
             
