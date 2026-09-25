@@ -146,6 +146,7 @@ export default function App() {
   const [newFundedSize, setNewFundedSize] = useState(50000);
   const [editingAccountId, setEditingAccountId] = useState(null);
   const [editingAccountName, setEditingAccountName] = useState('');
+  const [editingAccountType, setEditingAccountType] = useState('Personal');
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editingBalanceValue, setEditingBalanceValue] = useState('');
   const [editingFundedSizeId, setEditingFundedSizeId] = useState(null);
@@ -758,13 +759,24 @@ export default function App() {
     );
   };
 
-  const handleRenameAccount = (accId, newName) => {
+  const handleSaveAccountEdit = (accId, newName, newType) => {
     if (!newName.trim()) return;
-    const updatedAccounts = accounts.map(a => a.id === accId ? { ...a, name: newName.trim() } : a);
+    const updatedAccounts = accounts.map(a => {
+      if (a.id === accId) {
+        return { 
+          ...a, 
+          name: newName.trim(), 
+          type: newType,
+          fundedSize: newType === 'Funded' ? (a.fundedSize || 50000) : undefined 
+        };
+      }
+      return a;
+    });
     setAccounts(updatedAccounts);
     saveAccounts(currentUser, updatedAccounts);
     setEditingAccountId(null);
     setEditingAccountName('');
+    setEditingAccountType('Personal');
   };
 
   const handleUpdateInitialBalance = (accId, newBalance) => {
@@ -1586,6 +1598,15 @@ export default function App() {
       {showAccountModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden max-h-[90vh] overflow-y-auto">
+            <datalist id="fundedSizesList">
+              <option value="5000" />
+              <option value="10000" />
+              <option value="25000" />
+              <option value="50000" />
+              <option value="100000" />
+              <option value="200000" />
+              <option value="400000" />
+            </datalist>
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
             
             {/* Header */}
@@ -1631,19 +1652,13 @@ export default function App() {
               {newAccountType === 'Funded' && (
                 <div className="flex items-center gap-2 mt-1 px-1">
                   <label className="text-[10px] text-slate-500 uppercase font-bold">Funded Size ($):</label>
-                  <select
+                  <input
+                    type="number"
+                    list="fundedSizesList"
                     value={newFundedSize}
                     onChange={(e) => setNewFundedSize(e.target.value)}
-                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="5000">5,000</option>
-                    <option value="10000">10,000</option>
-                    <option value="25000">25,000</option>
-                    <option value="50000">50,000</option>
-                    <option value="100000">100,000</option>
-                    <option value="200000">200,000</option>
-                    <option value="400000">400,000</option>
-                  </select>
+                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 w-32"
+                  />
                 </div>
               )}
             </div>
@@ -1673,16 +1688,24 @@ export default function App() {
                             type="text" 
                             value={editingAccountName}
                             onChange={(e) => setEditingAccountName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleRenameAccount(acc.id, editingAccountName)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveAccountEdit(acc.id, editingAccountName, editingAccountType)}
                             className="flex-1 bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-700 rounded-lg px-2 py-1 text-sm font-bold text-slate-900 dark:text-white focus:outline-none"
                             autoFocus
                           />
+                          <select
+                            value={editingAccountType}
+                            onChange={(e) => setEditingAccountType(e.target.value)}
+                            className="bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                          >
+                            <option value="Personal">Personal</option>
+                            <option value="Funded">Funded</option>
+                          </select>
                           <button 
-                            onClick={() => handleRenameAccount(acc.id, editingAccountName)}
+                            onClick={() => handleSaveAccountEdit(acc.id, editingAccountName, editingAccountType)}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer"
                           >✓</button>
                           <button 
-                            onClick={() => { setEditingAccountId(null); setEditingAccountName(''); }}
+                            onClick={() => { setEditingAccountId(null); setEditingAccountName(''); setEditingAccountType('Personal'); }}
                             className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer"
                           >✕</button>
                         </div>
@@ -1692,7 +1715,7 @@ export default function App() {
                             {isActive && <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 animate-pulse"></span>}
                             <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{acc.name}</span>
                             <button 
-                              onClick={() => { setEditingAccountId(acc.id); setEditingAccountName(acc.name); }}
+                              onClick={() => { setEditingAccountId(acc.id); setEditingAccountName(acc.name); setEditingAccountType(acc.type || 'Personal'); }}
                               className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer flex-shrink-0"
                               title="Rename"
                             >✏️</button>
@@ -1704,19 +1727,13 @@ export default function App() {
                               </span>
                               {isEditingFunded ? (
                                 <div className="flex gap-1">
-                                  <select 
+                                  <input 
+                                    type="number"
+                                    list="fundedSizesList"
                                     value={editingFundedSizeValue}
                                     onChange={(e) => setEditingFundedSizeValue(e.target.value)}
-                                    className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-0.5 text-[9px] font-bold text-slate-900 dark:text-white focus:outline-none"
-                                  >
-                                    <option value="5000">5K</option>
-                                    <option value="10000">10K</option>
-                                    <option value="25000">25K</option>
-                                    <option value="50000">50K</option>
-                                    <option value="100000">100K</option>
-                                    <option value="200000">200K</option>
-                                    <option value="400000">400K</option>
-                                  </select>
+                                    className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-0.5 text-[9px] font-bold text-slate-900 dark:text-white focus:outline-none w-20"
+                                  />
                                   <button 
                                     onClick={() => handleUpdateFundedSize(acc.id, editingFundedSizeValue)}
                                     className="bg-emerald-600 hover:bg-emerald-500 text-white px-1.5 py-0.5 rounded text-[8px] font-bold cursor-pointer"
