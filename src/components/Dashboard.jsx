@@ -21,6 +21,8 @@ export default function Dashboard({
   isVip,
   canViewAnalytics,
   onLoadSampleData,
+  allAccountTrades = trades,
+  globalDateRange = 'All',
   pnlDisplayMode = 'pnl',
   hasTradesInAccount,
   usePercentageRR,
@@ -784,6 +786,8 @@ export default function Dashboard({
         <div className={!isVip ? 'blur-md pointer-events-none select-none opacity-60' : ''}>
           <PortfolioProjection 
             trades={trades} 
+            allAccountTrades={allAccountTrades}
+            globalDateRange={globalDateRange}
             initialBalance={initialBalance} 
             fundingHistory={fundingHistory} 
           />

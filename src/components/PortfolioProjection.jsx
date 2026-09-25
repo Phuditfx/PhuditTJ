@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ComposedChart, ReferenceLine } from 'recharts';
 
-export default function PortfolioProjection({ trades, initialBalance, fundingHistory = [] }) {
+export default function PortfolioProjection({ trades, allAccountTrades = trades, globalDateRange = 'All', initialBalance, fundingHistory = [] }) {
   const [monthsAhead, setMonthsAhead] = useState(6);
 
   const closedTrades = useMemo(() => trades.filter(t => t.status === 'Closed').sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime)), [trades]);
+  const allClosedTrades = useMemo(() => allAccountTrades.filter(t => t.status === 'Closed').sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime)), [allAccountTrades]);
 
   // --- Portfolio Growth Graph Logic ---
   const growthData = useMemo(() => {
@@ -15,12 +16,12 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
     }, 0);
     let runningBalance = initialBalance - sumFunding;
 
-    if (closedTrades.length === 0 && fundingHistory.length === 0) {
+    if (allClosedTrades.length === 0 && fundingHistory.length === 0) {
       return [{ date: new Date().toISOString().split('T')[0], balance: initialBalance }];
     }
 
     const events = [];
-    closedTrades.forEach(t => {
+    allClosedTrades.forEach(t => {
       if (t.dateTime) {
         events.push({ date: new Date(t.dateTime), type: 'trade', amount: parseFloat(t.pnl) || 0, id: t.id });
       }
@@ -62,8 +63,55 @@ export default function PortfolioProjection({ trades, initialBalance, fundingHis
       }
     });
 
-    return data;
-  }, [closedTrades, initialBalance, fundingHistory]);
+    let filteredData = data;
+    if (globalDateRange !== 'All') {
+      const now = new Date();
+      let startDate = new Date(0);
+      let endDate = new Date('2100-01-01');
+
+      if (globalDateRange === '1W') {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (globalDateRange === '1M') {
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      } else if (globalDateRange === 'YTD') {
+        startDate = new Date(now.getFullYear(), 0, 1);
+      } else if (globalDateRange.startsWith('MONTH-')) {
+        const parts = globalDateRange.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[1], 10);
+          const month = parseInt(parts[2], 10) - 1;
+          startDate = new Date(year, month, 1);
+          endDate = new Date(year, month + 1, 0, 23, 59, 59);
+        }
+      }
+
+      filteredData = data.filter(d => d.timestamp >= startDate.getTime() && d.timestamp <= endDate.getTime());
+      
+      const beforePoints = data.filter(d => d.timestamp < startDate.getTime());
+      let lastBal = initialBalance - sumFunding;
+      if (beforePoints.length > 0) {
+        lastBal = beforePoints[beforePoints.length - 1].balance;
+      }
+
+      if (filteredData.length === 0) {
+        filteredData = [{
+          date: startDate.toISOString().split('T')[0],
+          balance: lastBal,
+          timestamp: startDate.getTime()
+        }];
+      } else {
+        if (filteredData[0].timestamp > startDate.getTime()) {
+          filteredData.unshift({
+            date: startDate.toISOString().split('T')[0],
+            balance: lastBal,
+            timestamp: startDate.getTime()
+          });
+        }
+      }
+    }
+
+    return filteredData;
+  }, [allClosedTrades, initialBalance, fundingHistory, globalDateRange]);
 
 
   // --- System Projection Graph Logic (Monte Carlo + Statistical) ---

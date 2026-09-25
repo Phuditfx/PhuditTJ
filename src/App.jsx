@@ -420,6 +420,11 @@ export default function App() {
     return rank;
   }, [accountBalance]);
 
+  // All trades for current account (unfiltered by date)
+  const allAccountTrades = useMemo(() => {
+    return trades.filter(t => (t.accountId || 'default') === accountId);
+  }, [trades, accountId]);
+
   // กรอง Trades ตาม Account และ Date Range
   const filteredGlobalTrades = useMemo(() => {
     return trades.filter(t => {
@@ -1096,7 +1101,9 @@ export default function App() {
                   targetRR={targetRR}
                   setTargetRR={setTargetRR}
                   trades={filteredGlobalTrades}
-                  hasTradesInAccount={trades.some(t => (t.accountId || 'default') === accountId)}
+                  allAccountTrades={allAccountTrades}
+                  globalDateRange={globalDateRange}
+                  hasTradesInAccount={allAccountTrades.length > 0}
                   currentRank={currentRank}
                   fundingHistory={fundingHistory}
                   isVip={isVip}
