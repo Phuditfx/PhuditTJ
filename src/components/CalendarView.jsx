@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-export default function CalendarView({ trades, pnlDisplayMode = 'pnl', usePercentageRR, setUsePercentageRR, accountBalance }) {
+export default function CalendarView({ trades, pnlDisplayMode = 'pnl', usePercentageRR, setUsePercentageRR, accountBalance, activeAccount }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayTrades, setSelectedDayTrades] = useState(null);
 
@@ -98,8 +98,14 @@ export default function CalendarView({ trades, pnlDisplayMode = 'pnl', usePercen
       const today = new Date();
       const isToday = day === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
+      const isFunded = activeAccount?.type === 'Funded';
+      const fundedTarget = isFunded ? (activeAccount.fundedSize || 0) * 0.005 : 0;
+      const hitFundedTarget = isFunded && (totalPnL >= fundedTarget);
+
       const bgColor = isWin 
-        ? 'bg-emerald-500/10 dark:bg-emerald-500/10 border-emerald-400/40 dark:border-emerald-500/30 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/20' 
+        ? (hitFundedTarget 
+            ? 'bg-emerald-500/20 dark:bg-emerald-500/20 border-4 border-emerald-500 dark:border-emerald-500 hover:bg-emerald-500/30 dark:hover:bg-emerald-500/30' 
+            : 'bg-emerald-500/10 dark:bg-emerald-500/10 border-emerald-400/40 dark:border-emerald-500/30 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/20')
         : isLoss 
           ? 'bg-rose-500/10 dark:bg-rose-500/10 border-rose-400/40 dark:border-rose-500/30 hover:bg-rose-500/20 dark:hover:bg-rose-500/20' 
           : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60';

@@ -142,10 +142,14 @@ export default function App() {
   };
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountType, setNewAccountType] = useState('Personal');
+  const [newFundedSize, setNewFundedSize] = useState(50000);
   const [editingAccountId, setEditingAccountId] = useState(null);
   const [editingAccountName, setEditingAccountName] = useState('');
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editingBalanceValue, setEditingBalanceValue] = useState('');
+  const [editingFundedSizeId, setEditingFundedSizeId] = useState(null);
+  const [editingFundedSizeValue, setEditingFundedSizeValue] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [promptDialog, setPromptDialog] = useState({ isOpen: false, title: '', message: '', placeholder: '', onConfirm: null });
@@ -715,11 +719,18 @@ export default function App() {
 
   const handleAddAccount = () => {
     if (!newAccountName.trim()) return;
-    const newAccount = { id: `acc-${Date.now()}`, name: newAccountName.trim() };
+    const newAccount = { 
+      id: `acc-${Date.now()}`, 
+      name: newAccountName.trim(),
+      type: newAccountType,
+      fundedSize: newAccountType === 'Funded' ? parseFloat(newFundedSize) : undefined
+    };
     const updatedAccounts = [...accounts, newAccount];
     setAccounts(updatedAccounts);
     saveAccounts(currentUser, updatedAccounts);
     setNewAccountName('');
+    setNewAccountType('Personal');
+    setNewFundedSize(50000);
   };
 
   const handleDeleteAccount = (idToDelete) => {
@@ -764,6 +775,17 @@ export default function App() {
     saveInitialBalance(currentUser, updatedBalances);
     setEditingBalanceId(null);
     setEditingBalanceValue('');
+  };
+
+  const handleUpdateFundedSize = (accId, newSize) => {
+    const val = parseFloat(newSize);
+    if (isNaN(val) || val <= 0) return;
+    const updatedAccounts = accounts.map(a => 
+      a.id === accId ? { ...a, fundedSize: val } : a
+    );
+    setAccounts(updatedAccounts);
+    saveAccounts(currentUser, updatedAccounts);
+    setEditingFundedSizeId(null);
   };
 
   if (!authReady) {
@@ -1154,6 +1176,7 @@ export default function App() {
                         usePercentageRR={usePercentageRR}
                         setUsePercentageRR={setUsePercentageRR}
                         accountBalance={accountBalance}
+                        activeAccount={accounts.find(a => a.id === accountId) || { type: 'Personal' }}
                       />
                     : <VipLockScreen featureName="Calendar" onBack={() => setActiveTab('dashboard')} />
                 )}
@@ -1580,21 +1603,49 @@ export default function App() {
             </div>
 
             {/* Add New Account */}
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddAccount()}
-                placeholder="New account name..." 
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-              <button 
-                onClick={handleAddAccount}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-indigo-900/20 flex items-center gap-1 whitespace-nowrap"
-              >
-                ➕ Add
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddAccount()}
+                  placeholder="New account name..." 
+                  className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+                <select
+                  value={newAccountType}
+                  onChange={(e) => setNewAccountType(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="Personal">Personal</option>
+                  <option value="Funded">Funded</option>
+                </select>
+                <button 
+                  onClick={handleAddAccount}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-indigo-900/20 flex items-center gap-1 whitespace-nowrap"
+                >
+                  ➕ Add
+                </button>
+              </div>
+              {newAccountType === 'Funded' && (
+                <div className="flex items-center gap-2 mt-1 px-1">
+                  <label className="text-[10px] text-slate-500 uppercase font-bold">Funded Size ($):</label>
+                  <select
+                    value={newFundedSize}
+                    onChange={(e) => setNewFundedSize(e.target.value)}
+                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="5000">5,000</option>
+                    <option value="10000">10,000</option>
+                    <option value="25000">25,000</option>
+                    <option value="50000">50,000</option>
+                    <option value="100000">100,000</option>
+                    <option value="200000">200,000</option>
+                    <option value="400000">400,000</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Account List */}
@@ -1605,6 +1656,7 @@ export default function App() {
                 const accBalance = (initialBalances[acc.id] ?? 10000);
                 const isEditing = editingAccountId === acc.id;
                 const isEditingBal = editingBalanceId === acc.id;
+                const isEditingFunded = editingFundedSizeId === acc.id;
                 const isActive = accountId === acc.id;
 
                 return (
@@ -1635,14 +1687,57 @@ export default function App() {
                           >✕</button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {isActive && <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 animate-pulse"></span>}
-                          <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{acc.name}</span>
-                          <button 
-                            onClick={() => { setEditingAccountId(acc.id); setEditingAccountName(acc.name); }}
-                            className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer flex-shrink-0"
-                            title="Rename"
-                          >✏️</button>
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {isActive && <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 animate-pulse"></span>}
+                            <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{acc.name}</span>
+                            <button 
+                              onClick={() => { setEditingAccountId(acc.id); setEditingAccountName(acc.name); }}
+                              className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer flex-shrink-0"
+                              title="Rename"
+                            >✏️</button>
+                          </div>
+                          {acc.type === 'Funded' && (
+                            <div className="flex items-center gap-1.5 ml-4">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 font-black border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center">
+                                FUNDED
+                              </span>
+                              {isEditingFunded ? (
+                                <div className="flex gap-1">
+                                  <select 
+                                    value={editingFundedSizeValue}
+                                    onChange={(e) => setEditingFundedSizeValue(e.target.value)}
+                                    className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-0.5 text-[9px] font-bold text-slate-900 dark:text-white focus:outline-none"
+                                  >
+                                    <option value="5000">5K</option>
+                                    <option value="10000">10K</option>
+                                    <option value="25000">25K</option>
+                                    <option value="50000">50K</option>
+                                    <option value="100000">100K</option>
+                                    <option value="200000">200K</option>
+                                    <option value="400000">400K</option>
+                                  </select>
+                                  <button 
+                                    onClick={() => handleUpdateFundedSize(acc.id, editingFundedSizeValue)}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-1.5 py-0.5 rounded text-[8px] font-bold cursor-pointer"
+                                  >✓</button>
+                                  <button 
+                                    onClick={() => setEditingFundedSizeId(null)}
+                                    className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded text-[8px] font-bold cursor-pointer"
+                                  >✕</button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                                  {(acc.fundedSize || 0).toLocaleString()} Size
+                                  <button 
+                                    onClick={() => { setEditingFundedSizeId(acc.id); setEditingFundedSizeValue(acc.fundedSize?.toString() || "50000"); }}
+                                    className="text-[8px] text-slate-400 hover:text-emerald-500 cursor-pointer"
+                                    title="Edit Size"
+                                  >✏️</button>
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                       
