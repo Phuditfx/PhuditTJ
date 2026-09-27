@@ -38,6 +38,7 @@ export default function Dashboard({
   const [showFundingModal, setShowFundingModal] = useState(false);
   const [fundingAmount, setFundingAmount] = useState('');
   const [fundingType, setFundingType] = useState('deposit');
+  const [activeTab, setActiveTab] = useState('overview');
 
   React.useEffect(() => {
     setLocalBalance(initialBalance);
@@ -375,7 +376,33 @@ export default function Dashboard({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Dashboard Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'overview' 
+              ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' 
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer'
+          }`}
+        >
+          📊 Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('psychology')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'psychology' 
+              ? 'bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' 
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer'
+          }`}
+        >
+          🧠 Psychology & Regime
+        </button>
+      </div>
+
+      {activeTab === 'overview' && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="crypto-card p-5 relative overflow-visible">
           <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.accountBalance')}<CustomTooltip content="ยอดเงินคงเหลือในพอร์ตปัจจุบันของคุณ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           {pnlDisplayMode === 'pnl' ? (
@@ -1070,6 +1097,20 @@ export default function Dashboard({
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {activeTab === 'psychology' && (
+        <div className="flex flex-col gap-6">
+          <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-6 shadow-sm min-h-[400px] flex flex-col items-center justify-center text-center">
+            <span className="text-6xl mb-4">🧠</span>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Psychology & Discipline Analytics</h3>
+            <p className="text-slate-500 max-w-md">
+              (Coming Soon) หน้านี้จะใช้สำหรับวิเคราะห์เปรียบเทียบระหว่างคะแนนวินัยการทำตามแผน (Plan Adherence) กับผลลัพธ์การเทรด เพื่อประเมินว่าปัญหาเกิดจากการขาดวินัย หรือเกิดจากสภาวะตลาดเปลี่ยน (Market Regime Shift)
+            </p>
+          </div>
+        </div>
+      )}
 
 
 

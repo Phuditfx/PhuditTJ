@@ -199,14 +199,20 @@ const TradeRow = React.memo(({
                   </button>
                 )}
 
-                {/* Plan Adherence Indicator */}
-                <div className={`w-2 h-2 rounded-full ${
-                  trade.planAdherenceScore === 100 
-                    ? 'bg-emerald-400' 
-                    : trade.planAdherenceScore === 50 
-                      ? 'bg-amber-400' 
-                      : 'bg-rose-400'
-                }`} title={trade.planAdherence}></div>
+                {/* Plan Adherence / No Plan Indicator */}
+                {(!trade.planId || trade.planId === 'ไม่ได้ระบุแผน') ? (
+                  <span className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 px-1.5 py-0.5 rounded text-[9px] font-black uppercase shadow-sm whitespace-nowrap" title="ไม่ได้ระบุ Setup/Plan">
+                    ⚠️ No Plan
+                  </span>
+                ) : (
+                  <div className={`w-2 h-2 rounded-full shadow-sm ${
+                    trade.planAdherenceScore === 100 
+                      ? 'bg-emerald-400' 
+                      : trade.planAdherenceScore === 50 
+                        ? 'bg-amber-400' 
+                        : 'bg-rose-400'
+                  }`} title={trade.planAdherence}></div>
+                )}
 
                 {/* Notes Icon */}
                 {trade.notes && (
@@ -499,8 +505,15 @@ const TradeCard = React.memo(({
               ⚡ AI: {trade.aiScore}/10 ▼
             </button>
           )}
-          {trade.planAdherence && (
-            <div className={`w-2 h-2 rounded-full ${trade.planAdherenceScore === 100 ? 'bg-emerald-400' : trade.planAdherenceScore === 50 ? 'bg-amber-400' : 'bg-rose-400'}`} title={trade.planAdherence}></div>
+          {/* Plan Adherence / No Plan Indicator */}
+          {(!trade.planId || trade.planId === 'ไม่ได้ระบุแผน') ? (
+            <span className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 px-1.5 py-0.5 rounded text-[9px] font-black uppercase shadow-sm whitespace-nowrap" title="ไม่ได้ระบุ Setup/Plan">
+              ⚠️ No Plan
+            </span>
+          ) : (
+            trade.planAdherence && (
+              <div className={`w-2 h-2 rounded-full shadow-sm ${trade.planAdherenceScore === 100 ? 'bg-emerald-400' : trade.planAdherenceScore === 50 ? 'bg-amber-400' : 'bg-rose-400'}`} title={trade.planAdherence}></div>
+            )
           )}
           {trade.notes && <span className="text-[11px] cursor-help" title={trade.notes}>📝</span>}
         </div>

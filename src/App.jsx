@@ -384,7 +384,9 @@ export default function App() {
     tp3: ''
   });
 
-  const initialBalance = initialBalances[accountId] ?? 10000;
+  const initialBalance = accountId === 'all_accounts' 
+    ? Object.values(initialBalances).reduce((acc, bal) => acc + (parseFloat(bal) || 0), 0)
+    : (initialBalances[accountId] ?? 10000);
 
   // บันทึกและซิงค์เงินตั้งต้นลง LocalStorage
   const setInitialBalance = (newBalance) => {
@@ -403,7 +405,7 @@ export default function App() {
   const accountBalance = useMemo(() => {
     const netPnL = trades.reduce((acc, t) => {
       const tradeAcc = t.accountId || 'default';
-      if (tradeAcc === accountId && t.status === 'Closed') {
+      if ((accountId === 'all_accounts' || tradeAcc === accountId) && t.status === 'Closed') {
         return acc + (parseFloat(t.pnl) || 0);
       }
       return acc;
@@ -422,14 +424,14 @@ export default function App() {
 
   // All trades for current account (unfiltered by date)
   const allAccountTrades = useMemo(() => {
-    return trades.filter(t => (t.accountId || 'default') === accountId);
+    return trades.filter(t => accountId === 'all_accounts' || (t.accountId || 'default') === accountId);
   }, [trades, accountId]);
 
   // กรอง Trades ตาม Account และ Date Range
   const filteredGlobalTrades = useMemo(() => {
     return trades.filter(t => {
       const tradeAcc = t.accountId || 'default';
-      if (tradeAcc !== accountId) return false;
+      if (accountId !== 'all_accounts' && tradeAcc !== accountId) return false;
 
       if (globalDateRange === 'All') return true;
       if (!t.dateTime) return true;

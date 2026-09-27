@@ -115,6 +115,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           onChange={(e) => setAccountId(e.target.value)}
           className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 transition-colors"
         >
+          <option value="all_accounts">🌐 All Accounts (Total)</option>
           {accounts && accounts.map(acc => (
             <option key={acc.id} value={acc.id}>{acc.name}</option>
           ))}
