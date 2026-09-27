@@ -210,7 +210,7 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                 <input 
-                  type="number"
+                  type="number" step="any"
                   step="0.01"
                   value={transactionAmount}
                   onChange={(e) => setTransactionAmount(e.target.value)}
@@ -296,7 +296,7 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
                       </td>
                       <td className="p-4">
                         <input 
-                          type="number"
+                          type="number" step="any"
                           step="0.01"
                           disabled={record.isClosed}
                           value={record.capitalInvested !== undefined ? record.capitalInvested : ''}
@@ -307,7 +307,7 @@ export function WeeklySwingTracker({ userEmail, picks, onPicksChange, requestAle
                       </td>
                       <td className="p-4">
                         <input 
-                          type="number"
+                          type="number" step="any"
                           step="0.01"
                           disabled={record.isClosed}
                           value={record.pnl !== undefined ? record.pnl : ''}

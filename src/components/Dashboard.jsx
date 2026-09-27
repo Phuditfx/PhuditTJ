@@ -316,6 +316,43 @@ export default function Dashboard({
   }).filter(d => d.count > 0); // Only show scenarios that have occurred
   // ----------------------------------------
 
+  // --- Psychology & Discipline Analytics ---
+  let plannedTrades = { count: 0, wins: 0, pnl: 0 };
+  let unplannedTrades = { count: 0, wins: 0, pnl: 0 };
+  const moodStats = {};
+
+  closedTrades.forEach(t => {
+    const pnl = parseFloat(t.pnl) || 0;
+    const isWin = pnl > 0;
+    
+    if (t.planId && t.planId !== 'ไม่ได้ระบุแผน') {
+      plannedTrades.count++;
+      plannedTrades.pnl += pnl;
+      if (isWin) plannedTrades.wins++;
+    } else {
+      unplannedTrades.count++;
+      unplannedTrades.pnl += pnl;
+      if (isWin) unplannedTrades.wins++;
+    }
+
+    const mood = t.entryMood || 'Unknown';
+    if (!moodStats[mood]) moodStats[mood] = { count: 0, wins: 0, pnl: 0 };
+    moodStats[mood].count++;
+    moodStats[mood].pnl += pnl;
+    if (isWin) moodStats[mood].wins++;
+  });
+
+  const moodData = Object.keys(moodStats).map(mood => ({
+    name: mood,
+    count: moodStats[mood].count,
+    winRate: moodStats[mood].count > 0 ? (moodStats[mood].wins / moodStats[mood].count) * 100 : 0,
+    pnl: moodStats[mood].pnl
+  })).sort((a, b) => b.count - a.count);
+
+  const plannedWinRate = plannedTrades.count > 0 ? (plannedTrades.wins / plannedTrades.count) * 100 : 0;
+  const unplannedWinRate = unplannedTrades.count > 0 ? (unplannedTrades.wins / unplannedTrades.count) * 100 : 0;
+
+
   const handleSaveFunding = () => {
     if (!fundingAmount || isNaN(fundingAmount) || Number(fundingAmount) <= 0) return;
     
@@ -415,7 +452,7 @@ export default function Dashboard({
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-mono">$</span>
               <input onFocus={(e) => e.target.select()}  
-                type="number" 
+                type="number" step="any" 
                 value={localBalance} 
                 onChange={(e) => {
                   setLocalBalance(e.target.value);
@@ -559,7 +596,7 @@ export default function Dashboard({
                   <div className="text-[10px] uppercase text-slate-550 dark:text-slate-500 tracking-wider font-semibold">{t('dashboard.targetRR')}</div>
                   <div className="flex items-center gap-1.5">
                     <input onFocus={(e) => e.target.select()}  
-                      type="number" 
+                      type="number" step="any" 
                       value={localRR} 
                       onChange={(e) => {
                         setLocalRR(e.target.value);
@@ -1102,11 +1139,66 @@ export default function Dashboard({
 
       {activeTab === 'psychology' && (
         <div className="flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-6 shadow-sm min-h-[400px] flex flex-col items-center justify-center text-center">
-            <span className="text-6xl mb-4">🧠</span>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Psychology & Discipline Analytics</h3>
-            <p className="text-slate-500 max-w-md">
-              (Coming Soon) หน้านี้จะใช้สำหรับวิเคราะห์เปรียบเทียบระหว่างคะแนนวินัยการทำตามแผน (Plan Adherence) กับผลลัพธ์การเทรด เพื่อประเมินว่าปัญหาเกิดจากการขาดวินัย หรือเกิดจากสภาวะตลาดเปลี่ยน (Market Regime Shift)
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div className="crypto-card p-6">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">📋 Plan Adherence vs Performance</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+                  <div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-1">With Plan (ทำตามแผน)</div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-white">{plannedWinRate.toFixed(1)}% <span className="text-sm font-normal text-slate-500">Win Rate</span></div>
+                    <div className="text-sm font-bold mt-1 text-emerald-600 dark:text-emerald-400">PnL: ${plannedTrades.pnl.toFixed(2)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-500">{plannedTrades.count}</div>
+                    <div className="text-xs text-slate-500 font-medium">Trades</div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center p-4 bg-rose-50 dark:bg-rose-900/20 rounded-lg border border-rose-100 dark:border-rose-800/50">
+                  <div>
+                    <div className="text-xs text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider mb-1">No Plan (ไม่มีแผน)</div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-white">{unplannedWinRate.toFixed(1)}% <span className="text-sm font-normal text-slate-500">Win Rate</span></div>
+                    <div className="text-sm font-bold mt-1 text-rose-600 dark:text-rose-400">PnL: ${unplannedTrades.pnl.toFixed(2)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-black text-rose-600 dark:text-rose-500">{unplannedTrades.count}</div>
+                    <div className="text-xs text-slate-500 font-medium">Trades</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="crypto-card p-6">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">🎭 Entry Mood Impact</h3>
+              <div className="space-y-3">
+                {moodData.length > 0 ? moodData.map(mood => (
+                  <div key={mood.name} className="flex justify-between items-center p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800 transition-colors">
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{mood.name}</div>
+                      <div className="text-xs text-slate-500">{mood.count} Trades • {mood.winRate.toFixed(1)}% Win Rate</div>
+                    </div>
+                    <div className={`text-sm font-black ${mood.pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {mood.pnl >= 0 ? '+' : ''}${mood.pnl.toFixed(2)}
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-sm text-slate-500 py-4 text-center">No mood data recorded yet.</div>
+                )}
+              </div>
+            </div>
+
+          </div>
+          
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl p-6">
+            <h3 className="text-base font-bold text-indigo-900 dark:text-indigo-300 mb-2">🤖 AI Regime & Discipline Analysis</h3>
+            <p className="text-sm text-indigo-700 dark:text-indigo-400 leading-relaxed">
+              {unplannedTrades.count > plannedTrades.count 
+                ? "คุณมีการเทรดนอกแผน (No Plan) ค่อนข้างมาก ซึ่งอาจทำให้สถิติระบบเพี้ยนได้ แนะนำให้งดการเทรดแบบสุ่มและยึดมั่นใน Setup ที่วางไว้" 
+                : plannedWinRate < 40 && plannedTrades.count > 10 
+                  ? "แม้ว่าคุณจะเทรดตามแผนได้ดี แต่วินเรทโดยรวมยังต่ำ บ่งบอกว่า 'สภาวะตลาด (Market Regime)' อาจจะไม่เข้ากับ Setup ปัจจุบัน แนะนำให้ปรับลดความเสี่ยงหรือหยุดเทรดชั่วคราวเพื่อรอตลาดเปลี่ยนสภาพ" 
+                  : "คุณรักษาวินัยการเทรดได้ดี และสภาวะตลาดดูเหมือนจะตอบสนองต่อ Setup ของคุณได้ดี ให้รักษามาตรฐานนี้ไว้!"}
             </p>
           </div>
         </div>
@@ -1138,7 +1230,7 @@ export default function Dashboard({
             <div>
               <label className="text-xs font-bold text-slate-500 block mb-1">Amount ($)</label>
               <input onFocus={(e) => e.target.select()} 
-                type="number"
+                type="number" step="any"
                 value={fundingAmount}
                 onChange={(e) => setFundingAmount(e.target.value)}
                 placeholder="e.g. 1000"

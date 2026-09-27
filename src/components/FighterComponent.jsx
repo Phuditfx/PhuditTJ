@@ -205,7 +205,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
           <div className="absolute top-0 left-0 w-1 h-full bg-amber-600"></div>
           <label className="text-[10px] text-amber-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">TI ENTRY ALERT</label>
           <input onFocus={(e) => e.target.select()}  
-            type="number" 
+            type="number" step="any" 
             value={tiEntryAlert} 
             onChange={(e) => updateShared('tiEntryAlert', e.target.value)} 
             onFocus={(e) => e.target.select()}
@@ -218,7 +218,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
           <div className="absolute top-0 left-0 w-1 h-full bg-emerald-600"></div>
           <label className="text-[10px] text-emerald-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">CUSTOM ENTRY (TF60)</label>
           <input onFocus={(e) => e.target.select()}  
-            type="number" 
+            type="number" step="any" 
             value={entry} 
             onChange={(e) => updateShared('entry', e.target.value)} 
             onFocus={(e) => e.target.select()}
@@ -230,7 +230,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
           <div className="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>
           <label className="text-[10px] text-rose-600 block mb-1.5 uppercase font-bold tracking-wider pl-2">CUSTOM SL (TF60)</label>
           <input onFocus={(e) => e.target.select()}  
-            type="number" 
+            type="number" step="any" 
             value={stopLoss} 
             onChange={(e) => updateShared('stopLoss', e.target.value)} 
             onFocus={(e) => e.target.select()}
@@ -289,7 +289,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
               ))}
             </div>
             <input onFocus={(e) => e.target.select()}  
-              type="number" 
+              type="number" step="any" 
               value={inputValue} 
               onChange={(e) => setInputValue(e.target.value)} 
               onFocus={(e) => e.target.select()}
@@ -392,7 +392,7 @@ export default function FighterComponent({ accountBalance, sharedOrder, setShare
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{tp.id} TARGET</span>
                   <input onFocus={(e) => e.target.select()}  
-                  type="number" 
+                  type="number" step="any" 
                   value={tp.price} 
                   onChange={(e) => tp.setPrice(e.target.value)} 
                   onFocus={(e) => e.target.select()}

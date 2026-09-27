@@ -160,7 +160,7 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
                   <div className="relative w-32">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                     <input onFocus={(e) => e.target.select()} 
-                      type="number"
+                      type="number" step="any"
                       min="0"
                       value={accountSize}
                       onChange={(e) => setAccountSize(e.target.value)}
@@ -180,7 +180,7 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
                     {riskMode === '%' ? '%' : '$'}
                   </span>
                   <input onFocus={(e) => e.target.select()} 
-                    type="number"
+                    type="number" step="any"
                     min="0"
                     step={riskMode === '%' ? "0.1" : "1"}
                     value={riskValue}
@@ -198,7 +198,7 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                   <input onFocus={(e) => e.target.select()} 
-                    type="number"
+                    type="number" step="any"
                     min="0.01"
                     step="0.01"
                     value={slDistance}
@@ -219,7 +219,7 @@ export default function PositionSizingCalculator({ accountBalance = 0 }) {
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                   <input onFocus={(e) => e.target.select()} 
-                    type="number"
+                    type="number" step="any"
                     min="0"
                     step="0.01"
                     value={entryPrice}

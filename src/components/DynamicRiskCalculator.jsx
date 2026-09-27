@@ -57,7 +57,7 @@ export default function DynamicRiskCalculator() {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">1. เงินทุนของพอร์ตปัจจุบัน (Current Capital - USD)</label>
               <input 
-                type="number" 
+                type="number" step="any" 
                 value={portfolio} 
                 onChange={(e) => setPortfolio(e.target.value)}
                 onFocus={(e) => e.target.select()}
@@ -68,7 +68,7 @@ export default function DynamicRiskCalculator() {
             <div className="p-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-500/30 rounded-lg">
               <label className="block text-sm font-medium text-sky-700 dark:text-sky-300 mb-1">2. กำหนด % ความเสี่ยงต่อพอร์ต (Risk %)</label>
               <input 
-                type="number" 
+                type="number" step="any" 
                 value={riskPercent} 
                 onChange={(e) => setRiskPercent(e.target.value)}
                 step="0.01" min="0.01"
@@ -80,7 +80,7 @@ export default function DynamicRiskCalculator() {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">3. กำหนดค่า 1 RR เป็นตัวเงิน (Risk Amount - USD)</label>
               <input 
-                type="number" 
+                type="number" step="any" 
                 value={riskAmount} 
                 onChange={(e) => setRiskAmount(e.target.value)}
                 step="0.5"
@@ -93,7 +93,7 @@ export default function DynamicRiskCalculator() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">4. เป้าหมายกำไร/เดือน ($)</label>
                 <input 
-                  type="number" 
+                  type="number" step="any" 
                   value={profitGoal} 
                   onChange={(e) => setProfitGoal(e.target.value)}
                   step="100"
@@ -104,7 +104,7 @@ export default function DynamicRiskCalculator() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">จำนวนวันเทรด/เดือน</label>
                 <input 
-                  type="number" 
+                  type="number" step="any" 
                   value={days} 
                   onChange={(e) => setDays(e.target.value)}
                   onFocus={(e) => e.target.select()}

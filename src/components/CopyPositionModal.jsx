@@ -202,7 +202,7 @@ export default function CopyPositionModal({
             </label>
             <div className="relative">
               <input
-                type="number"
+                type="number" step="any"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder={sizingMode === 'Budget' ? 'เช่น 1000' : sizingMode === 'Risk($)' ? 'เช่น 50' : 'เช่น 1'}

@@ -1190,7 +1190,7 @@ export default function App() {
                 {activeTab === 'calendar' && (
                   isVip || isTiPicks
                     ? <CalendarView 
-                        trades={trades.filter(t => (t.accountId || 'default') === accountId)} 
+                        trades={allAccountTrades} 
                         pnlDisplayMode={pnlDisplayMode} 
                         usePercentageRR={usePercentageRR}
                         setUsePercentageRR={setUsePercentageRR}
@@ -1300,6 +1300,8 @@ export default function App() {
             plans={plans}
             requestAlert={requestAlert}
             requestConfirm={requestConfirm}
+            accountId={accountId}
+            accounts={accounts}
           />
           
           {/* ข้อมูลคำเตือนเล็กๆ ท้ายบอร์ด */}

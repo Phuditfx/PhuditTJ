@@ -225,7 +225,7 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
           <div className="mt-1 relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
             <input onFocus={(e) => e.target.select()}  
-              type="number" 
+              type="number" step="any" 
               value={newCash}
               onChange={(e) => setNewCash(e.target.value)}
               className="w-full pl-7 pr-3 py-1.5 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-black text-xl rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"

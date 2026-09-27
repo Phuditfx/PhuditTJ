@@ -200,7 +200,7 @@ export default function TISwingPicksPlan() {
                   'เงินทุนรายสัปดาห์ ปีที่ 1 ($) (ตัวอย่าง: 75$)'
                 )}
               </label>
-              <input type="number" 
+              <input type="number" step="any" 
                 value={weeklyFresh} onChange={(e) => setWeeklyFresh(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
             </div>
@@ -208,7 +208,7 @@ export default function TISwingPicksPlan() {
             {mode === 'injection' && (
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">เติมเงินเข้าพอร์ตต่อปี ตั้งแต่ปีที่ 2 เป็นต้นไป ($)<br/><span className="text-xs font-normal text-slate-500 dark:text-slate-400">(หากไม่เติมเงินเพิ่มเลย ให้ใส่ 0)</span></label>
-                <input type="number" step="100"
+                <input type="number" step="any" step="100"
                   value={annualAdd} onChange={(e) => setAnnualAdd(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
               </div>
@@ -216,28 +216,28 @@ export default function TISwingPicksPlan() {
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Win Rate (%)</label>
-              <input type="number" 
+              <input type="number" step="any" 
                 value={winRate} onChange={(e) => setWinRate(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">เป้าหมายกำไรเฉลี่ยต่อตัว : Take Profit (%)</label>
-              <input type="number" 
+              <input type="number" step="any" 
                 value={tp} onChange={(e) => setTp(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">จุดตัดขาดทุน : Stop Loss (%)</label>
-              <input type="number" 
+              <input type="number" step="any" 
                 value={sl} onChange={(e) => setSl(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ระยะเวลาจำลองผลลัพธ์ (ปี)</label>
-              <input type="number" 
+              <input type="number" step="any" 
                 value={years} onChange={(e) => setYears(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
             </div>

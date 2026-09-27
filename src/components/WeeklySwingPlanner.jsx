@@ -495,7 +495,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Entry Alert ($)</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number" 
+                    type="number" step="any" 
                     step="0.01"
                     value={entryPrice}
                     onChange={(e) => setEntryPrice(e.target.value)}
@@ -506,7 +506,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Stop Loss ($)</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number" 
+                    type="number" step="any" 
                     step="0.01"
                     value={stopLoss}
                     onChange={(e) => setStopLoss(e.target.value)}
@@ -582,7 +582,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Target RRR</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number" 
+                    type="number" step="any" 
                     step="0.1"
                     value={targetRrr}
                     onChange={(e) => setTargetRrr(e.target.value)}
@@ -730,7 +730,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                  <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={floatData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.1} horizontal={false} />
-                    <XAxis type="number" stroke="#64748b" tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+                    <XAxis type="number" step="any" stroke="#64748b" tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
                     <YAxis dataKey="name" type="category" stroke="#64748b" tickLine={false} axisLine={false} width={60} />
                     <Tooltip 
                       cursor={{fill: '#1e293b', opacity: 0.1}}
@@ -758,7 +758,7 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
                  <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={setupData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.1} horizontal={false} />
-                    <XAxis type="number" stroke="#64748b" tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+                    <XAxis type="number" step="any" stroke="#64748b" tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
                     <YAxis dataKey="name" type="category" stroke="#64748b" tickLine={false} axisLine={false} width={100} />
                     <Tooltip 
                       cursor={{fill: '#1e293b', opacity: 0.1}}

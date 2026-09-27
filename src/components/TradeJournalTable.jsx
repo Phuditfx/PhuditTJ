@@ -1963,7 +1963,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                     {isFetchingPrice && <span className="text-[9px] text-amber-500 animate-pulse">Fetching Live Price...</span>}
                   </label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number"
+                    type="number" step="any"
                     value={exitPrice}
                     onChange={(e) => {
                       setExitPrice(e.target.value);
@@ -1978,7 +1978,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                 <div className="flex flex-col gap-1.5 flex-1 relative">
                   <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Costs ($)</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number"
+                    type="number" step="any"
                     value={costs}
                     onChange={(e) => setCosts(e.target.value)}
                     placeholder="ค่าธรรมเนียม..."
@@ -1990,7 +1990,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                 <div className="flex flex-col gap-1.5 flex-1">
                   <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares to Close</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number"
+                    type="number" step="any"
                     value={closeShares}
                     onChange={(e) => {
                       setCloseShares(e.target.value);
@@ -2039,7 +2039,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                     <span>MFE Price ($)</span>
                   </label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number"
+                    type="number" step="any"
                     value={mfePrice}
                     onChange={(e) => setMfePrice(e.target.value)}
                     placeholder="ราคาพีคฝั่งกำไร..."
@@ -2051,7 +2051,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
                     <span>MAE Price ($)</span>
                   </label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number"
+                    type="number" step="any"
                     value={maePrice}
                     onChange={(e) => setMaePrice(e.target.value)}
                     placeholder="ราคาพีคฝั่งขาดทุน..."
@@ -2615,7 +2615,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry Price ($)</label>
                 <input onFocus={(e) => e.target.select()}  
-                  type="number"
+                  type="number" step="any"
                   value={editEntry}
                   onChange={(e) => setEditEntry(e.target.value)}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
@@ -2624,7 +2624,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Stop Loss ($)</label>
                 <input onFocus={(e) => e.target.select()}  
-                  type="number"
+                  type="number" step="any"
                   value={editSL}
                   onChange={(e) => setEditSL(e.target.value)}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
@@ -2633,7 +2633,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Take Profit 1 ($) (Optional)</label>
                 <input onFocus={(e) => e.target.select()}  
-                  type="number"
+                  type="number" step="any"
                   value={editTP}
                   onChange={(e) => setEditTP(e.target.value)}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"
@@ -2642,7 +2642,7 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Shares (Position Size)</label>
                 <input onFocus={(e) => e.target.select()}  
-                  type="number"
+                  type="number" step="any"
                   value={editShares}
                   onChange={(e) => setEditShares(e.target.value)}
                   className="bg-slate-55 dark:bg-slate-950 p-2.5 rounded border border-slate-200 dark:border-slate-800 font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 text-sm"

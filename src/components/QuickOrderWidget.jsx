@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [], requestAlert, requestConfirm, currentUser }) {
+export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTrade, sharedOrder, setSharedOrder, activeTab, plans = [], requestAlert, requestConfirm, currentUser, accountId, accounts = [] }) {
   const { t } = useLanguage();
   const { symbol, tiEntryAlert, entry, stopLoss: sl, tp1: tp, isGapUpStrategy } = sharedOrder || {
     symbol: 'AAPL', tiEntryAlert: '', entry: '', stopLoss: '', tp1: '', isGapUpStrategy: false
@@ -21,6 +21,8 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const [selectedPlan, setSelectedPlan] = useState('');
   const [selectedSetup, setSelectedSetup] = useState('');
   const [selectedMood, setSelectedMood] = useState('');
+  
+  const [selectedAccountForTrade, setSelectedAccountForTrade] = useState('');
   
   // Forward Testing Fields
   const [entryWindow, setEntryWindow] = useState('');
@@ -58,8 +60,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const rawShares = activeTab === 'fighter' 
     ? (sharedOrder?.calculatedShares !== undefined ? sharedOrder.calculatedShares : 0)
     : (gap > 0 && pRisk > 0 ? (pRisk / gap) : 0);
-  const fractionalShares = Math.floor(rawShares).toString();
-  const actualShares = shareInputMode === 'calculated' ? parseInt(fractionalShares, 10) : (parseInt(customShares, 10) || 0);
+  const actualShares = shareInputMode === 'calculated' ? parseFloat(rawShares) : (parseFloat(customShares) || 0);
   const buyingPowerRequired = (actualShares * pEntry).toFixed(2);
 
   // คำนวณวงเงินสูงสุดของยศในการเข้าเทรด
@@ -67,6 +68,11 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const isOverBudget = parseFloat(buyingPowerRequired) > maxBudget;
 
   const handleSave = () => {
+    if (accountId === 'all_accounts' && !selectedAccountForTrade) {
+      if (requestAlert) requestAlert("ข้อมูลไม่ครบ", "กรุณาเลือกบัญชีเทรด (Account) สำหรับออเดอร์นี้");
+      else alert("กรุณาเลือกบัญชีเทรด (Account) สำหรับออเดอร์นี้");
+      return;
+    }
     if (!symbol) {
       if (requestAlert) requestAlert("ข้อมูลไม่ครบ", "กรุณากรอก SYMBOL หุ้น");
       else alert("กรุณากรอก SYMBOL หุ้น");
@@ -121,6 +127,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
 
     // สร้างข้อมูลบันทึกเข้าพอร์ต
     const tradeData = {
+      accountId: accountId === 'all_accounts' ? selectedAccountForTrade : accountId,
       symbol: symbol.toUpperCase(),
       direction,
       tiEntryAlert: parseFloat(tiEntryAlert) || 0,
@@ -174,6 +181,22 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-wider font-bold">Sidebar Assistant</p>
       </div>
 
+      {accountId === 'all_accounts' && (
+        <div className="flex flex-col gap-1 mt-1">
+          <label className="text-[10px] text-indigo-500 uppercase font-bold tracking-wider">Select Account For This Trade</label>
+          <select
+            value={selectedAccountForTrade}
+            onChange={(e) => setSelectedAccountForTrade(e.target.value)}
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:border-indigo-500"
+          >
+            <option value="" disabled>-- เลือกพอร์ตที่ต้องการบันทึก --</option>
+            {accounts && accounts.map(acc => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Symbol & Direction Toggle */}
       <div className="grid grid-cols-2 gap-2 mt-1">
         <div className="flex flex-col gap-1">
@@ -212,7 +235,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
         <div className="flex flex-col gap-1">
           <label className="text-[10px] text-amber-600 dark:text-amber-400 uppercase font-semibold">TI Entry Alert ($) <span className="text-[9px] text-slate-500">(Day Breakout)</span></label>
           <input onFocus={(e) => e.target.select()}  
-            type="number" 
+            type="number" step="any" 
             value={tiEntryAlert} 
             onChange={e => updateShared('tiEntryAlert', e.target.value)} 
             onFocus={(e) => e.target.select()}
@@ -224,7 +247,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry ($)</label>
             <input onFocus={(e) => e.target.select()}  
-              type="number" 
+              type="number" step="any" 
               value={entry} 
               onChange={e => updateShared('entry', e.target.value)} 
               onFocus={(e) => e.target.select()}
@@ -235,7 +258,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Stop Loss ($)</label>
             <input onFocus={(e) => e.target.select()}  
-              type="number" 
+              type="number" step="any" 
               value={sl} 
               onChange={e => updateShared('stopLoss', e.target.value)} 
               onFocus={(e) => e.target.select()}
@@ -246,7 +269,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Take Profit ($)</label>
             <input onFocus={(e) => e.target.select()}  
-              type="number" 
+              type="number" step="any" 
               value={tp} 
               onChange={e => updateShared('tp1', e.target.value)} 
               onFocus={(e) => e.target.select()}
@@ -360,7 +383,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             <div className="text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-1 select-all">{fractionalShares}</div>
           ) : (
             <input 
-              type="number"
+              type="number" step="any"
               value={customShares}
               onChange={(e) => {
                 const val = e.target.value.replace(/[^0-9]/g, '');

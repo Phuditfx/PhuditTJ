@@ -200,7 +200,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
               <input onFocus={(e) => e.target.select()} 
-                type="number"
+                type="number" step="any"
                 min="0"
                 step="100"
                 placeholder="e.g. 10000"
@@ -222,7 +222,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                 <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">% ของ Capital</span>
                 <div className="relative">
                   <input onFocus={(e) => e.target.select()} 
-                    type="number"
+                    type="number" step="any"
                     min="0"
                     max="100"
                     step="0.1"
@@ -246,7 +246,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                   <input onFocus={(e) => e.target.select()} 
-                    type="number"
+                    type="number" step="any"
                     min="0"
                     step="10"
                     placeholder="e.g. 200"
@@ -318,7 +318,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                       <div className="relative">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
                         <input onFocus={(e) => e.target.select()} 
-                          type="number"
+                          type="number" step="any"
                           min="0"
                           step="0.01"
                           placeholder="Price"
@@ -339,7 +339,7 @@ export default function SwingPickCalculator({ accountBalance = 0 }) {
                     <div className="relative">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
                       <input onFocus={(e) => e.target.select()} 
-                        type="number"
+                        type="number" step="any"
                         min="0"
                         step="0.01"
                         placeholder="Stop Loss"

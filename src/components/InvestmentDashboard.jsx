@@ -387,7 +387,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Total Shares</label>
                 <input onFocus={(e) => e.target.select()}  
-                  type="number" 
+                  type="number" step="any" 
                   step="any"
                   required
                   value={editForm.totalShares}
@@ -398,7 +398,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Average Cost</label>
                 <input onFocus={(e) => e.target.select()}  
-                  type="number" 
+                  type="number" step="any" 
                   step="any"
                   required
                   value={editForm.averageCost}
@@ -447,7 +447,7 @@ export default function InvestmentDashboard({ currentUser, requestAlert, portfol
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Amount ($)</label>
                 <input 
-                  type="number" 
+                  type="number" step="any" 
                   step="0.01"
                   value={cashAmount}
                   onChange={(e) => setCashAmount(e.target.value)}

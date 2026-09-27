@@ -476,7 +476,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 <div className="col-span-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Shares</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number" 
+                    type="number" step="any" 
                     step="0.0001"
                     value={shares}
                     onChange={(e) => setShares(e.target.value)}
@@ -487,7 +487,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 <div className="col-span-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Price ($)</label>
                   <input onFocus={(e) => e.target.select()}  
-                    type="number" 
+                    type="number" step="any" 
                     step="0.01"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
@@ -635,11 +635,11 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 </div>
                 <div className="col-span-1 md:col-span-1">
                   <label className="block text-[10px] font-black text-blue-500 mb-1">ENTRY ALERT</label>
-                  <input onFocus={(e) => e.target.select()}  type="number" step="0.01" value={jEntry} onChange={e=>setJEntry(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:outline-none" />
+                  <input onFocus={(e) => e.target.select()}  type="number" step="any" step="0.01" value={jEntry} onChange={e=>setJEntry(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:outline-none" />
                 </div>
                 <div className="col-span-1 md:col-span-1">
                   <label className="block text-[10px] font-black text-rose-500 mb-1">STOP LOSS</label>
-                  <input onFocus={(e) => e.target.select()}  type="number" step="0.01" value={jStopLoss} onChange={e=>setJStopLoss(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:outline-none" />
+                  <input onFocus={(e) => e.target.select()}  type="number" step="any" step="0.01" value={jStopLoss} onChange={e=>setJStopLoss(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white focus:outline-none" />
                 </div>
               </div>
               <div className="flex gap-4">
@@ -963,7 +963,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Split Ratio (อัตราส่วน)</label>
                 <input 
-                  type="number" 
+                  type="number" step="any" 
                   step="any"
                   required
                   placeholder="e.g. 2 for 2:1, 0.5 for 1:2"
