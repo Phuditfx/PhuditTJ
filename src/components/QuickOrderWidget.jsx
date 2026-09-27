@@ -60,6 +60,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
   const rawShares = activeTab === 'fighter' 
     ? (sharedOrder?.calculatedShares !== undefined ? sharedOrder.calculatedShares : 0)
     : (gap > 0 && pRisk > 0 ? (pRisk / gap) : 0);
+  const fractionalShares = parseFloat(rawShares.toFixed(4)).toString();
   const actualShares = shareInputMode === 'calculated' ? parseFloat(rawShares) : (parseFloat(customShares) || 0);
   const buyingPowerRequired = (actualShares * pEntry).toFixed(2);
 
@@ -386,7 +387,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
               type="number" step="any"
               value={customShares}
               onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, '');
+                const val = e.target.value.replace(/[^0-9.]/g, '');
                 setCustomShares(val);
               }}
               onFocus={(e) => e.target.select()}
