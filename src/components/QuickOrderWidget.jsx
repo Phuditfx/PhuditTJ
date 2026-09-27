@@ -244,7 +244,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
             className="bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-900/50 font-mono text-amber-700 dark:text-amber-400 font-bold text-sm focus:outline-none focus:border-amber-500" 
           />
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Entry ($)</label>
             <input onFocus={(e) => e.target.select()}  
@@ -321,7 +321,7 @@ export default function QuickOrderWidget({ currentRank, accountBalance, onSaveTr
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
             <label className="text-[9px] text-slate-500 dark:text-slate-450 font-bold uppercase">Order Type</label>
             <select value={orderType} onChange={(e) => setOrderType(e.target.value)} className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-indigo-500">

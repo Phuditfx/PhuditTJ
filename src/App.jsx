@@ -1030,6 +1030,7 @@ export default function App() {
               onChange={(e) => setAccountId(e.target.value)}
               className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg px-2 py-1.5 text-[11px] font-bold shadow-sm focus:outline-none"
             >
+            <option value="all_accounts">All Trading Accounts</option>
             {accounts && accounts.map(acc => (
               <option key={acc.id} value={acc.id}>{acc.name}</option>
             ))}
@@ -1631,7 +1632,7 @@ export default function App() {
 
             {/* Add New Account */}
             <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                   type="text" 
                   value={newAccountName}
@@ -1687,9 +1688,9 @@ export default function App() {
                       : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800'
                   }`}>
                     {/* Account Name Row */}
-                    <div className="flex justify-between items-center gap-2">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-4">
                       {isEditing ? (
-                        <div className="flex gap-2 flex-1">
+                        <div className="flex flex-col sm:flex-row gap-2 flex-1 w-full">
                           <input 
                             type="text" 
                             value={editingAccountName}
@@ -1782,8 +1783,9 @@ export default function App() {
                     </div>
 
                     {/* Balance & P/L Stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center flex flex-col items-center justify-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
+                      <div className="text-center flex flex-col items-center justify-center p-2 sm:p-0 bg-slate-50/50 dark:bg-slate-900/30 sm:bg-transparent rounded-lg border sm:border-0 border-slate-200 dark:border-slate-800">
+
                         <span className="text-[9px] text-slate-400 font-bold uppercase block">Initial Bal.</span>
                         {isEditingBal ? (
                           <div className="flex gap-1 mt-0.5">
