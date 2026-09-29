@@ -253,12 +253,12 @@ export async function executeRecoupTransaction(userEmail, portfolioId, positionI
   const remainingShares = parseFloat(posData.total_shares) - sharesToSell;
   const recoupedAmount = sharesToSell * currentPrice;
 
-  // 2. Update Position to MOONBAG
+  // 2. Update Position to MOONBAG (preserve average_cost for reference)
   const { data: updatedData, error: updatePosErr } = await supabase
     .from('investment_positions')
     .update({
       total_shares: remainingShares,
-      average_cost: 0, // Cost basis is now 0 (fully de-risked)
+      // Keep original average_cost so user can see entry price in Moonbag tab
       recouped_amount: parseFloat(posData.recouped_amount || 0) + recoupedAmount,
       status: remainingShares > 0 ? 'MOONBAG' : 'CLOSED',
       updated_at: new Date().toISOString()
