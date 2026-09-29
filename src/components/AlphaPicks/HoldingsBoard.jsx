@@ -31,7 +31,10 @@ export default function HoldingsBoard() {
 
   const executeRecoup = async (e) => {
     e.preventDefault();
-    if (!recoupConfirmPos || !recoupPrice || !recoupShares) return;
+    if (!recoupConfirmPos || recoupPrice === '' || recoupShares === '') {
+      setErrorMsg("Please fill in all fields.");
+      return;
+    }
     try {
       await handleRecoup(recoupConfirmPos.id, parseFloat(recoupPrice), parseFloat(recoupShares));
       setRecoupConfirmPos(null);
@@ -50,7 +53,10 @@ export default function HoldingsBoard() {
 
   const executeTrade = async (e) => {
     e.preventDefault();
-    if (!tradePos || !tradeShares || !tradePrice) return;
+    if (!tradePos || tradeShares === '' || tradePrice === '') {
+      setErrorMsg("Please fill in all fields.");
+      return;
+    }
     try {
       await handleAddTransaction(tradePos.ticker, tradeType, tradeShares, tradePrice, 'Row Action');
       setTradePos(null);
