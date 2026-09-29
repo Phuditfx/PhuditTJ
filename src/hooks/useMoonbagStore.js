@@ -102,7 +102,10 @@ export const useMoonbagStore = create((set, get) => ({
       const posData = await getInvestmentPositions(userEmail, portfolioId);
       
       const enhancedPositions = posData.map(pos => {
-        const currentPrice = parseFloat(pos.current_price || pos.average_cost);
+        const cp = parseFloat(pos.current_price);
+        const ac = parseFloat(pos.average_cost);
+        const currentPrice = !isNaN(cp) ? cp : (!isNaN(ac) ? ac : 0);
+        
         const currentValue = parseFloat(pos.total_shares) * currentPrice;
         
         // Handle missing DB fields gracefully for old positions
@@ -121,6 +124,7 @@ export const useMoonbagStore = create((set, get) => ({
           initial_investment: initialInvest,
           initial_shares: initialShares,
           recouped_amount: recouped,
+          currentPrice,
           currentValue,
           remainingPrincipal: Math.max(0, remainingPrincipal),
           isRecoupEligible
