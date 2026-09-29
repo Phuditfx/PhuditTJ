@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 
-export default function HoldingsBoard() {
+export default function HoldingsBoard({ isLoading = false }) {
   const { positions, handleRecoup, handleAddTransaction } = useMoonbagStore();
   const [activeTab, setActiveTab] = useState('ACTIVE');
   const [errorMsg, setErrorMsg] = useState('');
@@ -74,7 +74,15 @@ export default function HoldingsBoard() {
   };
 
   return (
-    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-3xl shadow-xl shadow-slate-200/20 dark:shadow-black/20 overflow-hidden flex flex-col min-h-[500px]">
+    <div className="relative bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-3xl shadow-xl shadow-slate-200/20 dark:shadow-black/20 overflow-hidden flex flex-col min-h-[500px]">
+      
+      {/* Loading Overlay — shown during DB operations WITHOUT unmounting the board */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/40 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-3 rounded-3xl">
+          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-black text-white tracking-widest uppercase">Syncing...</span>
+        </div>
+      )}
       
       {/* Tabs Header */}
       <div className="flex border-b border-slate-200/50 dark:border-slate-700/50 p-2 gap-2 bg-slate-50/50 dark:bg-slate-800/50">

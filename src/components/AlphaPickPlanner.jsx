@@ -35,14 +35,7 @@ export default function AlphaPickPlanner({ userEmail, isVip }) {
       
       <NewPickForm />
       
-      {loading ? (
-        <div className="py-20 text-center flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm font-black text-slate-400 tracking-widest uppercase">Syncing Portfolio...</span>
-        </div>
-      ) : (
-        <HoldingsBoard />
-      )}
+      <HoldingsBoard isLoading={loading} />
       
     </div>
   );
