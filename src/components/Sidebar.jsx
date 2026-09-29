@@ -31,7 +31,6 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
 
   const DEFAULT_VIP_ITEMS = [
     { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
-    { id: 'portfolioRebalancer', icon: '⚖️', label: 'Portfolio Rebalancer' },
     { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
     { id: 'alphaPicks', icon: '🏛️', label: 'Alpha Picks Inv.' },
     { id: 'swing', icon: '📐', label: 'Swing Calculator' },
@@ -53,7 +52,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     let ordered = [];
     const currentMap = new Map(defaultItems.map(i => [i.id, i]));
     if (order.length > 0) {
-      ordered = order.map(id => currentMap.get(id)).filter(Boolean);
+      ordered = order.filter(id => id !== 'portfolioRebalancer').map(id => currentMap.get(id)).filter(Boolean);
     }
     defaultItems.forEach(item => {
       if (!ordered.find(m => m.id === item.id)) ordered.push(item);
@@ -87,7 +86,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const checkAccess = (tabId) => {
     if (isVip) return true;
     if (isTiPicks && ['positionSizing', 'weeklyPicks', 'swing', 'calendar', 'plans'].includes(tabId)) return true;
-    if (isAlphaPicks && ['portfolioRebalancer', 'alphaPicks', 'plans', 'dividends'].includes(tabId)) return true;
+    if (isAlphaPicks && ['alphaPicks', 'plans', 'dividends'].includes(tabId)) return true;
     if (tabId === 'pennyStocks') return isPennyStocks;
     return false;
   };

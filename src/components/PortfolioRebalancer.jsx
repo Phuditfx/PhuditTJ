@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getInvestmentPortfolios, getInvestmentPositions, updateInvestmentPositionTargetAlloc } from '../db/investmentDB';
 import { fetchLivePrices } from '../utils/riskManagement';
 
-export default function PortfolioRebalancer({ currentUser, requestAlert }) {
+export default function PortfolioRebalancer({ currentUser, requestAlert, initialPortfolioId, onPortfolioChange }) {
   const [portfolios, setPortfolios] = useState([]);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState('');
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState(initialPortfolioId || '');
   const [loading, setLoading] = useState(false);
 
   const [dbAssets, setDbAssets] = useState([]);
@@ -23,7 +23,7 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
   const [newPrice, setNewPrice] = useState('');
   const [newTarget, setNewTarget] = useState('');
 
-  // Fetch portfolios on mount
+  // Fetch portfolios on mount or when initialPortfolioId changes
   useEffect(() => {
     if (!currentUser) return;
     const fetchPorts = async () => {
@@ -31,14 +31,18 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
         const ports = await getInvestmentPortfolios(currentUser);
         setPortfolios(ports);
         if (ports.length > 0) {
-          setSelectedPortfolioId(ports[0].id);
+          if (initialPortfolioId && ports.some(p => p.id === initialPortfolioId)) {
+            setSelectedPortfolioId(initialPortfolioId);
+          } else if (!selectedPortfolioId || !ports.some(p => p.id === selectedPortfolioId)) {
+            setSelectedPortfolioId(ports[0].id);
+          }
         }
       } catch (err) {
         console.error('Failed to load portfolios', err);
       }
     };
     fetchPorts();
-  }, [currentUser]);
+  }, [currentUser, initialPortfolioId]);
 
   // Fetch positions and live prices when portfolio changes
   useEffect(() => {
@@ -205,7 +209,10 @@ export default function PortfolioRebalancer({ currentUser, requestAlert }) {
           <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">เลือกพอร์ตลงทุน (Alpha Picks)</label>
           <select
             value={selectedPortfolioId}
-            onChange={(e) => setSelectedPortfolioId(e.target.value)}
+            onChange={(e) => {
+              setSelectedPortfolioId(e.target.value);
+              if (onPortfolioChange) onPortfolioChange(e.target.value);
+            }}
             className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 dark:text-slate-100 cursor-pointer"
             disabled={loading}
           >

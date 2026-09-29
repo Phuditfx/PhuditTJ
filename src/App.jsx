@@ -1163,8 +1163,8 @@ export default function App() {
 
             {activeTab === 'portfolioRebalancer' && (
               isVip || isAlphaPicks
-                ? <PortfolioRebalancer currentUser={currentUser} requestAlert={requestAlert} />
-                : <VipLockScreen featureName="Portfolio Rebalancer" onBack={() => setActiveTab('dashboard')} />
+                ? <AlphaPickPlanner userEmail={currentUser} isVip={isVip || isAlphaPicks} requestAlert={requestAlert} requestConfirm={requestConfirm} initialSubTab="rebalancer" />
+                : <VipLockScreen featureName="Alpha Picks (PRO)" onBack={() => setActiveTab('dashboard')} />
             )}
 
             {/* ✅ Task 5: User Profile Tab */}
@@ -1376,10 +1376,6 @@ export default function App() {
               <button onClick={() => setActiveTab('positionSizing')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'positionSizing' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">🛡️</span>
                 <span className="text-[10px] font-bold text-center leading-tight">Position<br/>Sizing</span>
-              </button>
-              <button onClick={() => setActiveTab('portfolioRebalancer')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'portfolioRebalancer' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                <span className="text-2xl mb-1">⚖️</span>
-                <span className="text-[10px] font-bold text-center leading-tight">Rebalance</span>
               </button>
               <button onClick={() => setActiveTab('fighter')} className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-colors ${activeTab === 'fighter' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                 <span className="text-2xl mb-1">⚡</span>
