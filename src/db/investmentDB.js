@@ -30,6 +30,25 @@ export async function createInvestmentPortfolio(userEmail, name, description = '
   return data[0];
 }
 
+export async function updateInvestmentPortfolio(portfolioId, newName) {
+  const { data, error } = await supabase
+    .from('investment_portfolios')
+    .update({ name: newName })
+    .eq('id', portfolioId)
+    .select();
+  if (error) throw error;
+  return data[0];
+}
+
+export async function deleteInvestmentPortfolio(portfolioId) {
+  const { error } = await supabase
+    .from('investment_portfolios')
+    .delete()
+    .eq('id', portfolioId);
+  if (error) throw error;
+  return true;
+}
+
 // ----------------------------------------------------
 // POSITIONS & TRANSACTIONS
 // ----------------------------------------------------

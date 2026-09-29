@@ -61,6 +61,39 @@ export const useMoonbagStore = create((set, get) => ({
     }
   },
 
+  editPortfolio: async (portfolioId, newName) => {
+    const { userEmail } = get();
+    if (!portfolioId || !newName) return;
+    set({ loading: true });
+    try {
+      const { updateInvestmentPortfolio } = await import('../db/investmentDB');
+      await updateInvestmentPortfolio(portfolioId, newName);
+      await get().loadPortfolios(userEmail);
+    } catch (error) {
+      console.error("Failed to edit portfolio:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  deletePortfolio: async (portfolioId) => {
+    const { userEmail } = get();
+    if (!portfolioId) return;
+    set({ loading: true });
+    try {
+      const { deleteInvestmentPortfolio } = await import('../db/investmentDB');
+      await deleteInvestmentPortfolio(portfolioId);
+      get().setSelectedPortfolioId(null);
+      await get().loadPortfolios(userEmail);
+    } catch (error) {
+      console.error("Failed to delete portfolio:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   loadPositions: async (portfolioId) => {
     const { userEmail } = get();
     if (!userEmail || !portfolioId) return;
@@ -139,7 +172,7 @@ export const useMoonbagStore = create((set, get) => ({
     get().updateLivePrices({ [ticker]: parseFloat(price) });
   },
 
-  handleRecoup: async (positionId, currentPrice) => {
+  handleRecoup: async (positionId, currentPrice, customSharesToSell) => {
     const { userEmail, selectedPortfolioId } = get();
     set({ loading: true });
     try {
@@ -147,13 +180,14 @@ export const useMoonbagStore = create((set, get) => ({
       if (!pos) throw new Error("Position not found");
 
       const remainingPrincipal = Math.max(0, parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0));
-      // Calculate exactly how many shares to sell to cover the remaining principal at the current price
-      const sharesToSell = Math.ceil(remainingPrincipal / currentPrice);
+      // Use user provided shares, or calculate default
+      const sharesToSell = customSharesToSell || Math.ceil(remainingPrincipal / currentPrice);
       
       if (sharesToSell > parseFloat(pos.total_shares)) {
         throw new Error("Not enough shares to recoup principal.");
       }
 
+      const { executeRecoupTransaction } = await import('../db/investmentDB');
       await executeRecoupTransaction(userEmail, selectedPortfolioId, positionId, pos.ticker, sharesToSell, currentPrice);
       
       // Reload everything to sync DB

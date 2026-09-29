@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 
 export default function MoonbagHeader() {
-  const { portfolios, selectedPortfolioId, setSelectedPortfolioId, positions, createPortfolio, addCash } = useMoonbagStore();
+  const { portfolios, selectedPortfolioId, setSelectedPortfolioId, positions, createPortfolio, editPortfolio, deletePortfolio, addCash } = useMoonbagStore();
   const [showAddCash, setShowAddCash] = useState(false);
   const [showNewPort, setShowNewPort] = useState(false);
+  const [showEditPort, setShowEditPort] = useState(false);
   
   const [newPortName, setNewPortName] = useState('');
+  const [editPortName, setEditPortName] = useState('');
   const [cashAmount, setCashAmount] = useState('');
 
   const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
@@ -22,6 +24,21 @@ export default function MoonbagHeader() {
     await createPortfolio(newPortName);
     setNewPortName('');
     setShowNewPort(false);
+  };
+
+  const handleEditPortfolio = async (e) => {
+    e.preventDefault();
+    if (!editPortName.trim() || !selectedPortfolioId) return;
+    await editPortfolio(selectedPortfolioId, editPortName);
+    setEditPortName('');
+    setShowEditPort(false);
+  };
+
+  const handleDeletePortfolio = async () => {
+    if (!selectedPortfolioId) return;
+    if (confirm("Are you sure you want to delete this portfolio? This cannot be undone.")) {
+      await deletePortfolio(selectedPortfolioId);
+    }
   };
 
   const handleAddCash = async (e) => {
@@ -56,9 +73,19 @@ export default function MoonbagHeader() {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-          <button onClick={() => setShowNewPort(true)} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors">
-            <span className="text-slate-500 dark:text-slate-400">➕</span>
+          <button onClick={() => setShowNewPort(true)} className="p-2 bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-xl transition-colors" title="Create Portfolio">
+            ➕
           </button>
+          {selectedPortfolioId && (
+            <>
+              <button onClick={() => setShowEditPort(true)} className="p-2 bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors" title="Edit Portfolio">
+                ✏️
+              </button>
+              <button onClick={handleDeletePortfolio} className="p-2 bg-rose-100 text-rose-500 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 rounded-xl transition-colors" title="Delete Portfolio">
+                🗑️
+              </button>
+            </>
+          )}
         </div>
       </div>
       
@@ -102,6 +129,21 @@ export default function MoonbagHeader() {
               <div className="flex gap-2">
                 <button type="button" onClick={() => setShowNewPort(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 dark:text-slate-300">Cancel</button>
                 <button type="submit" className="flex-1 py-3 rounded-xl font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditPort && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-lg font-black mb-4 dark:text-white">Edit Portfolio Name</h3>
+            <form onSubmit={handleEditPortfolio}>
+              <input type="text" value={editPortName} onChange={e=>setEditPortName(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-4 font-bold dark:text-white" placeholder="New Portfolio Name..." autoFocus />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowEditPort(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 dark:text-slate-300">Cancel</button>
+                <button type="submit" className="flex-1 py-3 rounded-xl font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">Save</button>
               </div>
             </form>
           </div>
