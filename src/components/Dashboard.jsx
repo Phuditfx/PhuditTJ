@@ -414,23 +414,23 @@ export default function Dashboard({
   return (
     <div className="flex flex-col gap-6">
       {/* Dashboard Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-800/60 pb-3">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+          className={`py-2.5 px-5 rounded-2xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap ${
             activeTab === 'overview' 
-              ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' 
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer'
+              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-indigo-400/30' 
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 cursor-pointer'
           }`}
         >
           📊 Overview
         </button>
         <button
           onClick={() => setActiveTab('psychology')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+          className={`py-2.5 px-5 rounded-2xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap ${
             activeTab === 'psychology' 
-              ? 'bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' 
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer'
+              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-indigo-400/30' 
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 cursor-pointer'
           }`}
         >
           🧠 Psychology & Regime
@@ -440,15 +440,15 @@ export default function Dashboard({
       {activeTab === 'overview' && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.accountBalance')}<CustomTooltip content="ยอดเงินคงเหลือในพอร์ตปัจจุบันของคุณ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
+        <div className="bg-gradient-to-br from-indigo-500/15 via-white/60 to-indigo-500/5 dark:from-indigo-500/20 dark:via-slate-900/60 dark:to-indigo-500/5 backdrop-blur-xl border border-indigo-500/20 dark:border-indigo-500/30 rounded-3xl p-5 shadow-xl shadow-slate-200/20 dark:shadow-black/20 relative overflow-visible">
+          <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block"><span className="flex items-center">{t('dashboard.accountBalance')}<CustomTooltip content="ยอดเงินคงเหลือในพอร์ตปัจจุบันของคุณ"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
           {pnlDisplayMode === 'pnl' ? (
-            <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="text-3xl font-mono font-black text-slate-900 dark:text-white mt-2 block">${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           ) : (
-            <span className="text-3xl font-mono font-bold text-slate-400 mt-2 block blur-md select-none pointer-events-none" title="Hidden in RR Mode">$**,***.**</span>
+            <span className="text-3xl font-mono font-black text-slate-400 mt-2 block blur-md select-none pointer-events-none" title="Hidden in RR Mode">$**,***.**</span>
           )}
-          <div className="flex justify-between items-center mt-3 text-xs pt-3 border-t border-slate-200 dark:border-slate-800/60">
-            <span className="text-slate-500">{t('dashboard.initialBalance')}:</span>
+          <div className="flex justify-between items-center mt-3 text-xs pt-3 border-t border-slate-200/50 dark:border-slate-800/60">
+            <span className="text-slate-500 font-bold">{t('dashboard.initialBalance')}:</span>
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-mono">$</span>
               <input onFocus={(e) => e.target.select()}  
@@ -458,7 +458,7 @@ export default function Dashboard({
                   setLocalBalance(e.target.value);
                   setIsBalanceSaved(false);
                 }} 
-                className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-1 text-right font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-[11px]"
+                className="w-16 bg-white/60 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 text-right font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px]"
               />
               <button
                 onClick={() => {
@@ -468,7 +468,7 @@ export default function Dashboard({
                   setIsBalanceSaved(true);
                   setTimeout(() => setIsBalanceSaved(false), 2000);
                 }}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${isBalanceSaved ? 'bg-emerald-650 text-white shadow-sm' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'}`}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${isBalanceSaved ? 'bg-emerald-600 text-white shadow-sm' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'}`}
               >
                 {isBalanceSaved ? '✓' : t('dashboard.save')}
               </button>
@@ -477,25 +477,25 @@ export default function Dashboard({
           <div className="mt-2 text-right">
             <button
               onClick={() => setShowFundingModal(true)}
-              className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-2 py-1 rounded transition-colors"
+              className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 rounded-lg transition-colors border border-indigo-500/20"
             >
               + Add Deposit/Withdrawal
             </button>
           </div>
         </div>
 
-        <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.winRate')}<CustomTooltip content="อัตราการชนะ (จำนวนครั้งที่เทรดได้กำไร เทียบกับจำนวนเทรดทั้งหมด)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
-          <span className="text-3xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-2 block">{winRate.toFixed(1)}%</span>
-          <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
+        <div className="bg-gradient-to-br from-emerald-500/15 via-white/60 to-emerald-500/5 dark:from-emerald-500/20 dark:via-slate-900/60 dark:to-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 dark:border-emerald-500/30 rounded-3xl p-5 shadow-xl shadow-slate-200/20 dark:shadow-black/20 relative overflow-visible">
+          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block"><span className="flex items-center">{t('dashboard.winRate')}<CustomTooltip content="อัตราการชนะ (จำนวนครั้งที่เทรดได้กำไร เทียบกับจำนวนเทรดทั้งหมด)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
+          <span className="text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-2 block">{winRate.toFixed(1)}%</span>
+          <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/60">
             <span>{t('dashboard.closedTrades')}: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalClosed}</strong></span>
             <span>{t('dashboard.wins')}: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{wins.length}</strong></span>
           </div>
         </div>
 
-        <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
-          <span className={`text-3xl font-mono font-bold mt-2 block ${
+        <div className="bg-gradient-to-br from-blue-500/15 via-white/60 to-cyan-500/5 dark:from-blue-500/20 dark:via-slate-900/60 dark:to-cyan-500/5 backdrop-blur-xl border border-blue-500/20 dark:border-cyan-500/30 rounded-3xl p-5 shadow-xl shadow-slate-200/20 dark:shadow-black/20 relative overflow-visible">
+          <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block"><span className="flex items-center">{pnlDisplayMode === 'pnl' ? t('dashboard.netPerformance') : 'Net RR'}<CustomTooltip content="ผลกำไร/ขาดทุนสุทธิ คิดเป็นกี่เท่าของความเสี่ยง (R) ค่าบวกแสดงว่าระบบมีกำไร"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
+          <span className={`text-3xl font-mono font-black mt-2 block ${
             (pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'
           }`}>
             {(pnlDisplayMode === 'pnl' ? netPnL : achievedRR) >= 0 ? '+' : ''}
@@ -503,20 +503,20 @@ export default function Dashboard({
             {Math.abs(pnlDisplayMode === 'pnl' ? netPnL : achievedRR).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             {pnlDisplayMode === 'rr' ? ' R' : ''}
           </span>
-          <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
-            <span>{t('dashboard.activeTrades')}: <strong className="text-indigo-650 dark:text-indigo-400 font-mono">{trades.filter(t => t.status === 'Open').length}</strong></span>
-            <span className={netPnL >= 0 ? 'text-emerald-600 dark:text-emerald-500/80' : 'text-rose-500/80'}>
+          <div className="flex justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/60">
+            <span>{t('dashboard.activeTrades')}: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{trades.filter(t => t.status === 'Open').length}</strong></span>
+            <span className={netPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-500 font-bold'}>
               {netPnL >= 0 ? t('dashboard.growth') : t('dashboard.drawdown')}
             </span>
           </div>
         </div>
 
-        <div className="crypto-card p-5 relative overflow-visible">
-          <span className="text-xs text-brand-text-secondary uppercase tracking-wider block"><span className="flex items-center">{t('dashboard.activeLevel')}<CustomTooltip content="ระดับปัจจุบันของคุณในระบบ Gamification ซึ่งเป็นตัวกำหนดเพดานความเสี่ยง (Risk Limit)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
-          <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2 block">{currentRank.name}</span>
-          <div className="flex justify-between text-xs text-slate-500 dark:text-slate-450 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/60">
+        <div className="bg-gradient-to-br from-amber-500/15 via-white/60 to-amber-500/5 dark:from-amber-500/20 dark:via-slate-900/60 dark:to-amber-500/5 backdrop-blur-xl border border-amber-500/20 dark:border-amber-500/30 rounded-3xl p-5 shadow-xl shadow-slate-200/20 dark:shadow-black/20 relative overflow-visible">
+          <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block"><span className="flex items-center">{t('dashboard.activeLevel')}<CustomTooltip content="ระดับปัจจุบันของคุณในระบบ Gamification ซึ่งเป็นตัวกำหนดเพดานความเสี่ยง (Risk Limit)"><span className="ml-1 w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] inline-flex items-center justify-center cursor-help text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-600">?</span></CustomTooltip></span></span>
+          <span className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 block">{currentRank.name}</span>
+          <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/60 font-bold">
             <span>{t('dashboard.level')} {currentRank.level}</span>
-            <span className="text-slate-650 dark:text-slate-500 font-mono font-bold">{t('dashboard.riskLimit')}: ${currentRank.risk1}</span>
+            <span className="text-slate-700 dark:text-slate-300 font-mono font-bold">{t('dashboard.riskLimit')}: ${currentRank.risk1}</span>
           </div>
         </div>
       </div>

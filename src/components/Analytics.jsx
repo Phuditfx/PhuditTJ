@@ -57,33 +57,33 @@ export default function Analytics({ trades }) {
     <div className="flex flex-col gap-6">
       
       {/* 📈 PnL Curve */}
-      <div className="crypto-card p-6">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">📈 Equity Curve (Cumulative PnL)</h3>
-        <p className="text-xs text-slate-550 dark:text-slate-400 mb-6">กราฟแสดงการเติบโตของพอร์ตจากกำไร/ขาดทุนสะสม</p>
+      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-6 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
+        <h3 className="text-xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-1">📈 Equity Curve (Cumulative PnL)</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-bold">กราฟแสดงการเติบโตของพอร์ตจากกำไร/ขาดทุนสะสม</p>
         <div className="h-64 min-h-[256px] w-full text-xs font-mono">
           {pnlCurveData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={pnlCurveData}>
                 <defs>
                   <linearGradient id="colorPnL" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.6}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.15} vertical={false} />
                 <XAxis dataKey="tradeNo" stroke="#64748b" tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} width={50} />
                 <Tooltip 
-                  contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
+                  contentStyle={{backgroundColor: '#0B1121', borderColor: '#334155', borderRadius: '16px', color: '#ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'}}
                   itemStyle={{fontWeight: 'bold', color: '#ffffff'}}
                   formatter={(value) => [`$${value.toFixed(2)}`, 'Cumulative PnL']}
                   labelFormatter={(label) => `Trade #${label}`}
                 />
-                <Area type="monotone" dataKey="pnl" stroke="#4f46e5" fillOpacity={1} fill="url(#colorPnL)" />
+                <Area type="monotone" dataKey="pnl" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorPnL)" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+            <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
               No Data Available
             </div>
           )}
@@ -92,9 +92,9 @@ export default function Analytics({ trades }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Win Rate Pie */}
-        <div className="crypto-card p-6">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">🎯 Win Rate Distribution</h3>
-          <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">สัดส่วนออเดอร์ที่กำไรและขาดทุน</p>
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-6 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
+          <h3 className="text-base font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-1">🎯 Win Rate Distribution</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-bold">สัดส่วนออเดอร์ที่กำไรและขาดทุน</p>
           <div className="h-48 min-h-[192px] w-full flex items-center justify-center">
             {totalTrades > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -114,13 +114,13 @@ export default function Analytics({ trades }) {
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#ffffff'}}
+                    contentStyle={{backgroundColor: '#0B1121', borderColor: '#334155', borderRadius: '16px', color: '#ffffff'}}
                     itemStyle={{fontWeight: 'bold'}}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                 No Data Available
               </div>
             )}
@@ -128,8 +128,8 @@ export default function Analytics({ trades }) {
         </div>
 
         {/* Avg Win vs Avg Loss */}
-        <div className="crypto-card p-6">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">⚖️ Average Win vs Loss</h3>
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-6 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
+          <h3 className="text-base font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-1">⚖️ Average Win vs Loss</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 mb-4">เปรียบเทียบค่าเฉลี่ยกำไรและขาดทุนต่อออเดอร์</p>
           <div className="h-48 min-h-[192px] w-full">
             {totalTrades > 0 ? (

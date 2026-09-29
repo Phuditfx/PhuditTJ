@@ -94,18 +94,18 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
 
   return (
     <>
-    <aside className={`w-full ${!isMobileView ? 'lg:w-64 flex-shrink-0 lg:sticky lg:top-24' : ''} flex flex-col gap-6`}>
+    <aside className={`w-full ${!isMobileView ? 'lg:w-64 flex-shrink-0 lg:sticky lg:top-24' : ''} flex flex-col gap-5`}>
       
       {/* Account Selector */}
       {!isMobileView && (
-      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 shadow-xl shadow-slate-200/10 dark:shadow-black/20 flex flex-col gap-2">
         <div className="flex justify-between items-center mb-1">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">
+          <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block">
             {t('common.tradingAccount', 'Trading Account')}
           </label>
           <button 
             onClick={() => setShowAccountModal(true)}
-            className="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold px-2 py-1 rounded"
+            className="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold px-2 py-1 rounded-lg transition-colors"
           >
             ⚙️ Manage
           </button>
@@ -113,7 +113,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
         <select 
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
-          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+          className="w-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all hover:bg-white dark:hover:bg-slate-800 shadow-sm"
         >
           <option value="all_accounts">🌐 All Accounts (Total)</option>
           {accounts && accounts.map(acc => (
@@ -125,8 +125,8 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
 
       {/* Date Range Filter */}
       {!isMobileView && (
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
+        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 block">
           {t('common.dateRange', 'Date Range')}
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -134,10 +134,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             <button
               key={range}
               onClick={() => setGlobalDateRange(range)}
-              className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+              className={`py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                 globalDateRange === range
-                  ? 'bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 shadow-sm'
-                  : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white border-transparent shadow-md shadow-indigo-500/25'
+                  : 'bg-white/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               {range}
@@ -155,10 +155,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
               }
               setShowMonthPicker(true);
             }}
-            className={`col-span-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+            className={`col-span-2 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
               globalDateRange.startsWith('MONTH-')
-                ? 'bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 shadow-sm'
-                : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white border-transparent shadow-md shadow-indigo-500/25'
+                : 'bg-white/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             {globalDateRange.startsWith('MONTH-') ? formatMonthLabel(globalDateRange) : 'Custom Month'}
@@ -168,12 +168,12 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
       )}
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1">
-        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-3 flex justify-between items-center group">
+      <nav className="flex flex-col gap-1.5">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-3 flex justify-between items-center group">
           <span>{t('common.mainMenu', 'Main Menu')}</span>
           <button 
             onClick={() => setIsEditMode(!isEditMode)} 
-            className={`transition-opacity text-xs ${isEditMode ? 'text-orange-500 font-bold opacity-100' : 'text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100'}`} 
+            className={`transition-opacity text-xs ${isEditMode ? 'text-indigo-500 font-bold opacity-100' : 'text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100'}`} 
             title="Edit Menu Order"
           >
             {isEditMode ? 'Done' : '⚙️ Edit'}
@@ -189,22 +189,22 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             onDragEnd={() => { handleSort('nav'); dragGroup.current = null; dragItem.current = null; dragOverItem.current = null; }}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => { if (!isEditMode) setActiveTab(item.id); }}
-            className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${isEditMode ? 'cursor-move hover:bg-slate-100 dark:hover:bg-slate-800' : 'cursor-pointer'} ${
+            className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${isEditMode ? 'cursor-move hover:bg-white/50 dark:hover:bg-slate-800/50' : 'cursor-pointer'} ${
               activeTab === item.id && !isEditMode
-                ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-indigo-400'
             }`}
           >
-            <span className="text-lg">{item.icon}</span>
-            <span className="flex-1 text-left">{item.label}</span>
+            <span className="text-lg filter drop-shadow-sm">{item.icon}</span>
+            <span className="flex-1 text-left font-bold">{item.label}</span>
             {item.id === 'feed' && hasNewFeedPost && !isEditMode && (
-              <span className="absolute top-3.5 left-8 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
+              <span className="absolute top-3 left-8 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
             )}
             {isEditMode && <span className="text-slate-400">≡</span>}
           </button>
         ))}
 
-        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 px-3 flex items-center gap-1.5">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4 mb-1 px-3 flex items-center gap-1.5">
           <span>👑</span>
           <span>Pro Features</span>
         </div>
@@ -219,18 +219,18 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             onDragEnd={() => { handleSort('vip'); dragGroup.current = null; dragItem.current = null; dragOverItem.current = null; }}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => { if (!isEditMode) setActiveTab(item.id); }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${isEditMode ? 'cursor-move hover:bg-slate-100 dark:hover:bg-slate-800' : 'cursor-pointer'} ${
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${isEditMode ? 'cursor-move hover:bg-white/50 dark:hover:bg-slate-800/50' : 'cursor-pointer'} ${
               activeTab === item.id && !isEditMode
                 ? hasPermission
-                  ? 'bg-orange-500 text-white shadow-md shadow-orange-900/20 border-l-4 border-orange-700'
-                  : 'bg-slate-100 text-slate-400 shadow-inner border-l-4 border-slate-300'
+                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                  : 'bg-slate-100 text-slate-400 shadow-inner'
                 : hasPermission
-                  ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-orange-600 dark:hover:text-orange-400 border-l-4 border-transparent'
-                  : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-500 dark:hover:text-slate-400 border-l-4 border-transparent'
+                  ? 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-indigo-400'
+                  : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 hover:text-slate-500 dark:hover:text-slate-400'
             }`}
           >
-            <span className="text-lg">{item.icon}</span>
-            <span className="flex-1 text-left">{item.label}</span>
+            <span className="text-lg filter drop-shadow-sm">{item.icon}</span>
+            <span className="flex-1 text-left font-bold">{item.label}</span>
             {!hasPermission && !isEditMode && (
               <span className="text-[10px] ml-auto opacity-60 text-amber-500">🔒</span>
             )}
@@ -242,10 +242,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           <>
             <button
               onClick={() => setActiveTab('data')}
-              className={`mt-4 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer border ${
+              className={`mt-3 flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer border ${
                 activeTab === 'data'
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-md'
-                  : 'border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/30'
+                  : 'border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'
               }`}
             >
               <span className="text-lg">⚙️</span>
@@ -253,10 +253,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             </button>
             <button
               onClick={() => setActiveTab('owner')}
-              className={`mt-2 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer border ${
+              className={`mt-1.5 flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer border ${
                 activeTab === 'owner'
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-md'
-                  : 'border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/30'
+                  : 'border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
               }`}
             >
               <span className="text-lg">👑</span>
@@ -265,10 +265,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
           </>
         )}
 
-        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+        <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/60 flex flex-col gap-2">
           <button 
             onClick={() => setShowManual && setShowManual(true)}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/35 border border-slate-200 dark:border-slate-700"
+            className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50"
           >
             <span className="text-sm">📖</span>
             <span>{t('app.manual', 'User Manual')}</span>
@@ -280,14 +280,14 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
 
       {/* Month Picker Modal */}
       {showMonthPicker && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-fade-in">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Select Month & Year</h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 dark:bg-[#0B1121]/95 backdrop-blur-2xl rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200/60 dark:border-slate-800/80 relative animate-fade-in">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Select Month & Year</h3>
             <div className="flex gap-3 mb-6">
               <select
                 value={tempSelectedMonth}
                 onChange={(e) => setTempSelectedMonth(e.target.value)}
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 cursor-pointer"
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
               >
                 {Array.from({ length: 12 }, (_, i) => {
                   const m = (i + 1).toString().padStart(2, '0');
@@ -298,7 +298,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
               <select
                 value={tempSelectedYear}
                 onChange={(e) => setTempSelectedYear(e.target.value)}
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 cursor-pointer"
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
               >
                 {Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => {
                   const y = (2020 + i).toString();
@@ -309,7 +309,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
             <div className="flex justify-end gap-2">
               <button 
                 onClick={() => setShowMonthPicker(false)}
-                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>
@@ -320,7 +320,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
                   }
                   setShowMonthPicker(false);
                 }}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow transition-colors"
+                className="px-5 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-lg shadow-indigo-500/30 transition-all"
               >
                 Apply
               </button>

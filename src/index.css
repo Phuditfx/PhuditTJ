@@ -5,59 +5,63 @@
   --font-mono: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   
   /* Crypto Blue Colors */
-  --color-brand-primary: #0052FF;
-  --color-brand-primary-hover: #003ECB;
-  --color-brand-secondary: #5B616E;
-  --color-brand-neutral: #8A919E;
+  --color-brand-primary: #6366F1;
+  --color-brand-primary-hover: #4F46E5;
+  --color-brand-secondary: #64748B;
+  --color-brand-neutral: #94A3B8;
   --color-brand-surface: #FFFFFF;
-  --color-brand-border: #D1D5DB;
-  --color-brand-success: #05B169;
-  --color-brand-warning: #F0AD4E;
-  --color-brand-error: #DF2935;
-  --color-brand-text-primary: #050F1A;
-  --color-brand-text-secondary: #5B616E;
+  --color-brand-border: #E2E8F0;
+  --color-brand-success: #10B981;
+  --color-brand-warning: #F59E0B;
+  --color-brand-error: #EF4444;
+  --color-brand-text-primary: #0F172A;
+  --color-brand-text-secondary: #64748B;
 
   /* Elevations */
-  --shadow-level-1: 0 1px 3px rgba(5, 15, 26, 0.06);
-  --shadow-level-2: 0 4px 12px rgba(5, 15, 26, 0.08);
-  --shadow-level-3: 0 12px 24px rgba(5, 15, 26, 0.12);
+  --shadow-level-1: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-level-2: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+  --shadow-level-3: 0 20px 35px -5px rgba(15, 23, 42, 0.12), 0 10px 15px -5px rgba(15, 23, 42, 0.06);
 }
 
 @custom-variant dark (&:is(.dark *));
 
-/* 🎨 Custom Scrollbar for premium look */
+/* 🎨 Custom Scrollbar matching Alpha Picks premium look */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F9FAFB;
+  background: transparent;
 }
 .dark ::-webkit-scrollbar-track {
-  background: #020617;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
-  border-radius: 8px;
+  background: #CBD5E1;
+  border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #1E293B;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0052FF;
+  background: #6366F1;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #818CF8;
 }
 
 body {
-  background-color: #F9FAFB;
-  color: #050F1A;
+  background-color: #F8FAFC;
+  color: #0F172A;
   font-family: var(--font-sans);
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  min-height: 100dvh; /* For mobile viewports */
+  min-height: 100dvh;
   transition: background-color 0.3s, color 0.3s;
 }
 
@@ -66,57 +70,80 @@ body {
 }
 
 .dark {
-  --color-bg-mask: #0f172a;
+  --color-bg-mask: #0B1121;
 }
 
 .dark body {
-  background-color: #020617;
-  color: #f1f5f9;
+  background-color: #0B1121;
+  color: #F1F5F9;
 }
 
-/* Base Component Styling overrides */
+/* Base Component Styling */
 .font-mono-data {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .crypto-card {
-  background: #FFFFFF;
-  border: 1px solid #D1D5DB;
-  border-radius: 12px;
-  box-shadow: var(--shadow-level-1);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
 }
 .dark .crypto-card {
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.4);
 }
 
-/* Glassmorphism effects (kept for backward compat but toned down) */
+/* Alpha Picks style Glassmorphism effects */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #D1D5DB;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(11, 17, 33, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
 }
 
-/* Removing previous glow effects in favor of clean minimal borders */
-.glow-card-indigo, .glow-card-emerald, .glow-card-amber {
-  box-shadow: var(--shadow-level-1);
-  border: 1px solid #D1D5DB;
+/* Glow cards inspired by Alpha Picks */
+.glow-card-indigo {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1);
 }
-.dark .glow-card-indigo, .dark .glow-card-emerald, .dark .glow-card-amber {
-  box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.glow-card-emerald {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.03) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1);
+}
+.glow-card-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.03) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.1);
+}
+.glow-card-purple {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(168, 85, 247, 0.03) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.1);
 }
 
 /* Animations */
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
 }
 
 .pulse-glow-effect {

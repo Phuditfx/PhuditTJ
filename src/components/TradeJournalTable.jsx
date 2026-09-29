@@ -627,10 +627,10 @@ const DesktopTradeCard = React.memo(({
   return (
     <div 
       onClick={() => setSummaryTrade && setSummaryTrade(trade)}
-      className={`bg-white dark:bg-[#0f172a]/90 border rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer ${
+      className={`bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 cursor-pointer ${
         isFeedbackActive 
-          ? 'border-indigo-500 dark:border-indigo-700 ring-2 ring-indigo-500/10' 
-          : 'border-slate-200 dark:border-slate-800/80'
+          ? 'border-indigo-500 dark:border-indigo-500 ring-2 ring-indigo-500/20' 
+          : 'border-slate-200/60 dark:border-slate-800/80 shadow-sm'
       }`}>
       {/* 🚀 Header: Symbol, Direction, Status */}
       <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/40">
@@ -1622,18 +1622,18 @@ export default function TradeJournalTable({ currentUser, trades, globalTrades = 
   };
 
   return (
-    <div className="crypto-card p-6 flex flex-col gap-6 transition-all duration-300">
+    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-6 shadow-xl shadow-slate-200/10 dark:shadow-black/20 flex flex-col gap-6 transition-all duration-300">
       
       {/* ส่วนหัวของตาราง พร้อมตัวค้นหาและปุ่มเลือกฟิลเตอร์ */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-800/85 pb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200/50 dark:border-slate-800/60 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent flex items-center gap-2">
             <span>📓 {t('journal.title')}</span>
-            <span className="text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-md font-mono">
               {filteredTrades.length} {t('journal.trades')}
             </span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">ประวัติการยิงออเดอร์ วิเคราะห์ระยะ RR และการถอดบทเรียนทางจิตวิทยา</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-bold">ประวัติการยิงออเดอร์ วิเคราะห์ระยะ RR และการถอดบทเรียนทางจิตวิทยา</p>
         </div>
         
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto items-end md:items-center justify-end">

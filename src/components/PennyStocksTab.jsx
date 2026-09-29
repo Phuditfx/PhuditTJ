@@ -175,7 +175,7 @@ export default function PennyStocksTab({ userEmail, requestAlert, requestConfirm
             const isNewFormat = postData && postData.is_new_format;
 
             return (
-              <div key={post.id} className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none transition-all hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:border-slate-700">
+              <div key={post.id} className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-slate-200/50 dark:border-slate-800/60 shadow-xl shadow-slate-200/10 dark:shadow-black/20 transition-all hover:border-indigo-500/40">
                 {/* Post Header */}
                 <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800/60">
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-4">

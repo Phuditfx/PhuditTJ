@@ -830,42 +830,46 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-orange-500/30 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1121] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/30 transition-colors duration-300 relative overflow-x-hidden">
+      {/* Global Ambient Lighting matching Alpha Picks */}
+      <div className="fixed top-0 left-0 w-full h-[600px] bg-gradient-to-b from-indigo-500/10 via-emerald-500/5 to-transparent -z-10 pointer-events-none"></div>
+      <div className="fixed top-20 right-0 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+      <div className="fixed bottom-20 left-10 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
       
-      <header className="glass-panel sticky top-0 z-40 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
+      <header className="sticky top-0 z-40 px-4 md:px-6 py-3.5 flex flex-col md:flex-row gap-4 justify-between items-center bg-white/70 dark:bg-[#0B1121]/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/60 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="PDTJ Logo" className="w-10 h-10 object-contain drop-shadow-md rounded-lg" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-            <div className="bg-brand-primary p-2 rounded-lg text-white font-black text-xl shadow-md shadow-brand-primary/40 select-none animate-pulse hidden">💎</div>
+            <img src="/logo.png" alt="PDTJ Logo" className="w-10 h-10 object-contain drop-shadow-md rounded-xl" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+            <div className="bg-gradient-to-tr from-indigo-600 to-indigo-400 p-2 rounded-xl text-white font-black text-xl shadow-lg shadow-indigo-500/30 select-none animate-pulse hidden">💎</div>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-brand-text-primary dark:text-white m-0 leading-none">PDTJ</h1>
-              <p className="text-[10px] text-brand-text-secondary mt-1 uppercase tracking-widest font-bold hidden sm:block">Phudit Trade Journal</p>
+              <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent m-0 leading-none">PDTJ</h1>
+              <p className="text-[10px] text-slate-400 dark:text-slate-400 mt-1 uppercase tracking-widest font-black hidden sm:block">Phudit Trade Journal</p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-center">
-          <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 px-4 py-1.5 rounded-xl shadow-inner w-full md:w-auto justify-between md:justify-center">
+          <div className="flex items-center gap-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 px-4 py-1.5 rounded-2xl shadow-sm w-full md:w-auto justify-between md:justify-center">
             <div className="flex items-center gap-2 cursor-pointer group hover:opacity-90 active:scale-95 transition-all" onClick={() => setShowSettingsModal(true)}>
               {profile.photo ? (
-                <img src={profile.photo} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
+                <img src={profile.photo} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-indigo-500/30 shadow-sm" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-900/50 flex items-center justify-center shadow-sm text-[13px]">👤</div>
+                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900/50 flex items-center justify-center shadow-sm text-[13px]">👤</div>
               )}
               <div className="flex flex-col text-left">
-                <span className="text-[10px] text-orange-600 dark:text-orange-400 font-extrabold uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">{profile.name || currentUser.split('@')[0]}</span>
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase leading-tight group-hover:underline max-w-[100px] sm:max-w-none truncate">{profile.name || currentUser.split('@')[0]}</span>
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-none max-w-[100px] sm:max-w-none truncate">{currentUser}</span>
               </div>
             </div>
-            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-[1px] h-8 bg-slate-200/60 dark:bg-slate-800/60"></div>
             <div className="hidden md:block text-right">
-              <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold">Rank Level</span>
-              <span className="text-sm font-extrabold text-amber-605 dark:text-amber-400 block font-sans">{currentRank.name}</span>
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-black">Rank Level</span>
+              <span className="text-xs font-black px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 inline-block font-sans">{currentRank.name}</span>
             </div>
-            <div className="hidden md:block w-[1px] h-8 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="hidden md:block w-[1px] h-8 bg-slate-200/60 dark:bg-slate-800/60"></div>
             <div className="hidden md:flex flex-col items-end justify-center">
               {pnlDisplayMode === 'pnl' ? (
-                <div className="text-left font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                <div className="text-left font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">
                   ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               ) : (
@@ -874,13 +878,13 @@ export default function App() {
                 </div>
               )}
             </div>
-            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 ml-2 border border-slate-200 dark:border-slate-700">
+            <div className="hidden md:flex items-center bg-slate-100/80 dark:bg-slate-800/80 rounded-xl p-1 ml-2 border border-slate-200/50 dark:border-slate-700/50">
               <button
                 onClick={() => setPnlDisplayMode('pnl')}
-                className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${
+                className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all ${
                   pnlDisplayMode === 'pnl'
-                    ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/30'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="โหมดแสดงผล PnL (ดอลลาร์)"
               >
@@ -888,10 +892,10 @@ export default function App() {
               </button>
               <button
                 onClick={() => setPnlDisplayMode('rr')}
-                className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${
+                className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all ${
                   pnlDisplayMode === 'rr'
-                    ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/30'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="โหมดแสดงผล RR (เพื่อลดความกดดัน)"
               >
@@ -910,13 +914,13 @@ export default function App() {
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 ml-2">
-            <button onClick={toggleLanguage} className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm text-xs font-black text-slate-700 dark:text-slate-300" title={language === 'en' ? 'Switch to Thai' : 'Switch to English'}>
+            <button onClick={toggleLanguage} className="px-3 py-1.5 rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm text-xs font-black text-slate-700 dark:text-slate-300" title={language === 'en' ? 'Switch to Thai' : 'Switch to English'}>
               {language === 'en' ? 'TH' : 'EN'}
             </button>
-            <button onClick={toggleTheme} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm" title="Toggle Theme">
+            <button onClick={toggleTheme} className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm" title="Toggle Theme">
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-800/80 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all shadow-sm text-xs font-bold" title="Logout">
+            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-all shadow-sm text-xs font-black" title="Logout">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
               </svg>
@@ -925,7 +929,7 @@ export default function App() {
           </div>
           {/* Mobile Hamburger Button */}
           <button 
-            className="md:hidden ml-2 p-2 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="md:hidden ml-2 p-2 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-white dark:hover:bg-slate-800"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -940,7 +944,7 @@ export default function App() {
 
         {/* Mobile Slide-down Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg animate-fade-in max-h-[70vh] overflow-y-auto">
+          <div className="md:hidden flex flex-col gap-2 w-full mt-4 p-3 bg-white/90 dark:bg-[#0B1121]/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/80 rounded-2xl shadow-2xl animate-fade-in max-h-[70vh] overflow-y-auto">
             
             <Sidebar 
               isMobileView={true}

@@ -365,42 +365,42 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
     <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-10">
       
       {/* Header & Stats Overview */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200/50 dark:border-slate-800/60 pb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">📐</span>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">TI Weekly Swing Planner</h2>
-            <div className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-[10px] font-black tracking-widest uppercase border border-amber-200 dark:border-amber-800/50">PRO</div>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="text-3xl filter drop-shadow-md">📐</span>
+            <h2 className="text-3xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent tracking-tight">TI Weekly Swing Planner</h2>
+            <div className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md text-[10px] font-black tracking-widest uppercase border border-emerald-500/20 shadow-sm backdrop-blur-sm">PRO</div>
           </div>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Plan your swing trades logically</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Plan your swing trades logically</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/60 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
           <button
             onClick={() => setActiveTab('planner')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all ${
               activeTab === 'planner'
-                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-indigo-400/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             📋 Planner
           </button>
           <button
             onClick={() => setActiveTab('tracker')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all ${
               activeTab === 'tracker'
-                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-indigo-400/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             📈 Tracker
           </button>
           <button
             onClick={() => setActiveTab('rulebook')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all ${
               activeTab === 'rulebook'
-                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-indigo-400/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             📖 Rulebook
@@ -426,8 +426,8 @@ export default function WeeklySwingPlanner({ userEmail, isVip, requestAlert, req
         
         {/* Form Section */}
         <div className="lg:col-span-1 flex flex-col gap-6">
-          <div className="crypto-card p-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-6 shadow-xl shadow-slate-200/10 dark:shadow-black/20">
+            <h3 className="text-lg font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-4 border-b border-slate-200/50 dark:border-slate-800/60 pb-3">
               ➕ Add Weekly Pick
             </h3>
             <form onSubmit={handleAddPick} className="flex flex-col gap-4">

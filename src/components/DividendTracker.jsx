@@ -42,16 +42,19 @@ export default function DividendTracker({ dividends = [], onSaveDividend, onDele
           </div>
           <button 
             onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors cursor-pointer"
+            className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase shadow-lg shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer"
           >
             {showAddForm ? 'Cancel' : '+ Add Dividend'}
           </button>
         </div>
 
         {/* Total Cashflow Box */}
-        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-xl flex justify-between items-center">
-          <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Total Passive Income</span>
-          <span className="text-2xl font-mono font-black text-emerald-600 dark:text-emerald-500">
+        <div className="relative overflow-hidden rounded-2xl p-5 border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent backdrop-blur-xl shadow-lg shadow-emerald-500/5 flex justify-between items-center">
+          <div className="flex flex-col">
+            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Total Passive Income</span>
+            <span className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">Accumulated Cashflow</span>
+          </div>
+          <span className="text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
             ${totalDividends.toFixed(2)}
           </span>
         </div>
