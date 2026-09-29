@@ -53,12 +53,23 @@ export const useMoonbagStore = create((set, get) => ({
       const enhancedPositions = posData.map(pos => {
         const currentPrice = parseFloat(pos.current_price || pos.average_cost);
         const currentValue = parseFloat(pos.total_shares) * currentPrice;
-        const remainingPrincipal = parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0);
+        
+        // Handle missing DB fields gracefully for old positions
+        const status = pos.status || 'ACTIVE';
+        const initialInvest = pos.initial_investment != null ? parseFloat(pos.initial_investment) : (parseFloat(pos.average_cost) * parseFloat(pos.total_shares));
+        const initialShares = pos.initial_shares != null ? parseFloat(pos.initial_shares) : parseFloat(pos.total_shares);
+        const recouped = parseFloat(pos.recouped_amount || 0);
+
+        const remainingPrincipal = initialInvest - recouped;
         // Recoup eligible if Active, has value, hasn't fully recouped, and price is >= 2x average cost
-        const isRecoupEligible = pos.status === 'ACTIVE' && currentValue > 0 && remainingPrincipal > 0 && currentPrice >= (parseFloat(pos.average_cost) * 2);
+        const isRecoupEligible = status === 'ACTIVE' && currentValue > 0 && remainingPrincipal > 0 && currentPrice >= (parseFloat(pos.average_cost) * 2);
         
         return {
           ...pos,
+          status,
+          initial_investment: initialInvest,
+          initial_shares: initialShares,
+          recouped_amount: recouped,
           currentValue,
           remainingPrincipal: Math.max(0, remainingPrincipal),
           isRecoupEligible
@@ -80,11 +91,21 @@ export const useMoonbagStore = create((set, get) => ({
       const enhancedPositions = state.positions.map(pos => {
         const currentPrice = newLivePrices[pos.ticker] || parseFloat(pos.current_price || pos.average_cost);
         const currentValue = parseFloat(pos.total_shares) * currentPrice;
-        const remainingPrincipal = parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0);
-        const isRecoupEligible = pos.status === 'ACTIVE' && currentValue > 0 && remainingPrincipal > 0 && currentPrice >= (parseFloat(pos.average_cost) * 2);
+        // Handle missing DB fields gracefully for old positions
+        const status = pos.status || 'ACTIVE';
+        const initialInvest = pos.initial_investment != null ? parseFloat(pos.initial_investment) : (parseFloat(pos.average_cost) * parseFloat(pos.total_shares));
+        const initialShares = pos.initial_shares != null ? parseFloat(pos.initial_shares) : parseFloat(pos.total_shares);
+        const recouped = parseFloat(pos.recouped_amount || 0);
+
+        const remainingPrincipal = initialInvest - recouped;
+        const isRecoupEligible = status === 'ACTIVE' && currentValue > 0 && remainingPrincipal > 0 && currentPrice >= (parseFloat(pos.average_cost) * 2);
         
         return {
           ...pos,
+          status,
+          initial_investment: initialInvest,
+          initial_shares: initialShares,
+          recouped_amount: recouped,
           currentPrice: currentPrice, // override local state
           currentValue,
           remainingPrincipal: Math.max(0, remainingPrincipal),
