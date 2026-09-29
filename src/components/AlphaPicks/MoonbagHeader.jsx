@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 
 export default function MoonbagHeader() {
-  const { portfolios, selectedPortfolioId, setSelectedPortfolioId, positions } = useMoonbagStore();
+  const { portfolios, selectedPortfolioId, setSelectedPortfolioId, positions, createPortfolio, addCash } = useMoonbagStore();
   const [showAddCash, setShowAddCash] = useState(false);
+  const [showNewPort, setShowNewPort] = useState(false);
+  
+  const [newPortName, setNewPortName] = useState('');
+  const [cashAmount, setCashAmount] = useState('');
 
   const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
   const cashAvailable = parseFloat(selectedPortfolio?.cash_balance || 0);
@@ -12,8 +16,24 @@ export default function MoonbagHeader() {
   const positionsValue = positions.reduce((sum, pos) => sum + (pos.currentValue || 0), 0);
   const totalPortfolioValue = cashAvailable + positionsValue;
 
+  const handleCreatePortfolio = async (e) => {
+    e.preventDefault();
+    if (!newPortName.trim()) return;
+    await createPortfolio(newPortName);
+    setNewPortName('');
+    setShowNewPort(false);
+  };
+
+  const handleAddCash = async (e) => {
+    e.preventDefault();
+    if (!cashAmount || isNaN(cashAmount)) return;
+    await addCash(parseFloat(cashAmount));
+    setCashAmount('');
+    setShowAddCash(false);
+  };
+
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200/50 dark:border-slate-800/50 pb-6 mb-6">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200/50 dark:border-slate-800/50 pb-6 mb-6 relative">
       <div>
         <div className="flex items-center gap-3 mb-2">
           <span className="text-3xl filter drop-shadow-md">🚀</span>
@@ -36,6 +56,9 @@ export default function MoonbagHeader() {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
+          <button onClick={() => setShowNewPort(true)} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors">
+            <span className="text-slate-500 dark:text-slate-400">➕</span>
+          </button>
         </div>
       </div>
       
@@ -52,7 +75,10 @@ export default function MoonbagHeader() {
            <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
               <svg className="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
            </div>
-           <h3 className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Cash Pool</h3>
+           <div className="flex justify-between items-center mb-1">
+             <h3 className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cash Pool</h3>
+             <button onClick={() => setShowAddCash(true)} className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm hover:bg-emerald-400 z-10 relative">ADD</button>
+           </div>
            <div className="text-xl font-black text-emerald-700 dark:text-emerald-300 font-mono">
              ${cashAvailable.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
            </div>
@@ -65,6 +91,37 @@ export default function MoonbagHeader() {
            </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {showNewPort && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-lg font-black mb-4 dark:text-white">Create New Portfolio</h3>
+            <form onSubmit={handleCreatePortfolio}>
+              <input type="text" value={newPortName} onChange={e=>setNewPortName(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-4 font-bold dark:text-white" placeholder="Portfolio Name..." autoFocus />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowNewPort(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 dark:text-slate-300">Cancel</button>
+                <button type="submit" className="flex-1 py-3 rounded-xl font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showAddCash && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-lg font-black mb-4 dark:text-white text-emerald-500">Add Cash to Pool</h3>
+            <form onSubmit={handleAddCash}>
+              <input type="number" step="any" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-4 font-mono font-bold dark:text-white" placeholder="0.00" autoFocus />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowAddCash(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 dark:text-slate-300">Cancel</button>
+                <button type="submit" className="flex-1 py-3 rounded-xl font-black bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">Deposit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

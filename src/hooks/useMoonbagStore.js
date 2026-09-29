@@ -43,6 +43,24 @@ export const useMoonbagStore = create((set, get) => ({
     }
   },
 
+  createPortfolio: async (name) => {
+    const { userEmail } = get();
+    if (!userEmail || !name) return;
+    set({ loading: true });
+    try {
+      // Assuming createInvestmentPortfolio exists in investmentDB
+      const { createInvestmentPortfolio } = await import('../db/investmentDB');
+      const newPort = await createInvestmentPortfolio(userEmail, name);
+      await get().loadPortfolios(userEmail);
+      get().setSelectedPortfolioId(newPort.id);
+    } catch (error) {
+      console.error("Failed to create portfolio:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   loadPositions: async (portfolioId) => {
     const { userEmail } = get();
     if (!userEmail || !portfolioId) return;
@@ -159,6 +177,22 @@ export const useMoonbagStore = create((set, get) => ({
       await get().loadPositions(selectedPortfolioId);
     } catch (error) {
       console.error("Failed to add transaction:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  addCash: async (amount) => {
+    const { userEmail, selectedPortfolioId } = get();
+    if (!userEmail || !selectedPortfolioId || !amount) return;
+    set({ loading: true });
+    try {
+      const { addPortfolioFunding } = await import('../db/investmentDB');
+      await addPortfolioFunding(userEmail, selectedPortfolioId, 'DEPOSIT', amount, 'Manual Deposit');
+      await get().loadPortfolios(userEmail);
+    } catch (error) {
+      console.error("Failed to add cash:", error);
       throw error;
     } finally {
       set({ loading: false });
