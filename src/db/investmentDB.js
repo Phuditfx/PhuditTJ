@@ -95,6 +95,10 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
         total_shares: shares,
         average_cost: price,
         current_price: price, // initial default
+        status: 'ACTIVE',
+        initial_investment: parseFloat(shares) * parseFloat(price),
+        initial_shares: parseFloat(shares),
+        recouped_amount: 0
       }])
       .select();
 
@@ -109,11 +113,16 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
     const txShares = parseFloat(shares);
     const txPrice = parseFloat(price);
 
+    let newInitialInvest = parseFloat(position.initial_investment || 0);
+    let newInitialShares = parseFloat(position.initial_shares || 0);
+
     if (type === 'BUY') {
       const oldTotalValue = newTotalShares * newAverageCost;
       const newTxValue = txShares * txPrice;
       newTotalShares += txShares;
       newAverageCost = (oldTotalValue + newTxValue) / newTotalShares;
+      newInitialInvest += newTxValue;
+      newInitialShares += txShares;
     } else if (type === 'SELL') {
       if (txShares > newTotalShares) throw new Error("Cannot sell more shares than you own");
       
@@ -122,11 +131,19 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
       // Average cost stays the same on a sell
     }
 
+    let newStatus = position.status || 'ACTIVE';
+    if (newTotalShares <= 0) {
+      newStatus = 'CLOSED';
+    }
+
     const { error: updateError } = await supabase
       .from('investment_positions')
       .update({
         total_shares: newTotalShares,
         average_cost: newAverageCost,
+        initial_investment: newInitialInvest,
+        initial_shares: newInitialShares,
+        status: newStatus,
         updated_at: new Date().toISOString()
       })
       .eq('id', position.id);
@@ -174,6 +191,71 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
     await supabase
       .from('investment_portfolios')
       .update({ cash_balance: currentCash })
+      .eq('id', portfolioId);
+  }
+}
+
+export async function executeRecoupTransaction(userEmail, portfolioId, positionId, ticker, sharesToSell, currentPrice) {
+  // 1. Fetch position
+  const { data: posData, error: posErr } = await supabase
+    .from('investment_positions')
+    .select('*')
+    .eq('id', positionId)
+    .single();
+
+  if (posErr || !posData) throw new Error("Position not found");
+  
+  const remainingShares = parseFloat(posData.total_shares) - sharesToSell;
+  const recoupedAmount = sharesToSell * currentPrice;
+
+  // 2. Update Position to MOONBAG
+  const { error: updatePosErr } = await supabase
+    .from('investment_positions')
+    .update({
+      total_shares: remainingShares,
+      average_cost: 0, // Cost basis is now 0 (fully de-risked)
+      recouped_amount: parseFloat(posData.recouped_amount || 0) + recoupedAmount,
+      status: remainingShares > 0 ? 'MOONBAG' : 'CLOSED',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', positionId);
+
+  if (updatePosErr) throw updatePosErr;
+
+  // 3. Record RECOUP Transaction
+  const { error: txErr } = await supabase
+    .from('investment_transactions')
+    .insert([{
+      user_email: userEmail,
+      portfolio_id: portfolioId,
+      position_id: positionId,
+      type: 'RECOUP',
+      shares: sharesToSell,
+      price: currentPrice,
+      transaction_date: new Date().toISOString().split('T')[0],
+      realized_pnl: (currentPrice - parseFloat(posData.average_cost)) * sharesToSell,
+      notes: 'Recoup Capital (Risk-Free Transition)'
+    }]);
+
+  if (txErr) throw txErr;
+
+  // 4. Return Capital to Cash Pool
+  const { data: portData } = await supabase
+    .from('investment_portfolios')
+    .select('cash_balance, total_recouped')
+    .eq('id', portfolioId)
+    .single();
+    
+  if (portData) {
+    const currentCash = parseFloat(portData.cash_balance || 0);
+    const totalRecouped = parseFloat(portData.total_recouped || 0);
+    
+    await supabase
+      .from('investment_portfolios')
+      .update({ 
+        cash_balance: currentCash + recoupedAmount,
+        total_recouped: totalRecouped + recoupedAmount
+      })
       .eq('id', portfolioId);
   }
 }

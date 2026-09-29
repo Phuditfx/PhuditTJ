@@ -1,0 +1,146 @@
+import { create } from 'zustand';
+import { 
+  getInvestmentPortfolios, 
+  getInvestmentPositions, 
+  executeRecoupTransaction,
+  addInvestmentTransaction
+} from '../db/investmentDB';
+
+export const useMoonbagStore = create((set, get) => ({
+  userEmail: null,
+  portfolios: [],
+  selectedPortfolioId: null,
+  positions: [],
+  livePrices: {},
+  loading: false,
+
+  setUserEmail: (email) => {
+    if (get().userEmail !== email) {
+        set({ userEmail: email });
+        get().loadPortfolios(email);
+    }
+  },
+  
+  setSelectedPortfolioId: (id) => {
+    set({ selectedPortfolioId: id });
+    get().loadPositions(id);
+  },
+
+  loadPortfolios: async (email) => {
+    if (!email) return;
+    set({ loading: true });
+    try {
+      const ports = await getInvestmentPortfolios(email);
+      set({ portfolios: ports });
+      if (ports.length > 0 && !get().selectedPortfolioId) {
+        set({ selectedPortfolioId: ports[0].id });
+        await get().loadPositions(ports[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to load portfolios:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  loadPositions: async (portfolioId) => {
+    const { userEmail } = get();
+    if (!userEmail || !portfolioId) return;
+    set({ loading: true });
+    try {
+      const posData = await getInvestmentPositions(userEmail, portfolioId);
+      
+      const enhancedPositions = posData.map(pos => {
+        const currentPrice = parseFloat(pos.current_price || pos.average_cost);
+        const currentValue = parseFloat(pos.total_shares) * currentPrice;
+        const remainingPrincipal = parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0);
+        // Recoup eligible if Active, has value, hasn't fully recouped, and price is >= 2x average cost
+        const isRecoupEligible = pos.status === 'ACTIVE' && currentValue > 0 && remainingPrincipal > 0 && currentPrice >= (parseFloat(pos.average_cost) * 2);
+        
+        return {
+          ...pos,
+          currentValue,
+          remainingPrincipal: Math.max(0, remainingPrincipal),
+          isRecoupEligible
+        };
+      });
+
+      set({ positions: enhancedPositions });
+    } catch (error) {
+      console.error("Failed to load positions:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateLivePrices: (pricesMap) => {
+    set(state => {
+      const newLivePrices = { ...state.livePrices, ...pricesMap };
+      
+      const enhancedPositions = state.positions.map(pos => {
+        const currentPrice = newLivePrices[pos.ticker] || parseFloat(pos.current_price || pos.average_cost);
+        const currentValue = parseFloat(pos.total_shares) * currentPrice;
+        const remainingPrincipal = parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0);
+        const isRecoupEligible = pos.status === 'ACTIVE' && currentValue > 0 && remainingPrincipal > 0 && currentPrice >= (parseFloat(pos.average_cost) * 2);
+        
+        return {
+          ...pos,
+          currentPrice: currentPrice, // override local state
+          currentValue,
+          remainingPrincipal: Math.max(0, remainingPrincipal),
+          isRecoupEligible
+        };
+      });
+
+      return { livePrices: newLivePrices, positions: enhancedPositions };
+    });
+  },
+
+  setManualPrice: (ticker, price) => {
+    get().updateLivePrices({ [ticker]: parseFloat(price) });
+  },
+
+  handleRecoup: async (positionId, currentPrice) => {
+    const { userEmail, selectedPortfolioId } = get();
+    set({ loading: true });
+    try {
+      const pos = get().positions.find(p => p.id === positionId);
+      if (!pos) throw new Error("Position not found");
+
+      const remainingPrincipal = Math.max(0, parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0));
+      // Calculate exactly how many shares to sell to cover the remaining principal at the current price
+      const sharesToSell = Math.ceil(remainingPrincipal / currentPrice);
+      
+      if (sharesToSell > parseFloat(pos.total_shares)) {
+        throw new Error("Not enough shares to recoup principal.");
+      }
+
+      await executeRecoupTransaction(userEmail, selectedPortfolioId, positionId, pos.ticker, sharesToSell, currentPrice);
+      
+      // Reload everything to sync DB
+      await get().loadPortfolios(userEmail); 
+      await get().loadPositions(selectedPortfolioId);
+    } catch (error) {
+      console.error("Failed to recoup:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  handleAddTransaction: async (ticker, type, shares, price, notes) => {
+    const { userEmail, selectedPortfolioId } = get();
+    set({ loading: true });
+    try {
+      const txDate = new Date().toISOString().split('T')[0];
+      await addInvestmentTransaction(userEmail, selectedPortfolioId, ticker, type, shares, price, txDate, notes);
+      await get().loadPortfolios(userEmail);
+      await get().loadPositions(selectedPortfolioId);
+    } catch (error) {
+      console.error("Failed to add transaction:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  }
+}));
