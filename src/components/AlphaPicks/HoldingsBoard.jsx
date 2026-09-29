@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 
 export default function HoldingsBoard() {
-  const { positions, handleRecoup, handleAddTransaction } = useMoonbagStore();
+  const { positions, handleRecoup, handleAddTransaction, setManualPrice } = useMoonbagStore();
   const [activeTab, setActiveTab] = useState('ACTIVE');
   
   // Recoup State
@@ -39,7 +39,7 @@ export default function HoldingsBoard() {
   const openTradeModal = (pos, type) => {
     setTradePos(pos);
     setTradeType(type);
-    setTradeShares('');
+    setTradeShares(type === 'SELL' ? pos.total_shares : '');
     setTradePrice(pos.currentPrice);
   };
 
@@ -85,7 +85,7 @@ export default function HoldingsBoard() {
               <th className="px-4 py-3">Asset</th>
               <th className="px-4 py-3 text-right">Shares</th>
               <th className="px-4 py-3 text-right">Avg Entry</th>
-              <th className="px-4 py-3 text-right">Live Price</th>
+              <th className="px-4 py-3 text-right">Last Price</th>
               <th className="px-4 py-3 text-right">Value</th>
               <th className="px-4 py-3 text-right">{activeTab === 'MOONBAG' ? 'Total Return' : 'Unrealized PnL'}</th>
               <th className="px-4 py-3 text-center">Action</th>

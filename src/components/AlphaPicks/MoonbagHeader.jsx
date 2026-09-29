@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 
 export default function MoonbagHeader() {
-  const { portfolios, selectedPortfolioId, setSelectedPortfolioId, positions, createPortfolio, editPortfolio, deletePortfolio, addCash } = useMoonbagStore();
+  const { portfolios, selectedPortfolioId, setSelectedPortfolioId, positions, createPortfolio, editPortfolio, deletePortfolio, manageCash } = useMoonbagStore();
   const [showAddCash, setShowAddCash] = useState(false);
   const [showNewPort, setShowNewPort] = useState(false);
   const [showEditPort, setShowEditPort] = useState(false);
@@ -10,6 +10,7 @@ export default function MoonbagHeader() {
   const [newPortName, setNewPortName] = useState('');
   const [editPortName, setEditPortName] = useState('');
   const [cashAmount, setCashAmount] = useState('');
+  const [cashType, setCashType] = useState('DEPOSIT');
 
   const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
   const cashAvailable = parseFloat(selectedPortfolio?.cash_balance || 0);
@@ -50,7 +51,7 @@ export default function MoonbagHeader() {
   const handleAddCash = async (e) => {
     e.preventDefault();
     if (!cashAmount || isNaN(cashAmount)) return;
-    await addCash(parseFloat(cashAmount));
+    await manageCash(parseFloat(cashAmount), cashType);
     setCashAmount('');
     setShowAddCash(false);
   };
@@ -110,7 +111,7 @@ export default function MoonbagHeader() {
            </div>
            <div className="flex justify-between items-center mb-1">
              <h3 className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cash Pool</h3>
-             <button onClick={() => setShowAddCash(true)} className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm hover:bg-emerald-400 z-10 relative">ADD</button>
+             <button onClick={() => setShowAddCash(true)} className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm hover:bg-emerald-400 z-10 relative">MANAGE</button>
            </div>
            <div className="text-xl font-black text-emerald-700 dark:text-emerald-300 font-mono">
              ${cashAvailable.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -172,12 +173,30 @@ export default function MoonbagHeader() {
       {showAddCash && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full">
-            <h3 className="text-lg font-black mb-4 dark:text-white text-emerald-500">Add Cash to Pool</h3>
+            <h3 className="text-lg font-black mb-4 dark:text-white text-emerald-500">Manage Cash Pool</h3>
+            
+            <div className="flex gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <button 
+                onClick={() => setCashType('DEPOSIT')} 
+                className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${cashType === 'DEPOSIT' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-500' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+              >
+                DEPOSIT
+              </button>
+              <button 
+                onClick={() => setCashType('WITHDRAWAL')} 
+                className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${cashType === 'WITHDRAWAL' ? 'bg-white dark:bg-slate-700 shadow-sm text-rose-500' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+              >
+                WITHDRAW
+              </button>
+            </div>
+
             <form onSubmit={handleAddCash}>
-              <input type="number" step="any" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-4 font-mono font-bold dark:text-white" placeholder="0.00" autoFocus />
+              <input type="number" step="any" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-4 font-mono font-bold dark:text-white" placeholder="Amount ($)" autoFocus required />
               <div className="flex gap-2">
                 <button type="button" onClick={() => setShowAddCash(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 dark:text-slate-300">Cancel</button>
-                <button type="submit" className="flex-1 py-3 rounded-xl font-black bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">Deposit</button>
+                <button type="submit" className={`flex-1 py-3 rounded-xl font-black text-white shadow-lg ${cashType === 'DEPOSIT' ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30' : 'bg-rose-500 hover:bg-rose-400 shadow-rose-500/30'}`}>
+                  {cashType === 'DEPOSIT' ? 'Deposit' : 'Withdraw'}
+                </button>
               </div>
             </form>
           </div>

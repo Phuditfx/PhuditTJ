@@ -221,16 +221,16 @@ export const useMoonbagStore = create((set, get) => ({
     }
   },
 
-  addCash: async (amount) => {
+  manageCash: async (amount, type) => {
     const { userEmail, selectedPortfolioId } = get();
     if (!userEmail || !selectedPortfolioId || !amount) return;
     set({ loading: true });
     try {
       const { addPortfolioFunding } = await import('../db/investmentDB');
-      await addPortfolioFunding(userEmail, selectedPortfolioId, 'DEPOSIT', amount, 'Manual Deposit');
+      await addPortfolioFunding(userEmail, selectedPortfolioId, type, amount, `Manual ${type}`);
       await get().loadPortfolios(userEmail);
     } catch (error) {
-      console.error("Failed to add cash:", error);
+      console.error("Failed to manage cash:", error);
       throw error;
     } finally {
       set({ loading: false });
