@@ -140,7 +140,11 @@ export const useMoonbagStore = create((set, get) => ({
       const newLivePrices = { ...state.livePrices, ...pricesMap };
       
       const enhancedPositions = state.positions.map(pos => {
-        const currentPrice = newLivePrices[pos.ticker] || parseFloat(pos.current_price || pos.average_cost);
+        const cp = parseFloat(pos.current_price);
+        const ac = parseFloat(pos.average_cost);
+        const dbPrice = !isNaN(cp) ? cp : (!isNaN(ac) ? ac : 0);
+        const currentPrice = newLivePrices[pos.ticker] || dbPrice;
+        
         const currentValue = parseFloat(pos.total_shares) * currentPrice;
         // Handle missing DB fields gracefully for old positions
         const status = pos.status || 'ACTIVE';

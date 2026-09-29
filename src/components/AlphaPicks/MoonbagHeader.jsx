@@ -34,11 +34,17 @@ export default function MoonbagHeader() {
     setShowEditPort(false);
   };
 
-  const handleDeletePortfolio = async () => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const confirmDeletePortfolio = async () => {
     if (!selectedPortfolioId) return;
-    if (confirm("Are you sure you want to delete this portfolio? This cannot be undone.")) {
-      await deletePortfolio(selectedPortfolioId);
-    }
+    await deletePortfolio(selectedPortfolioId);
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeletePortfolio = (e) => {
+    e.preventDefault();
+    setShowDeleteConfirm(true);
   };
 
   const handleAddCash = async (e) => {
@@ -146,6 +152,19 @@ export default function MoonbagHeader() {
                 <button type="submit" className="flex-1 py-3 rounded-xl font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">Save</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-black mb-2 dark:text-white text-rose-500">Delete Portfolio</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Are you sure you want to delete this portfolio? This cannot be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 dark:text-slate-300">Cancel</button>
+              <button onClick={confirmDeletePortfolio} className="flex-1 py-3 rounded-xl font-black bg-rose-500 text-white shadow-lg shadow-rose-500/30">Delete</button>
+            </div>
           </div>
         </div>
       )}

@@ -122,7 +122,23 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
       .select();
 
     if (posError) throw posError;
-    position = newPosition[0];
+    
+    if (newPosition && newPosition.length > 0) {
+      position = newPosition[0];
+    } else {
+      // Fallback: fetch it again if select() didn't return data
+      const { data: refetch } = await supabase
+        .from('investment_positions')
+        .select('*')
+        .eq('user_email', userEmail)
+        .eq('portfolio_id', portfolioId)
+        .eq('ticker', ticker.toUpperCase());
+      if (refetch && refetch.length > 0) {
+        position = refetch[0];
+      } else {
+        throw new Error("Failed to create new position.");
+      }
+    }
   } else {
     // 3. Position exists, calculate new averages or realize PnL
     let newTotalShares = parseFloat(position.total_shares);
