@@ -4,6 +4,7 @@ import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 export default function HoldingsBoard() {
   const { positions, handleRecoup, handleAddTransaction } = useMoonbagStore();
   const [activeTab, setActiveTab] = useState('ACTIVE');
+  const [errorMsg, setErrorMsg] = useState('');
   
   // Recoup State
   const [recoupConfirmPos, setRecoupConfirmPos] = useState(null);
@@ -35,7 +36,8 @@ export default function HoldingsBoard() {
       await handleRecoup(recoupConfirmPos.id, parseFloat(recoupPrice), parseFloat(recoupShares));
       setRecoupConfirmPos(null);
     } catch (err) {
-      alert("Error: " + err.message);
+      setErrorMsg(err.message || "An unexpected error occurred during recoup.");
+      setRecoupConfirmPos(null);
     }
   };
 
@@ -53,7 +55,8 @@ export default function HoldingsBoard() {
       await handleAddTransaction(tradePos.ticker, tradeType, tradeShares, tradePrice, 'Row Action');
       setTradePos(null);
     } catch (err) {
-      alert("Error: " + err.message);
+      setErrorMsg(err.message || "An unexpected error occurred during trade.");
+      setTradePos(null);
     }
   };
 
@@ -231,6 +234,41 @@ export default function HoldingsBoard() {
           </div>
         </div>
       )}
+
+      {/* Error Modal */}
+      {errorMsg && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full">
+            <div className="flex items-center gap-3 mb-4 text-rose-500">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h3 className="text-xl font-black dark:text-white">Action Failed</h3>
+            </div>
+            
+            <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-4 rounded-xl mb-6">
+              <p className="text-sm font-bold text-rose-600 dark:text-rose-400 break-words">
+                {errorMsg}
+              </p>
+              
+              {/* Contextual help for common DB schema error */}
+              {errorMsg.includes('schema cache') && (
+                <p className="mt-3 text-xs text-rose-500/80 dark:text-rose-400/80">
+                  <strong className="block mb-1">How to fix this:</strong>
+                  1. Make sure you added the required column to your Supabase table.<br/>
+                  2. Go to Supabase Dashboard &gt; Project Settings &gt; API.<br/>
+                  3. Scroll down to "Schema cache" and click <strong>Reload cache</strong>.
+                </p>
+              )}
+            </div>
+
+            <button onClick={() => setErrorMsg('')} className="w-full py-3 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 transition-colors">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
