@@ -116,8 +116,13 @@ export default function HoldingsBoard() {
             ) : (
               filteredPositions.map(pos => {
                 const isReadyForRecoup = pos.isRecoupEligible;
-                const pnl = pos.currentValue - pos.remainingPrincipal;
-                const pnlPct = pos.remainingPrincipal > 0 ? (pnl / pos.remainingPrincipal) * 100 : 0;
+                const avgCost = parseFloat(pos.average_cost) || 0;
+                const currentPrice = parseFloat(pos.currentPrice) || 0;
+                const totalShares = parseFloat(pos.total_shares) || 0;
+                const totalCost = avgCost * totalShares;
+                const currentValue = currentPrice * totalShares;
+                const pnlAmt = currentValue - totalCost;
+                const pnlPct = avgCost > 0 ? ((currentPrice - avgCost) / avgCost) * 100 : 0;
                 
                 return (
                   <tr key={pos.id} className={`transition-colors text-sm hover:bg-slate-50 dark:hover:bg-slate-800/30 ${isReadyForRecoup ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}>
@@ -139,12 +144,12 @@ export default function HoldingsBoard() {
                     <td className="px-2 py-4 md:px-4 text-right font-mono font-bold text-slate-900 dark:text-white hidden md:table-cell">
                       ${pos.currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                     </td>
-                    <td className={`px-2 py-4 md:px-4 text-right font-mono font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <td className={`px-2 py-4 md:px-4 text-right font-mono font-bold ${pnlAmt >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {activeTab === 'MOONBAG' ? (
-                        <div>PURE PROFIT</div>
+                        <div className="text-xs font-black text-purple-500">FREE HOLD</div>
                       ) : (
                         <>
-                          <div>{pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                          <div>{pnlAmt >= 0 ? '+' : '-'}${Math.abs(pnlAmt).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                           <div className="text-[10px] bg-slate-100 dark:bg-slate-800 inline-block px-1.5 rounded">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</div>
                         </>
                       )}

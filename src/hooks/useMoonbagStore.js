@@ -182,21 +182,30 @@ export const useMoonbagStore = create((set, get) => ({
 
   handleRecoup: async (positionId, currentPrice, customSharesToSell) => {
     const { userEmail, selectedPortfolioId } = get();
+    console.log('[handleRecoup] Called with:', { positionId, currentPrice, customSharesToSell, userEmail, selectedPortfolioId });
+    
+    if (!userEmail) throw new Error("ไม่พบข้อมูลผู้ใช้ (userEmail) กรุณาล็อกอินใหม่");
+    if (!selectedPortfolioId) throw new Error("ไม่ได้เลือกพอร์ตฟอลิโอ กรุณาเลือกพอร์ตก่อน");
+    
     set({ loading: true });
     try {
       const pos = get().positions.find(p => p.id === positionId);
       if (!pos) throw new Error("Position not found");
 
-      const remainingPrincipal = Math.max(0, parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0));
-      // Use user provided shares, or calculate default
+      const remainingPrincipal = Math.max(0, parseFloat(pos.initial_investment || pos.average_cost * pos.total_shares || 0) - parseFloat(pos.recouped_amount || 0));
       const sharesToSell = customSharesToSell || (remainingPrincipal / currentPrice);
       
+      console.log('[handleRecoup] Pos data:', pos);
+      console.log('[handleRecoup] remainingPrincipal:', remainingPrincipal, 'sharesToSell:', sharesToSell);
+      
       if (sharesToSell > parseFloat(pos.total_shares)) {
-        throw new Error("Not enough shares to recoup principal.");
+        throw new Error(`ไม่มีหุ้นพอ: ต้องการขาย ${sharesToSell.toFixed(4)} แต่มีแค่ ${parseFloat(pos.total_shares).toFixed(4)}`);
       }
 
       const { executeRecoupTransaction } = await import('../db/investmentDB');
+      console.log('[handleRecoup] Calling executeRecoupTransaction...');
       await executeRecoupTransaction(userEmail, selectedPortfolioId, positionId, pos.ticker, sharesToSell, currentPrice);
+      console.log('[handleRecoup] Success! Reloading data...');
       
       // Reload everything to sync DB
       await get().loadPortfolios(userEmail); 
@@ -211,10 +220,17 @@ export const useMoonbagStore = create((set, get) => ({
 
   handleAddTransaction: async (ticker, type, shares, price, notes) => {
     const { userEmail, selectedPortfolioId } = get();
+    console.log('[handleAddTransaction] Called with:', { ticker, type, shares, price, userEmail, selectedPortfolioId });
+    
+    if (!userEmail) throw new Error("ไม่พบข้อมูลผู้ใช้ (userEmail) กรุณาล็อกอินใหม่");
+    if (!selectedPortfolioId) throw new Error("ไม่ได้เลือกพอร์ตฟอลิโอ กรุณาเลือกพอร์ตก่อน");
+    
     set({ loading: true });
     try {
       const txDate = new Date().toISOString().split('T')[0];
-      await addInvestmentTransaction(userEmail, selectedPortfolioId, ticker, type, shares, price, txDate, notes);
+      console.log('[handleAddTransaction] Calling addInvestmentTransaction...');
+      await addInvestmentTransaction(userEmail, selectedPortfolioId, ticker, type, parseFloat(shares), parseFloat(price), txDate, notes);
+      console.log('[handleAddTransaction] Success! Reloading data...');
       await get().loadPortfolios(userEmail);
       await get().loadPositions(selectedPortfolioId);
     } catch (error) {
