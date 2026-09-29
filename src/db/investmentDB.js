@@ -171,7 +171,7 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
       newStatus = 'CLOSED';
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedData, error: updateError } = await supabase
       .from('investment_positions')
       .update({
         total_shares: newTotalShares,
@@ -181,9 +181,13 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
         status: newStatus,
         updated_at: new Date().toISOString()
       })
-      .eq('id', position.id);
+      .eq('id', position.id)
+      .select();
 
     if (updateError) throw updateError;
+    if (!updatedData || updatedData.length === 0) {
+      throw new Error("Update failed. Please check Supabase RLS policies for UPDATE on investment_positions.");
+    }
   }
 
   // 4. Record the transaction
@@ -223,10 +227,16 @@ export async function addInvestmentTransaction(userEmail, portfolioId, ticker, t
       currentCash += transactionValue;
     }
     
-    await supabase
+    const { data: updatedData, error: updateErr } = await supabase
       .from('investment_portfolios')
       .update({ cash_balance: currentCash })
-      .eq('id', portfolioId);
+      .eq('id', portfolioId)
+      .select();
+      
+    if (updateErr) throw updateErr;
+    if (!updatedData || updatedData.length === 0) {
+      throw new Error("Update failed. Please check Supabase RLS policies for UPDATE on investment_portfolios.");
+    }
   }
 }
 
@@ -244,7 +254,7 @@ export async function executeRecoupTransaction(userEmail, portfolioId, positionI
   const recoupedAmount = sharesToSell * currentPrice;
 
   // 2. Update Position to MOONBAG
-  const { error: updatePosErr } = await supabase
+  const { data: updatedData, error: updatePosErr } = await supabase
     .from('investment_positions')
     .update({
       total_shares: remainingShares,
@@ -253,9 +263,13 @@ export async function executeRecoupTransaction(userEmail, portfolioId, positionI
       status: remainingShares > 0 ? 'MOONBAG' : 'CLOSED',
       updated_at: new Date().toISOString()
     })
-    .eq('id', positionId);
+    .eq('id', positionId)
+    .select();
 
   if (updatePosErr) throw updatePosErr;
+  if (!updatedData || updatedData.length === 0) {
+    throw new Error("Update failed. Please check Supabase RLS policies for UPDATE on investment_positions.");
+  }
 
   // 3. Record RECOUP Transaction
   const { error: txErr } = await supabase
@@ -285,13 +299,19 @@ export async function executeRecoupTransaction(userEmail, portfolioId, positionI
     const currentCash = parseFloat(portData.cash_balance || 0);
     const totalRecouped = parseFloat(portData.total_recouped || 0);
     
-    await supabase
+    const { data: updatedData, error: updateErr } = await supabase
       .from('investment_portfolios')
       .update({ 
         cash_balance: currentCash + recoupedAmount,
         total_recouped: totalRecouped + recoupedAmount
       })
-      .eq('id', portfolioId);
+      .eq('id', portfolioId)
+      .select();
+      
+    if (updateErr) throw updateErr;
+    if (!updatedData || updatedData.length === 0) {
+      throw new Error("Update failed. Please check Supabase RLS policies for UPDATE on investment_portfolios.");
+    }
   }
 }
 

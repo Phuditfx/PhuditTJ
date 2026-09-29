@@ -5,6 +5,7 @@ export default function HoldingsBoard() {
   const { positions, handleRecoup, handleAddTransaction } = useMoonbagStore();
   const [activeTab, setActiveTab] = useState('ACTIVE');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Recoup State
   const [recoupConfirmPos, setRecoupConfirmPos] = useState(null);
@@ -35,12 +36,15 @@ export default function HoldingsBoard() {
       setErrorMsg("Please fill in all fields.");
       return;
     }
+    setIsSubmitting(true);
     try {
       await handleRecoup(recoupConfirmPos.id, parseFloat(recoupPrice), parseFloat(recoupShares));
       setRecoupConfirmPos(null);
     } catch (err) {
       setErrorMsg(err.message || "An unexpected error occurred during recoup.");
       setRecoupConfirmPos(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -57,12 +61,15 @@ export default function HoldingsBoard() {
       setErrorMsg("Please fill in all fields.");
       return;
     }
+    setIsSubmitting(true);
     try {
       await handleAddTransaction(tradePos.ticker, tradeType, tradeShares, tradePrice, 'Row Action');
       setTradePos(null);
     } catch (err) {
       setErrorMsg(err.message || "An unexpected error occurred during trade.");
       setTradePos(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -91,16 +98,16 @@ export default function HoldingsBoard() {
 
       {/* Table Content */}
       <div className="overflow-x-auto p-4 flex-1">
-        <table className="w-full text-left border-collapse min-w-[900px]">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-slate-200/50 dark:border-slate-700/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
-              <th className="px-4 py-3">Asset</th>
-              <th className="px-4 py-3 text-right">Shares</th>
-              <th className="px-4 py-3 text-right">Avg Entry</th>
-              <th className="px-4 py-3 text-right">Last Price</th>
-              <th className="px-4 py-3 text-right">Value</th>
-              <th className="px-4 py-3 text-right">{activeTab === 'MOONBAG' ? 'Total Return' : 'Unrealized PnL'}</th>
-              <th className="px-4 py-3 text-center">Action</th>
+            <tr className="border-b border-slate-200/50 dark:border-slate-700/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider whitespace-nowrap">
+              <th className="px-2 py-3 md:px-4">Asset</th>
+              <th className="px-2 py-3 md:px-4 text-right">Shares</th>
+              <th className="px-2 py-3 md:px-4 text-right hidden sm:table-cell">Avg Entry</th>
+              <th className="px-2 py-3 md:px-4 text-right">Last Price</th>
+              <th className="px-2 py-3 md:px-4 text-right hidden md:table-cell">Value</th>
+              <th className="px-2 py-3 md:px-4 text-right">{activeTab === 'MOONBAG' ? 'Return' : 'PnL'}</th>
+              <th className="px-2 py-3 md:px-4 text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -114,25 +121,25 @@ export default function HoldingsBoard() {
                 
                 return (
                   <tr key={pos.id} className={`transition-colors text-sm hover:bg-slate-50 dark:hover:bg-slate-800/30 ${isReadyForRecoup ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}>
-                    <td className="px-4 py-4 font-black text-slate-900 dark:text-white">
+                    <td className="px-2 py-4 md:px-4 font-black text-slate-900 dark:text-white">
                       <div className="flex items-center gap-2">
                         {pos.ticker}
                         {isReadyForRecoup && <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                    <td className="px-2 py-4 md:px-4 text-right font-mono text-slate-700 dark:text-slate-300">
                       {parseFloat(pos.total_shares).toLocaleString(undefined, {maximumFractionDigits: 4})}
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-slate-500">
+                    <td className="px-2 py-4 md:px-4 text-right font-mono text-slate-500 hidden sm:table-cell">
                       ${parseFloat(pos.average_cost).toFixed(2)}
                     </td>
-                    <td className="px-4 py-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    <td className="px-2 py-4 md:px-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
                       ${parseFloat(pos.currentPrice).toFixed(2)}
                     </td>
-                    <td className="px-4 py-4 text-right font-mono font-bold text-slate-900 dark:text-white">
+                    <td className="px-2 py-4 md:px-4 text-right font-mono font-bold text-slate-900 dark:text-white hidden md:table-cell">
                       ${pos.currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                     </td>
-                    <td className={`px-4 py-4 text-right font-mono font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <td className={`px-2 py-4 md:px-4 text-right font-mono font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {activeTab === 'MOONBAG' ? (
                         <div>PURE PROFIT</div>
                       ) : (
@@ -142,7 +149,7 @@ export default function HoldingsBoard() {
                         </>
                       )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-2 py-4 md:px-4">
                       <div className="flex items-center justify-center gap-2">
                         {activeTab === 'ACTIVE' && (
                           <button 
@@ -203,8 +210,8 @@ export default function HoldingsBoard() {
                  <button type="button" onClick={() => setRecoupConfirmPos(null)} className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
                    Cancel
                  </button>
-                 <button type="submit" className="flex-1 py-3 rounded-xl font-black text-white bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/30 transition-all">
-                   Confirm
+                 <button type="submit" disabled={isSubmitting} className="flex-1 py-3 rounded-xl font-black text-white bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50">
+                   {isSubmitting ? 'Processing...' : 'Confirm'}
                  </button>
                </div>
             </form>
@@ -232,8 +239,8 @@ export default function HoldingsBoard() {
                  <button type="button" onClick={() => setTradePos(null)} className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
                    Cancel
                  </button>
-                 <button type="submit" className={`flex-1 py-3 rounded-xl font-black text-white shadow-lg transition-all ${tradeType==='BUY'?'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30':'bg-rose-500 hover:bg-rose-400 shadow-rose-500/30'}`}>
-                   Confirm {tradeType}
+                 <button type="submit" disabled={isSubmitting} className={`flex-1 py-3 rounded-xl font-black text-white shadow-lg transition-all disabled:opacity-50 ${tradeType==='BUY'?'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30':'bg-rose-500 hover:bg-rose-400 shadow-rose-500/30'}`}>
+                   {isSubmitting ? 'Processing...' : `Confirm ${tradeType}`}
                  </button>
                </div>
             </form>
