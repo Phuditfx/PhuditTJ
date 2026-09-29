@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
+import PortfolioOverview from './PortfolioOverview';
 
 export default function HoldingsBoard({ isLoading = false }) {
   const { positions, handleRecoup, handleAddTransaction } = useMoonbagStore();
-  const [activeTab, setActiveTab] = useState('ACTIVE');
+  const [activeTab, setActiveTab] = useState('OVERVIEW');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -85,12 +86,22 @@ export default function HoldingsBoard({ isLoading = false }) {
       )}
       
       {/* Tabs Header */}
-      <div className="flex border-b border-slate-200/50 dark:border-slate-700/50 p-2 gap-2 bg-slate-50/50 dark:bg-slate-800/50">
+      <div className="flex border-b border-slate-200/50 dark:border-slate-700/50 p-2 gap-2 bg-slate-50/50 dark:bg-slate-800/50 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('OVERVIEW')}
+          className={`py-3 px-4 rounded-2xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap ${
+            activeTab === 'OVERVIEW'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800'
+          }`}
+        >
+          📊 Overview
+        </button>
         {['ACTIVE', 'MOONBAG', 'CLOSED'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-black tracking-widest uppercase transition-all ${
+            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap ${
               activeTab === tab
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50'
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800'
@@ -104,7 +115,12 @@ export default function HoldingsBoard({ isLoading = false }) {
         ))}
       </div>
 
-      {/* Table Content */}
+      {/* Content Area */}
+      {activeTab === 'OVERVIEW' ? (
+        <div className="p-4 flex-1">
+          <PortfolioOverview />
+        </div>
+      ) : (
       <div className="overflow-x-auto p-4 flex-1">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -206,6 +222,7 @@ export default function HoldingsBoard({ isLoading = false }) {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Recoup Confirmation Modal */}
       {recoupConfirmPos && (

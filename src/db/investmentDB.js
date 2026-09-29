@@ -88,6 +88,22 @@ export async function getInvestmentTransactions(positionId) {
   return data;
 }
 
+export async function getPortfolioTransactions(portfolioId, limit = 50) {
+  if (!portfolioId) return [];
+  const { data, error } = await supabase
+    .from('investment_transactions')
+    .select('*, investment_positions(ticker)')
+    .eq('portfolio_id', portfolioId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching portfolio transactions:', error);
+    return [];
+  }
+  return data;
+}
+
 export async function addInvestmentTransaction(userEmail, portfolioId, ticker, type, shares, price, transactionDate, notes) {
   if (!userEmail || !portfolioId || !ticker || !shares || !price) throw new Error("Missing required fields");
 
