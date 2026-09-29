@@ -189,7 +189,7 @@ export const useMoonbagStore = create((set, get) => ({
 
       const remainingPrincipal = Math.max(0, parseFloat(pos.initial_investment || 0) - parseFloat(pos.recouped_amount || 0));
       // Use user provided shares, or calculate default
-      const sharesToSell = customSharesToSell || Math.ceil(remainingPrincipal / currentPrice);
+      const sharesToSell = customSharesToSell || (remainingPrincipal / currentPrice);
       
       if (sharesToSell > parseFloat(pos.total_shares)) {
         throw new Error("Not enough shares to recoup principal.");

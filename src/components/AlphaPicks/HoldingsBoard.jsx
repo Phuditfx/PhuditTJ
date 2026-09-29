@@ -19,7 +19,10 @@ export default function HoldingsBoard() {
   const filteredPositions = positions.filter(p => p.status === activeTab);
 
   const openRecoupModal = (pos) => {
-    const rShares = Math.ceil(pos.remainingPrincipal / pos.currentPrice);
+    let rShares = pos.remainingPrincipal / pos.currentPrice;
+    if (rShares > pos.total_shares) rShares = pos.total_shares;
+    rShares = parseFloat(rShares.toFixed(4)); // Limit to 4 decimal places for cleanliness
+    
     setRecoupConfirmPos(pos);
     setRecoupPrice(pos.currentPrice);
     setRecoupShares(rShares);
