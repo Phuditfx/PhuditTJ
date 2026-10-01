@@ -40,7 +40,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
       {/* Top Navigation & Sub-tab Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/50 dark:border-slate-800/60">
         <div className="flex items-center gap-3">
-          <span className="text-3xl filter drop-shadow-md">🏛️</span>
+          <img src="/alphapicks.png" alt="Alpha Picks" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-blue-500/25 filter drop-shadow-sm flex-shrink-0" />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-700 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent tracking-tight">
@@ -66,7 +66,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <span>🏛️</span>
+            <img src="/alphapicks.png" alt="Alpha Picks" className="w-4 h-4 rounded object-cover inline-block" />
             <span>พอร์ตลงทุน & Moonbag</span>
           </button>
           <button

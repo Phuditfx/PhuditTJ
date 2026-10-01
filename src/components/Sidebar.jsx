@@ -32,7 +32,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const DEFAULT_VIP_ITEMS = [
     { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
     { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
-    { id: 'alphaPicks', icon: '🏛️', label: 'Alpha Picks Inv.' },
+    { id: 'alphaPicks', icon: '/alphapicks.png', label: 'Alpha Picks Inv.' },
     { id: 'betaGrid', icon: 'β', label: t('app.betaGrid', 'Beta Grid Trading').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'swing', icon: '📐', label: 'Swing Calculator' },
     { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
@@ -233,7 +233,11 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
                   : 'text-slate-400 dark:text-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 hover:text-slate-500 dark:hover:text-slate-400'
             }`}
           >
-            <span className="text-lg filter drop-shadow-sm">{item.icon}</span>
+            {typeof item.icon === 'string' && (item.icon.startsWith('/') || item.icon.endsWith('.png')) ? (
+              <img src={item.icon} alt={item.label} className="w-5 h-5 rounded-md object-cover shadow-sm flex-shrink-0" />
+            ) : (
+              <span className="text-lg filter drop-shadow-sm">{item.icon}</span>
+            )}
             <span className="flex-1 text-left font-bold">{item.label}</span>
             {!hasPermission && !isEditMode && (
               <span className="text-[10px] ml-auto opacity-60 text-amber-500">🔒</span>
