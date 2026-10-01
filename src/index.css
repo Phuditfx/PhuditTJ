@@ -54,10 +54,20 @@
   background: #818CF8;
 }
 
+html {
+  font-size: 17px; /* Proportionally scales Google Sans & Noto Sans Thai to match previous Inter sizing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   background-color: #F8FAFC;
   color: #0F172A;
   font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: -0.008em;
   margin: 0;
   padding: 0;
   min-height: 100vh;
