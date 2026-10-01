@@ -26,6 +26,7 @@ export default function BetaGridChartModal({
   const [hoveredZone, setHoveredZone] = useState(null);
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
   const [chartType, setChartType] = useState('candle'); // 'candle' | 'line'
+  const [selectedTF, setSelectedTF] = useState('D'); // '1h' | '4h' | 'D' | 'W' | 'M'
 
   const zones = useMemo(() => profile?.zones || [], [profile?.zones]);
   const plan = profile?.plan || {};
@@ -81,21 +82,34 @@ export default function BetaGridChartModal({
     return padTop + (1 - ratio) * chartH;
   };
 
-  // Generate realistic price action candles that oscillate across the grid zones
+  // Timeframe configurations
+  const TF_CONFIGS = {
+    '1h': { count: 48, speed: 1.5, amp: 0.12, noise: 0.02 },
+    '4h': { count: 40, speed: 1.2, amp: 0.20, noise: 0.025 },
+    'D':  { count: 32, speed: 0.9, amp: 0.28, noise: 0.035 },
+    'W':  { count: 24, speed: 0.6, amp: 0.38, noise: 0.045 },
+    'M':  { count: 18, speed: 0.4, amp: 0.48, noise: 0.055 }
+  };
+
+  // Generate realistic price action candles that oscillate across the grid zones based on chosen TF
   const candles = useMemo(() => {
-    const count = 36;
+    const config = TF_CONFIGS[selectedTF] || TF_CONFIGS['D'];
+    const count = config.count;
     const items = [];
     const base = livePrice || (maxPrice + minPrice) / 2;
-    let current = base * 0.96;
+    let current = base * (1 - (config.amp * 0.2));
 
     for (let i = 0; i < count; i++) {
       const isLast = i === count - 1;
-      const target = isLast && livePrice ? livePrice : base + Math.sin(i / 3) * (priceRange * 0.28);
+      const wave = Math.sin((i / 4) * config.speed) * (priceRange * config.amp);
+      const target = isLast && livePrice ? livePrice : base + wave;
       const open = current;
-      const diff = (target - open) * 0.5 + (Math.sin(i * 1.5) * (priceRange * 0.04));
+      const noiseDiff = (Math.sin(i * 1.7) * (priceRange * config.noise));
+      const diff = (target - open) * 0.55 + noiseDiff;
       const close = isLast && livePrice ? livePrice : open + diff;
-      const high = Math.max(open, close) + Math.abs(Math.sin(i * 2)) * (priceRange * 0.03);
-      const low = Math.min(open, close) - Math.abs(Math.cos(i * 2)) * (priceRange * 0.03);
+      const wickSpread = (priceRange * (0.015 + (config.amp * 0.04)));
+      const high = Math.max(open, close) + Math.abs(Math.sin(i * 2.3)) * wickSpread;
+      const low = Math.min(open, close) - Math.abs(Math.cos(i * 2.1)) * wickSpread;
       current = close;
 
       items.push({
@@ -108,7 +122,7 @@ export default function BetaGridChartModal({
       });
     }
     return items;
-  }, [livePrice, minPrice, maxPrice, priceRange]);
+  }, [livePrice, minPrice, maxPrice, priceRange, selectedTF]);
 
   if (!isOpen) return null;
 
@@ -127,7 +141,7 @@ export default function BetaGridChartModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-black text-white font-mono tracking-tight">
-                  {ticker} Grid Visualizer Chart
+                  {ticker} <span className="text-indigo-400">({selectedTF})</span> Grid Visualizer Chart
                 </h2>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
                   {zones.length} โซน
@@ -144,12 +158,31 @@ export default function BetaGridChartModal({
             </div>
           </div>
 
-          {/* Top Controls */}
-          <div className="flex items-center gap-3">
+          {/* Top Controls: Timeframe + Chart Type + Close */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Timeframe Selector (1h / 4h / D / W / M) */}
+            <div className="flex p-1 rounded-xl bg-slate-800/90 border border-slate-700/70 text-xs font-bold shadow-inner">
+              {['1h', '4h', 'D', 'W', 'M'].map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setSelectedTF(tf)}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-mono font-bold ${
+                    selectedTF === tf
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-1 ring-indigo-400/40'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                  title={`Timeframe ${tf}`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+
+            {/* Candle vs Line Toggle */}
             <div className="flex p-1 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-bold">
               <button
                 onClick={() => setChartType('candle')}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   chartType === 'candle'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -159,7 +192,7 @@ export default function BetaGridChartModal({
               </button>
               <button
                 onClick={() => setChartType('line')}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   chartType === 'line'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'

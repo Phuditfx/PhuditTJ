@@ -123,6 +123,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           <AlphaPicksAnalytics
             userEmail={userEmail}
             selectedPortfolioId={selectedPortfolioId}
+            onSelectPortfolioId={setSelectedPortfolioId}
             portfolios={portfolios}
             requestAlert={requestAlert}
             requestConfirm={requestConfirm}

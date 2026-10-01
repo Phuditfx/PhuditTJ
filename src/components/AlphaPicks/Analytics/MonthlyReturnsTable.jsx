@@ -73,7 +73,7 @@ export default function MonthlyReturnsTable({ monthlyData = {} }) {
               onChange={(e) => setSelectedYearFilter(e.target.value)}
               className="bg-slate-900 border border-slate-700/70 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
             >
-              <option value="ALL">ทุกปี ({availableYears.length})</option>
+              <option value="ALL">All</option>
               {availableYears.map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}

@@ -25,6 +25,7 @@ import MaxDrawdownChart from './MaxDrawdownChart';
 export default function AlphaPicksAnalytics({
   userEmail,
   selectedPortfolioId,
+  onSelectPortfolioId,
   portfolios = [],
   requestAlert,
   requestConfirm
@@ -181,8 +182,30 @@ export default function AlphaPicksAnalytics({
       return history;
     }
 
+    // Fallback: If no transaction logs or snapshots yet, compute real drawdown from held positions
+    if (positions.length > 0) {
+      let totalCost = 0;
+      let totalVal = 0;
+      positions.forEach(p => {
+        const sh = parseFloat(p.total_shares) || 0;
+        const avg = parseFloat(p.average_cost) || 0;
+        const cur = parseFloat(p.current_price) || avg;
+        totalCost += sh * avg;
+        totalVal += sh * cur;
+      });
+
+      if (totalCost > 0) {
+        const peak = Math.max(totalCost, totalVal);
+        const dd = peak > 0 ? ((totalVal - peak) / peak) * 100 : 0;
+        return [
+          { date: 'ต้นทุนเฉลี่ย', value: totalCost, drawdown: 0 },
+          { date: 'มูลค่าปัจจุบัน', value: totalVal, drawdown: parseFloat(dd.toFixed(1)) }
+        ];
+      }
+    }
+
     return [];
-  }, [snapshots, transactions]);
+  }, [snapshots, transactions, positions]);
 
   // 3. Save Current Snapshot to Supabase
   const handleSaveSnapshot = async () => {
@@ -250,8 +273,29 @@ export default function AlphaPicksAnalytics({
           </div>
         </div>
 
-        {/* Month/Year Selector and Action Buttons */}
+        {/* Portfolio, Month/Year Selector and Action Buttons */}
         <div className="flex flex-wrap items-center gap-3 self-end md:self-auto">
+          {/* Portfolio Selector (Alpha Picks) */}
+          {portfolios && portfolios.length > 0 && (
+            <div className="flex items-center gap-2 p-1 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold shadow-inner">
+              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                <Layers size={13} className="text-cyan-400" />
+                <span className="hidden sm:inline">พอร์ตลงทุน:</span>
+              </span>
+              <select
+                value={selectedPortfolioId || (portfolios[0] ? portfolios[0].id : '')}
+                onChange={(e) => onSelectPortfolioId && onSelectPortfolioId(e.target.value)}
+                className="bg-transparent text-emerald-400 font-bold text-xs py-1 focus:outline-none cursor-pointer max-w-[170px] truncate"
+              >
+                {portfolios.map(p => (
+                  <option key={p.id} value={p.id} className="bg-slate-900 text-white font-medium">
+                    {p.name} {p.is_default ? '(หลัก)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Month/Year selector */}
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold">
             <Calendar size={13} className="text-slate-400 ml-1.5" />
