@@ -47,6 +47,15 @@ export default function BetaGridTrading({
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [modalEditProfile, setModalEditProfile] = useState(null);
 
+  // Accounting Method: 'NON_FIFO' | 'FIFO'
+  const [accountingMode, setAccountingMode] = useState('NON_FIFO');
+
+  useEffect(() => {
+    if (currentProfile?.accountingMode) {
+      setAccountingMode(currentProfile.accountingMode);
+    }
+  }, [currentProfile?.accountingMode]);
+
   // 1. Initial Load of Profiles & History
   useEffect(() => {
     let isMounted = true;
@@ -151,8 +160,18 @@ export default function BetaGridTrading({
   const handleHarvestZone = (zoneToHarvest) => {
     if (!currentProfile) return;
 
-    const profitDollars = (zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) * zoneToHarvest.sharesAllocated;
-    const profitPercent = ((zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) / zoneToHarvest.priceLevel) * 100;
+    // 1. Non-FIFO Discrete Zone Calculation
+    const discreteProfitDollars = (zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) * zoneToHarvest.sharesAllocated;
+    const discreteProfitPercent = ((zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) / zoneToHarvest.priceLevel) * 100;
+
+    // 2. FIFO Broker Calculation (earliest filled zone by timestamp or price)
+    const filledLots = (currentProfile.zones || [])
+      .filter(z => z.status === 'FILLED')
+      .sort((a, b) => new Date(a.filledAt || 0) - new Date(b.filledAt || 0));
+    const fifoLot = filledLots[0] || zoneToHarvest;
+    const fifoCostBasis = fifoLot.priceLevel;
+    const fifoProfitDollars = (zoneToHarvest.targetSellPrice - fifoCostBasis) * zoneToHarvest.sharesAllocated;
+    const fifoProfitPercent = ((zoneToHarvest.targetSellPrice - fifoCostBasis) / fifoCostBasis) * 100;
 
     // Reset zone to EMPTY
     const updatedZones = currentProfile.zones.map(z => {
@@ -167,7 +186,7 @@ export default function BetaGridTrading({
       return z;
     });
 
-    // Record in History
+    // Record in History with Dual Non-FIFO & FIFO tracking
     const historyItem = {
       id: `cycle_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       profileId: currentProfile.id,
@@ -178,8 +197,14 @@ export default function BetaGridTrading({
       priceLevel: zoneToHarvest.priceLevel,
       targetSellPrice: zoneToHarvest.targetSellPrice,
       sharesAllocated: zoneToHarvest.sharesAllocated,
-      profitDollars,
-      profitPercent,
+      // Discrete Non-FIFO
+      profitDollars: discreteProfitDollars,
+      profitPercent: discreteProfitPercent,
+      // Broker FIFO
+      fifoPriceLevel: fifoCostBasis,
+      fifoProfitDollars: fifoProfitDollars,
+      fifoProfitPercent: fifoProfitPercent,
+      accountingMode: accountingMode,
       buyTimestamp: zoneToHarvest.filledAt || new Date().toISOString(),
       sellTimestamp: new Date().toISOString()
     };
@@ -191,8 +216,15 @@ export default function BetaGridTrading({
     const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
     persistProfiles(updatedProfiles);
 
+    const activeProfit = accountingMode === 'NON_FIFO' ? discreteProfitDollars : fifoProfitDollars;
+    const activePct = accountingMode === 'NON_FIFO' ? discreteProfitPercent : fifoProfitPercent;
+    const isFakeLoss = accountingMode === 'FIFO' && activeProfit < 0;
+
     if (requestAlert) {
-      requestAlert(`💰 ปิดรอบทำกำไร (Non-FIFO Harvest) สำเร็จ!`, `เก็บกำไรกระแสเงินสด +$${profitDollars.toFixed(2)} (+${profitPercent.toFixed(1)}%) จากโซน #${zoneToHarvest.levelIndex} และรีเซ็ตโซนพร้อมรับรอบถัดไปแล้ว`);
+      requestAlert(
+        `💰 ปิดรอบทำกำไร (${accountingMode === 'NON_FIFO' ? 'Non-FIFO' : 'FIFO'} Harvest) สำเร็จ!`,
+        `${isFakeLoss ? '⚠️ โบรกเกอร์รายงานขาดทุน FIFO: ' : 'เก็บกระแสเงินสด: '} ${activeProfit >= 0 ? '+' : ''}$${activeProfit.toFixed(2)} (${activePct >= 0 ? '+' : ''}${activePct.toFixed(1)}%) (กำไรจริงตามโซนคือ +$${discreteProfitDollars.toFixed(2)}) และรีเซ็ตโซนพร้อมรับรอบถัดไปแล้ว`
+      );
     }
   };
 
@@ -427,9 +459,12 @@ export default function BetaGridTrading({
     }
   };
 
-  // Calculate Realized Profit for Current Profile
+  // Calculate Realized Profit for Current Profile based on accountingMode
   const currentProfileHistory = cycleHistory.filter(h => h.profileId === selectedProfileId);
-  const totalRealizedProfit = currentProfileHistory.reduce((sum, h) => sum + (parseFloat(h.profitDollars) || 0), 0);
+  const totalRealizedProfitNonFIFO = currentProfileHistory.reduce((sum, h) => sum + (parseFloat(h.profitDollars) || 0), 0);
+  const totalRealizedProfitFIFO = currentProfileHistory.reduce((sum, h) => sum + (parseFloat(h.fifoProfitDollars !== undefined ? h.fifoProfitDollars : h.profitDollars) || 0), 0);
+  const totalRealizedProfit = accountingMode === 'NON_FIFO' ? totalRealizedProfitNonFIFO : totalRealizedProfitFIFO;
+  const comparisonProfit = accountingMode === 'NON_FIFO' ? totalRealizedProfitFIFO : totalRealizedProfitNonFIFO;
 
   if (!isVip) {
     return (
@@ -577,7 +612,12 @@ export default function BetaGridTrading({
         autoRefresh={autoRefresh}
         setAutoRefresh={setAutoRefresh}
         totalRealizedProfit={totalRealizedProfit}
+        totalRealizedProfitNonFIFO={totalRealizedProfitNonFIFO}
+        totalRealizedProfitFIFO={totalRealizedProfitFIFO}
+        comparisonProfit={comparisonProfit}
         completedCyclesCount={currentProfileHistory.length}
+        accountingMode={accountingMode}
+        setAccountingMode={setAccountingMode}
         onExpandUpperZone={handleExpandUpperZone}
         onExpandLowerZone={handleExpandLowerZone}
         onExpandToLivePrice={handleExpandToLivePrice}
@@ -588,6 +628,7 @@ export default function BetaGridTrading({
         <BetaGridZoneTable
           zones={currentProfile.zones || []}
           livePrice={currentLivePrice}
+          accountingMode={accountingMode}
           onFillZone={handleFillZone}
           onHarvestZone={handleHarvestZone}
           onUpdateZoneShares={handleUpdateZoneShares}
@@ -601,6 +642,10 @@ export default function BetaGridTrading({
       {activeTab === 'history' && (
         <BetaGridCycleHistory
           history={cycleHistory}
+          accountingMode={accountingMode}
+          setAccountingMode={setAccountingMode}
+          totalRealizedProfitNonFIFO={totalRealizedProfitNonFIFO}
+          totalRealizedProfitFIFO={totalRealizedProfitFIFO}
           onDeleteHistoryItem={(id) => {
             const updated = cycleHistory.filter(h => h.id !== id);
             persistHistory(updated);

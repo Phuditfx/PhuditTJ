@@ -8,11 +8,18 @@ import {
   Zap, 
   Search,
   CheckCircle,
-  Clock
+  Clock,
+  ArrowRightLeft,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 
 export default function BetaGridCycleHistory({
   history = [],
+  accountingMode = 'NON_FIFO',
+  setAccountingMode,
+  totalRealizedProfitNonFIFO = 0,
+  totalRealizedProfitFIFO = 0,
   onDeleteHistoryItem,
   onClearAllHistory,
   requestConfirm
@@ -33,9 +40,16 @@ export default function BetaGridCycleHistory({
   });
 
   // Analytics on filtered history
-  const totalProfit = filteredHistory.reduce((sum, h) => sum + (parseFloat(h.profitDollars) || 0), 0);
+  const totalNonFIFOProfit = filteredHistory.reduce((sum, h) => sum + (parseFloat(h.profitDollars) || 0), 0);
+  const totalFIFOProfit = filteredHistory.reduce((sum, h) => {
+    const fifoVal = h.fifoProfitDollars !== undefined ? parseFloat(h.fifoProfitDollars) : parseFloat(h.profitDollars);
+    return sum + (fifoVal || 0);
+  }, 0);
+
+  const activeTotalProfit = accountingMode === 'NON_FIFO' ? totalNonFIFOProfit : totalFIFOProfit;
+  const profitDifference = totalNonFIFOProfit - totalFIFOProfit;
   const totalCapitalTurnover = filteredHistory.reduce((sum, h) => sum + ((parseFloat(h.priceLevel) || 0) * (parseInt(h.sharesAllocated, 10) || 0)), 0);
-  const avgProfit = filteredHistory.length > 0 ? totalProfit / filteredHistory.length : 0;
+  const avgProfit = filteredHistory.length > 0 ? activeTotalProfit / filteredHistory.length : 0;
 
   const handleDeleteItem = (id) => {
     const doDelete = () => onDeleteHistoryItem(id);
@@ -57,24 +71,50 @@ export default function BetaGridCycleHistory({
 
   const exportCSV = () => {
     if (filteredHistory.length === 0) return;
-    const headers = ['Date', 'Ticker', 'Strategy', 'Buy Price', 'Sell Price', 'Shares', 'Capital Used', 'Profit Dollars', 'Profit Percent'];
-    const rows = filteredHistory.map(h => [
-      `"${new Date(h.sellTimestamp).toLocaleString()}"`,
-      `"${h.ticker}"`,
-      `"${h.profileName || ''}"`,
-      h.priceLevel,
-      h.targetSellPrice,
-      h.sharesAllocated,
-      (h.priceLevel * h.sharesAllocated).toFixed(2),
-      h.profitDollars.toFixed(2),
-      h.profitPercent.toFixed(2)
-    ]);
+    const headers = [
+      'Date',
+      'Ticker',
+      'Strategy',
+      'Discrete Buy Price',
+      'Sell Price',
+      'Shares',
+      'Capital Used',
+      'Non-FIFO Profit ($)',
+      'Non-FIFO Return (%)',
+      'Broker FIFO Cost ($)',
+      'Broker FIFO Profit ($)',
+      'Broker FIFO Return (%)',
+      'Accounting Discrepancy ($)'
+    ];
+    const rows = filteredHistory.map(h => {
+      const nonFifo = parseFloat(h.profitDollars) || 0;
+      const fifoProfit = h.fifoProfitDollars !== undefined ? parseFloat(h.fifoProfitDollars) : nonFifo;
+      const fifoCost = h.fifoPriceLevel !== undefined ? parseFloat(h.fifoPriceLevel) : h.priceLevel;
+      const fifoReturn = h.fifoProfitPercent !== undefined ? parseFloat(h.fifoProfitPercent) : (parseFloat(h.profitPercent) || 0);
+      const diff = nonFifo - fifoProfit;
+
+      return [
+        `"${new Date(h.sellTimestamp).toLocaleString()}"`,
+        `"${h.ticker}"`,
+        `"${h.profileName || ''}"`,
+        h.priceLevel,
+        h.targetSellPrice,
+        h.sharesAllocated,
+        (h.priceLevel * h.sharesAllocated).toFixed(2),
+        nonFifo.toFixed(2),
+        (parseFloat(h.profitPercent) || 0).toFixed(2),
+        fifoCost.toFixed(2),
+        fifoProfit.toFixed(2),
+        fifoReturn.toFixed(2),
+        diff.toFixed(2)
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `beta_grid_cycles_${Date.now()}.csv`);
+    link.setAttribute('download', `beta_grid_cycles_${accountingMode}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -87,7 +127,7 @@ export default function BetaGridCycleHistory({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200/60 dark:border-slate-800/80">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
               <TrendingUp className="w-5 h-5" />
             </span>
             <h3 className="text-lg font-black text-slate-900 dark:text-white">
@@ -95,12 +135,42 @@ export default function BetaGridCycleHistory({
             </h3>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            ทุกรอบคำนวณกำไรตามจริงแบบ Discrete Zone (Non-FIFO) ไม่ขึ้นกับลำดับซื้อของโบรกเกอร์
+            รองรับการเปรียบเทียบกำไรจริงแบบ Discrete Zone (Non-FIFO) กับยอดบันทึกภาษี/โบรกเกอร์ (FIFO)
           </p>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        {/* Action Controls & Accounting Switcher */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+          {/* Quick Toggle: Non-FIFO vs FIFO */}
+          {setAccountingMode && (
+            <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-black shadow-inner">
+              <button
+                onClick={() => setAccountingMode('NON_FIFO')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  accountingMode === 'NON_FIFO'
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-1 ring-indigo-400/30'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="โหมด Non-FIFO: คำนวณกำไรแยกอิสระเฉพาะไม้ของโซนนั้นๆ (Discrete Zone)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Non-FIFO</span>
+              </button>
+              <button
+                onClick={() => setAccountingMode('FIFO')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  accountingMode === 'FIFO'
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/30'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="โหมด FIFO: คำนวณกำไรตามต้นทุนไม้แรกสุดเหมือนบัญชีโบรกเกอร์ทั่วไป"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span>FIFO Broker</span>
+              </button>
+            </div>
+          )}
+
           {filteredHistory.length > 0 && (
             <button
               onClick={exportCSV}
@@ -122,41 +192,80 @@ export default function BetaGridCycleHistory({
         </div>
       </div>
 
-      {/* 3 Metric Cards for History */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20 flex flex-col justify-between">
-          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-            Total Realized Cash Flow
-          </span>
-          <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-            +${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {/* 4 Metric Cards: Dual Accounting Comparison */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Non-FIFO Realized Cash Flow */}
+        <div className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+          accountingMode === 'NON_FIFO'
+            ? 'bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/40 ring-1 ring-emerald-500/30'
+            : 'bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-500/20'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+              Non-FIFO Cash Flow
+            </span>
+            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300">
+              Discrete
+            </span>
+          </div>
+          <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-2">
+            +${totalNonFIFOProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <span className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-            จาก {filteredHistory.length} รอบที่ปิดทำกำไรสำเร็จ
+            กำไรแท้จริงตามรอบ ({filteredHistory.length} รอบ)
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-500/20 flex flex-col justify-between">
-          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-            Average Profit / Cycle
+        {/* Card 2: FIFO Broker Statement P&L */}
+        <div className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+          accountingMode === 'FIFO'
+            ? 'bg-amber-500/10 dark:bg-amber-950/30 border-amber-500/40 ring-1 ring-amber-500/30'
+            : 'bg-slate-50/60 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800/60'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+              Broker Statement (FIFO)
+            </span>
+            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+              Statement
+            </span>
+          </div>
+          <div className={`text-2xl font-black font-mono mt-2 ${
+            totalFIFOProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+          }`}>
+            {totalFIFOProfit >= 0 ? '+' : ''}${totalFIFOProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            ยอดที่โบรกเกอร์รายงานตามลำดับซื้อก่อน
           </span>
-          <div className="text-2xl font-black font-mono text-indigo-600 dark:text-indigo-400 mt-1">
-            +${avgProfit.toFixed(2)}
+        </div>
+
+        {/* Card 3: FIFO Discrepancy / Drag */}
+        <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-500/20 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+              FIFO Discrepancy
+            </span>
+            <ArrowRightLeft size={13} className="text-indigo-400" />
+          </div>
+          <div className="text-2xl font-black font-mono text-indigo-600 dark:text-indigo-400 mt-2">
+            {profitDifference >= 0 ? '+' : ''}${profitDifference.toFixed(2)}
           </div>
           <span className="text-[11px] text-indigo-600/70 dark:text-indigo-400/70 mt-1">
-            กำไรเฉลี่ยต่อหนึ่งไม้ที่หมุนรอบ
+            {profitDifference > 0 ? '💡 เงินสดจริงมากกว่าที่โบรกโชว์' : 'ความต่างทางบัญชี FIFO'}
           </span>
         </div>
 
+        {/* Card 4: Capital Turnover & Average */}
         <div className="p-4 rounded-2xl bg-slate-100/60 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800/60 flex flex-col justify-between">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Capital Turnover
+            Turnover & Avg/Cycle
           </span>
-          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white mt-1">
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white mt-2">
             ${totalCapitalTurnover.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <span className="text-[11px] text-slate-400 mt-1">
-            เงินทุนหมุนเวียนที่ดึงกลับพร้อมกำไร
+            เฉลี่ย +${avgProfit.toFixed(2)} / รอบ ({accountingMode})
           </span>
         </div>
       </div>
@@ -210,17 +319,31 @@ export default function BetaGridCycleHistory({
             <tr className="border-b border-slate-200/60 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/50 text-slate-400 text-[11px] font-black uppercase tracking-wider">
               <th className="py-3 px-4">Date / Time</th>
               <th className="py-3 px-3">Ticker / Strategy</th>
-              <th className="py-3 px-3">Zone (Buy → Sell)</th>
+              <th className="py-3 px-3">Discrete Zone</th>
               <th className="py-3 px-3">Shares</th>
-              <th className="py-3 px-3">Capital Deployed</th>
-              <th className="py-3 px-3">Discrete Profit</th>
-              <th className="py-3 px-3">Return</th>
+              <th className="py-3 px-3">Capital</th>
+              <th className="py-3 px-3">
+                <span className={accountingMode === 'NON_FIFO' ? 'text-indigo-600 dark:text-indigo-400 underline decoration-2' : ''}>
+                  Discrete Profit (Non-FIFO)
+                </span>
+              </th>
+              <th className="py-3 px-3">
+                <span className={accountingMode === 'FIFO' ? 'text-amber-600 dark:text-amber-400 underline decoration-2' : ''}>
+                  Broker FIFO Profit
+                </span>
+              </th>
               <th className="py-3 px-4 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
             {filteredHistory.map((item) => {
               const capital = item.priceLevel * item.sharesAllocated;
+              const nonFifoProfit = parseFloat(item.profitDollars) || 0;
+              const nonFifoPct = parseFloat(item.profitPercent) || 0;
+              const fifoProfit = item.fifoProfitDollars !== undefined ? parseFloat(item.fifoProfitDollars) : nonFifoProfit;
+              const fifoPct = item.fifoProfitPercent !== undefined ? parseFloat(item.fifoProfitPercent) : nonFifoPct;
+              const isFakeLoss = fifoProfit < 0;
+
               return (
                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">
@@ -257,12 +380,35 @@ export default function BetaGridCycleHistory({
                     ${capital.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
-                  <td className="py-3 px-3 font-mono font-black text-emerald-600 dark:text-emerald-400">
-                    +${item.profitDollars.toFixed(2)}
+                  {/* Discrete Non-FIFO Profit */}
+                  <td className={`py-3 px-3 font-mono ${
+                    accountingMode === 'NON_FIFO' ? 'bg-indigo-50/30 dark:bg-indigo-950/20' : ''
+                  }`}>
+                    <div className="font-black text-emerald-600 dark:text-emerald-400">
+                      +${nonFifoProfit.toFixed(2)}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-500">
+                      +{nonFifoPct.toFixed(1)}% (ตามไม้)
+                    </div>
                   </td>
 
-                  <td className="py-3 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    +{item.profitPercent.toFixed(1)}%
+                  {/* Broker FIFO Profit */}
+                  <td className={`py-3 px-3 font-mono ${
+                    accountingMode === 'FIFO' ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
+                  }`}>
+                    <div className={`font-black ${fifoProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                      {fifoProfit >= 0 ? '+' : ''}${fifoProfit.toFixed(2)}
+                    </div>
+                    {isFakeLoss ? (
+                      <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.2 rounded mt-0.5">
+                        <AlertTriangle size={10} />
+                        <span>Fake Loss ({fifoPct.toFixed(1)}%)</span>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-slate-400">
+                        {fifoPct >= 0 ? '+' : ''}{fifoPct.toFixed(1)}% (FIFO)
+                      </div>
+                    )}
                   </td>
 
                   <td className="py-3 px-4 text-right">
@@ -285,7 +431,7 @@ export default function BetaGridCycleHistory({
         <div className="py-12 text-center text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center gap-2">
           <Clock size={32} className="opacity-30" />
           <p className="text-sm font-semibold">ยังไม่มีประวัติการปิดรอบทำกำไร</p>
-          <p className="text-xs">เมื่อคุณกด "ขายทำกำไร" ในโซนที่มีหุ้น ข้อมูลรอบจะถูกบันทึกที่นี่โดยอัตโนมัติ</p>
+          <p className="text-xs">เมื่อคุณกด "ขายทำกำไร" ในโซนที่มีหุ้น ข้อมูลรอบจะถูกบันทึกที่นี่พร้อมทั้งคำนวณแบบ Non-FIFO และ FIFO อัตโนมัติ</p>
         </div>
       )}
 

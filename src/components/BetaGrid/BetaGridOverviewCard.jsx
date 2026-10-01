@@ -10,7 +10,12 @@ export default function BetaGridOverviewCard({
   autoRefresh,
   setAutoRefresh,
   totalRealizedProfit,
+  totalRealizedProfitNonFIFO = 0,
+  totalRealizedProfitFIFO = 0,
+  comparisonProfit = 0,
   completedCyclesCount,
+  accountingMode = 'NON_FIFO',
+  setAccountingMode,
   onExpandUpperZone,
   onExpandLowerZone,
   onExpandToLivePrice
@@ -70,12 +75,16 @@ export default function BetaGridOverviewCard({
             <span className="text-2xl font-black font-serif italic text-white drop-shadow-md leading-none">β</span>
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {profile.assetTicker}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-500/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                Non-FIFO Discrete Grid
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${
+                accountingMode === 'NON_FIFO'
+                  ? 'bg-indigo-500/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+                  : 'bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+              }`}>
+                {accountingMode === 'NON_FIFO' ? 'Non-FIFO Discrete' : 'FIFO Broker Mode'}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
                 • {profile.name}
@@ -90,8 +99,39 @@ export default function BetaGridOverviewCard({
           </div>
         </div>
 
-        {/* Live Price Display & Refresh Controls */}
-        <div className="flex items-center gap-4 self-end md:self-auto">
+        {/* Live Price & Accounting Mode Switcher Controls */}
+        <div className="flex flex-wrap items-center gap-3.5 self-end md:self-auto">
+          
+          {/* Quick Toggle: Non-FIFO vs FIFO */}
+          {setAccountingMode && (
+            <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-black shadow-inner">
+              <button
+                onClick={() => setAccountingMode('NON_FIFO')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  accountingMode === 'NON_FIFO'
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-1 ring-indigo-400/30'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="โหมด Non-FIFO: คำนวณกำไรแยกอิสระเฉพาะไม้ของโซนนั้นๆ (Discrete Zone)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Non-FIFO</span>
+              </button>
+              <button
+                onClick={() => setAccountingMode('FIFO')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  accountingMode === 'FIFO'
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/30'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="โหมด FIFO: คำนวณกำไรตามไม้ที่ซื้อเข้ามาก่อนหลังตามรายงานของโบรกเกอร์"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span>FIFO (โบรกเกอร์)</span>
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col text-right">
             <div className="flex items-center justify-end gap-1.5">
               <span className="relative flex h-2 w-2">
@@ -231,18 +271,30 @@ export default function BetaGridOverviewCard({
         {/* Metric 2: Realized Cash Flow (Profit Collected) */}
         <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 shadow-lg shadow-slate-200/10 dark:shadow-black/20 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider">Realized Cash Flow</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-wider">
+              {accountingMode === 'NON_FIFO' ? 'Realized Cash Flow' : 'FIFO Broker Realized'}
+            </span>
+            <div className={`p-2 rounded-xl ${
+              accountingMode === 'NON_FIFO'
+                ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
+                : 'bg-amber-500/10 text-amber-500 dark:text-amber-400'
+            }`}>
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              +${totalRealizedProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className={`text-xl sm:text-2xl font-black font-mono ${
+              totalRealizedProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+            }`}>
+              {totalRealizedProfit >= 0 ? '+' : ''}${totalRealizedProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              <span>{completedCyclesCount} Completed Cycles</span>
-              <span className="text-emerald-500 font-bold">100% Win Rate</span>
+              <span>{completedCyclesCount} รอบปิดแล้ว</span>
+              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                {accountingMode === 'NON_FIFO'
+                  ? `FIFO: ${comparisonProfit >= 0 ? '+' : ''}$${comparisonProfit.toFixed(0)}`
+                  : `Non-FIFO: +$${comparisonProfit.toFixed(0)}`}
+              </span>
             </div>
           </div>
         </div>

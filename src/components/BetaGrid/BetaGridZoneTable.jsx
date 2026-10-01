@@ -171,9 +171,13 @@ export default function BetaGridZoneTable({
               <th className="py-3 px-3">Target Sell (เป้าขาย)</th>
               <th className="py-3 px-3">Shares (หุ้น)</th>
               <th className="py-3 px-3">Capital (เงินทุน)</th>
-              <th className="py-3 px-3">Discrete Profit / ไม้</th>
+              <th className="py-3 px-3">
+                {accountingMode === 'NON_FIFO' ? 'Discrete Profit / ไม้' : 'FIFO Broker Profit'}
+              </th>
               <th className="py-3 px-3">Live Status & Unrealized P&L</th>
-              <th className="py-3 px-4 text-right">Non-FIFO Action</th>
+              <th className="py-3 px-4 text-right">
+                {accountingMode === 'NON_FIFO' ? 'Non-FIFO Action' : 'FIFO Action'}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -182,6 +186,13 @@ export default function BetaGridZoneTable({
               const isFilled = zone.status === 'FILLED';
               const discreteProfitDollars = (zone.targetSellPrice - zone.priceLevel) * zone.sharesAllocated;
               const discreteProfitPct = ((zone.targetSellPrice - zone.priceLevel) / zone.priceLevel) * 100;
+
+              // FIFO comparison
+              const filledLots = zones.filter(z => z.status === 'FILLED').sort((a, b) => new Date(a.filledAt || 0) - new Date(b.filledAt || 0));
+              const fifoLot = filledLots[0] || zone;
+              const fifoCostBasis = fifoLot.priceLevel;
+              const fifoProfitDollars = (zone.targetSellPrice - fifoCostBasis) * zone.sharesAllocated;
+              const fifoProfitPct = ((zone.targetSellPrice - fifoCostBasis) / fifoCostBasis) * 100;
 
               // Unrealized PnL when FILLED
               const unrealizedDollars = livePrice ? (livePrice - zone.priceLevel) * zone.sharesAllocated : null;
@@ -283,14 +294,27 @@ export default function BetaGridZoneTable({
                     ${(zone.priceLevel * zone.sharesAllocated).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
-                  {/* Column 6: Discrete Non-FIFO Profit per Cycle */}
+                  {/* Column 6: Profit per Cycle (Non-FIFO vs FIFO) */}
                   <td className="py-3.5 px-3">
-                    <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      +${discreteProfitDollars.toFixed(2)}
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {(discreteProfitPct).toFixed(1)}% ต่อรอบ
-                    </span>
+                    {accountingMode === 'NON_FIFO' ? (
+                      <div>
+                        <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          +${discreteProfitDollars.toFixed(2)}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {(discreteProfitPct).toFixed(1)}% ต่อรอบ
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className={`font-mono font-bold ${fifoProfitDollars >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {fifoProfitDollars >= 0 ? '+' : ''}${fifoProfitDollars.toFixed(2)}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono block">
+                          จริง: +${discreteProfitDollars.toFixed(0)}
+                        </span>
+                      </div>
+                    )}
                   </td>
 
                   {/* Column 7: Status & Unrealized PnL */}
@@ -326,11 +350,17 @@ export default function BetaGridZoneTable({
                     ) : (
                       <button
                         onClick={() => onHarvestZone(zone)}
-                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-black shadow-md shadow-emerald-500/20 transition-all cursor-pointer inline-flex items-center gap-1.5 ring-1 ring-emerald-400/30"
-                        title="ขายทำกำไรเป้าหมายรอบนี้ (Non-FIFO Discrete Profit) และรีเซ็ตโซน"
+                        className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-black shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                          accountingMode === 'FIFO' && fifoProfitDollars < 0
+                            ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-rose-500/20'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-emerald-500/20 ring-1 ring-emerald-400/30'
+                        }`}
+                        title={accountingMode === 'FIFO' ? `FIFO Profit: $${fifoProfitDollars.toFixed(2)} (กำไรจริงตามโซน: +$${discreteProfitDollars.toFixed(2)})` : 'ขายทำกำไรเป้าหมายรอบนี้ (Non-FIFO Discrete Profit) และรีเซ็ตโซน'}
                       >
                         <DollarSign size={13} />
-                        <span>ขายทำกำไร (+${discreteProfitDollars.toFixed(0)})</span>
+                        <span>
+                          ขาย ({accountingMode === 'NON_FIFO' ? `+$${discreteProfitDollars.toFixed(0)}` : `${fifoProfitDollars >= 0 ? '+' : ''}$${fifoProfitDollars.toFixed(0)}`})
+                        </span>
                       </button>
                     )}
                   </td>

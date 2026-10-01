@@ -78,6 +78,7 @@ export function createDefaultProfile(email) {
     assetTicker: 'TQQQ',
     plan: defaultPlan,
     zones,
+    accountingMode: 'NON_FIFO', // 'NON_FIFO' | 'FIFO'
     initialCashReserve: 5000,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

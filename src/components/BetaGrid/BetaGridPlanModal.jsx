@@ -23,11 +23,15 @@ export default function BetaGridPlanModal({
   const [actionZoneShares, setActionZoneShares] = useState('10');
   const [safetyZoneShares, setSafetyZoneShares] = useState('20');
 
+  // Accounting Method (Non-FIFO vs FIFO)
+  const [accountingMode, setAccountingMode] = useState('NON_FIFO');
+
   useEffect(() => {
     if (existingProfile) {
       setName(existingProfile.name || '');
       setAssetTicker(existingProfile.assetTicker || 'TQQQ');
       setInitialCashReserve(String(existingProfile.initialCashReserve || 5000));
+      setAccountingMode(existingProfile.accountingMode || 'NON_FIFO');
       if (existingProfile.plan) {
         setUpperPrice(String(existingProfile.plan.upperPrice ?? '36.00'));
         setLowerPrice(String(existingProfile.plan.lowerPrice ?? '24.00'));
@@ -47,6 +51,7 @@ export default function BetaGridPlanModal({
       setActionZoneShares('10');
       setSafetyZoneShares('20');
       setInitialCashReserve('5000');
+      setAccountingMode('NON_FIFO');
     }
   }, [existingProfile, isOpen]);
 
@@ -133,6 +138,7 @@ export default function BetaGridPlanModal({
       name: name.trim() || `${assetTicker.toUpperCase()} Grid`,
       assetTicker: assetTicker.trim().toUpperCase(),
       initialCashReserve: parseFloat(initialCashReserve) || 0,
+      accountingMode,
       plan,
       zones: finalZones
     });
@@ -209,6 +215,69 @@ export default function BetaGridPlanModal({
                 placeholder="5000"
                 className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+            </div>
+          </div>
+
+          {/* Section: Accounting Method (Non-FIFO vs FIFO) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/5 via-slate-500/5 to-purple-500/5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">⚖️</span>
+                <span className="text-sm font-black text-slate-900 dark:text-white">
+                  ประเภทการคำนวณกำไร (Accounting Method)
+                </span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 uppercase tracking-wider">
+                {accountingMode === 'NON_FIFO' ? 'Discrete Zone' : 'Broker FIFO'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option 1: Non-FIFO */}
+              <div
+                onClick={() => setAccountingMode('NON_FIFO')}
+                className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col gap-1.5 ${
+                  accountingMode === 'NON_FIFO'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 dark:border-indigo-500 shadow-md shadow-indigo-500/10'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Non-FIFO (Discrete Zone)
+                  </span>
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    แนะนำสำหรับ Grid
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                  คิดกำไรแยกอิสระรายไม้ตามโซน (Target Sell - Zone Buy) ป้องกันปัญหาขาดทุนหลอก (Fake Losses) ในช่วงตลาดขาลง
+                </p>
+              </div>
+
+              {/* Option 2: FIFO */}
+              <div
+                onClick={() => setAccountingMode('FIFO')}
+                className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col gap-1.5 ${
+                  accountingMode === 'FIFO'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 dark:border-indigo-500 shadow-md shadow-indigo-500/10'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    FIFO (First-In, First-Out)
+                  </span>
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    ตามโบรกเกอร์
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                  คิดกำไรแบบเข้าก่อนออกก่อน เทียบกับไม้แรกสุดที่ซื้อเข้ามา เพื่อให้ตัวเลขตรงกับรายงานของโบรกเกอร์
+                </p>
+              </div>
             </div>
           </div>
 
