@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   TrendingUp, 
@@ -12,8 +12,10 @@ import {
   Minimize2,
   Activity,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
+import { fetchHistoricalCandles } from '../../api/priceApi';
 
 export default function BetaGridChartModal({
   isOpen,
@@ -26,7 +28,9 @@ export default function BetaGridChartModal({
   const [hoveredZone, setHoveredZone] = useState(null);
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
   const [chartType, setChartType] = useState('candle'); // 'candle' | 'line'
-  const [selectedTF, setSelectedTF] = useState('D'); // '1h' | '4h' | 'D' | 'W' | 'M'
+  const [selectedTF, setSelectedTF] = useState('1h'); // '1h' | '4h' | 'D' | 'W' | 'M'
+  const [realCandles, setRealCandles] = useState([]);
+  const [isLoadingCandles, setIsLoadingCandles] = useState(false);
 
   const zones = useMemo(() => profile?.zones || [], [profile?.zones]);
   const plan = profile?.plan || {};
@@ -35,15 +39,61 @@ export default function BetaGridChartModal({
   const filledCount = zones.filter(z => z.status === 'FILLED').length;
   const emptyCount = zones.filter(z => z.status === 'EMPTY').length;
 
-  // 1. Generate realistic price action candles anchored backward from livePrice
+  // Fetch real market historical candles whenever modal is opened or TF/ticker changes
+  useEffect(() => {
+    if (!isOpen || !ticker) return;
+    let isMounted = true;
+    setIsLoadingCandles(true);
+
+    fetchHistoricalCandles(ticker, selectedTF)
+      .then(data => {
+        if (isMounted) {
+          if (data && data.length > 0) {
+            setRealCandles(data);
+          } else {
+            setRealCandles([]);
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to load real market candles:', err);
+        if (isMounted) setRealCandles([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingCandles(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [isOpen, ticker, selectedTF]);
+
+  // 1. Process candles: Use 100% REAL market candles from Yahoo/Webull
   const candles = useMemo(() => {
+    if (realCandles && realCandles.length > 0) {
+      return realCandles.map((c, idx) => {
+        const isLast = idx === realCandles.length - 1;
+        const close = isLast && livePrice ? livePrice : c.close;
+        const high = Math.max(c.high, close);
+        const low = Math.min(c.low, close);
+        return {
+          index: idx,
+          time: c.time,
+          open: c.open,
+          close: close,
+          high: high,
+          low: low,
+          isUp: close >= c.open
+        };
+      });
+    }
+
+    // Fallback: If offline or API unavailable, generate realistic walk
     const config = {
-      '1h': { count: 42, stepPct: 0.004, waveFreq: 0.16 },
-      '4h': { count: 36, stepPct: 0.008, waveFreq: 0.13 },
-      'D':  { count: 32, stepPct: 0.015, waveFreq: 0.10 },
-      'W':  { count: 24, stepPct: 0.026, waveFreq: 0.08 },
-      'M':  { count: 18, stepPct: 0.042, waveFreq: 0.06 }
-    }[selectedTF] || { count: 32, stepPct: 0.015, waveFreq: 0.10 };
+      '1h': { count: 36, stepPct: 0.003, waveFreq: 0.12 },
+      '4h': { count: 32, stepPct: 0.006, waveFreq: 0.10 },
+      'D':  { count: 30, stepPct: 0.012, waveFreq: 0.08 },
+      'W':  { count: 24, stepPct: 0.022, waveFreq: 0.06 },
+      'M':  { count: 18, stepPct: 0.038, waveFreq: 0.05 }
+    }[selectedTF] || { count: 32, stepPct: 0.012, waveFreq: 0.08 };
 
     const count = config.count;
     const currentPrice = livePrice || (plan.upperPrice ? (plan.upperPrice + plan.lowerPrice) / 2 : 30);
@@ -51,7 +101,6 @@ export default function BetaGridChartModal({
     const maxBound = plan.upperPrice ? plan.upperPrice + step * 1.5 : currentPrice * 1.35;
     const minBound = plan.lowerPrice ? Math.max(0.5, plan.lowerPrice - step * 1.5) : currentPrice * 0.65;
 
-    // Walk backwards from currentPrice
     const rawReversed = [];
     let cur = currentPrice;
     rawReversed.push({ close: cur });
@@ -70,8 +119,6 @@ export default function BetaGridChartModal({
     }
 
     const rawChronological = rawReversed.reverse();
-    
-    // Build OHLC candles
     return rawChronological.map((item, idx) => {
       const isLast = idx === count - 1;
       const close = isLast ? currentPrice : item.close;
@@ -91,9 +138,9 @@ export default function BetaGridChartModal({
         isUp: close >= open
       };
     });
-  }, [livePrice, plan, selectedTF]);
+  }, [realCandles, livePrice, plan, selectedTF]);
 
-  // 2. Chart Y-Axis Price Range encompassing BOTH candles AND grid zones
+  // 2. Chart Y-Axis Price Range strictly encompassing BOTH candles AND grid zones
   const { minPrice, maxPrice, priceRange, visibleZones } = useMemo(() => {
     if (!candles || candles.length === 0) {
       return { minPrice: 20, maxPrice: 40, priceRange: 20, visibleZones: zones };
@@ -109,14 +156,14 @@ export default function BetaGridChartModal({
       maxC = Math.max(maxC, livePrice);
     }
 
-    // In macro timeframes (D, W, M) include the full grid upper & lower limits
+    // In macro timeframes (D, W, M), include full grid upper and lower boundaries
     if (selectedTF === 'D' || selectedTF === 'W' || selectedTF === 'M') {
       if (plan.lowerPrice) minC = Math.min(minC, plan.lowerPrice);
       if (plan.upperPrice) maxC = Math.max(maxC, plan.upperPrice);
     }
 
-    // Add 6% padding top and bottom
-    const pad = Math.max(0.5, (maxC - minC) * 0.06);
+    // Add 4% padding top and bottom
+    const pad = Math.max(0.15, (maxC - minC) * 0.04);
     const finalMin = Math.max(0.01, minC - pad);
     const finalMax = maxC + pad;
 
@@ -173,6 +220,18 @@ export default function BetaGridChartModal({
                 {livePrice && (
                   <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 animate-pulse">
                     Live: ${livePrice.toFixed(2)}
+                  </span>
+                )}
+                {realCandles.length > 0 && (
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>กราฟจริง (Market Data)</span>
+                  </span>
+                )}
+                {isLoadingCandles && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center gap-1 animate-pulse">
+                    <RefreshCw size={10} className="animate-spin" />
+                    <span>กำลังโหลดแท่งเทียน...</span>
                   </span>
                 )}
               </div>
@@ -424,6 +483,35 @@ export default function BetaGridChartModal({
                       ${price.toFixed(2)}
                     </text>
                   );
+                })}
+
+                {/* X-Axis Time Labels at bottom */}
+                {candles.map((c, idx) => {
+                  const step = Math.max(1, Math.floor(candles.length / 5));
+                  if (idx % step === 0 || idx === candles.length - 1) {
+                    const x = candles.length > 1 ? padLeft + (c.index / (candles.length - 1)) * (chartW - 20) + 10 : padLeft + chartW / 2;
+                    let label = '';
+                    if (c.time) {
+                      const d = new Date(typeof c.time === 'number' ? c.time * 1000 : c.time);
+                      label = selectedTF === '1h' || selectedTF === '4h'
+                        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' })
+                        : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                    return (
+                      <text
+                        key={`x_${idx}`}
+                        x={x}
+                        y={svgHeight - 12}
+                        fill="#64748b"
+                        fontSize="9.5"
+                        fontFamily="monospace"
+                        textAnchor="middle"
+                      >
+                        {label}
+                      </text>
+                    );
+                  }
+                  return null;
                 })}
               </svg>
             </div>

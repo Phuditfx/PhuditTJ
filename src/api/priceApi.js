@@ -92,3 +92,73 @@ export const fetchATR60m = async (symbol) => {
   }
   return null;
 };
+
+export const fetchHistoricalCandles = async (symbol, timeframe = 'D') => {
+  if (!symbol) return [];
+
+  const tfMap = {
+    '1h': { range: '5d', interval: '60m' },
+    '4h': { range: '1mo', interval: '60m', aggregate: 4 },
+    'D':  { range: '3mo', interval: '1d' },
+    'W':  { range: '1y', interval: '1wk' },
+    'M':  { range: '2y', interval: '1mo' }
+  };
+
+  const config = tfMap[timeframe] || tfMap['D'];
+
+  try {
+    const url = `/api/yahoo?symbol=${encodeURIComponent(symbol)}&range=${config.range}&interval=${config.interval}`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (response.ok) {
+      const data = await response.json();
+      const result = data.chart?.result?.[0];
+      if (result && result.timestamp && result.indicators?.quote?.[0]) {
+        const timestamps = result.timestamp;
+        const quote = result.indicators.quote[0];
+
+        const rawCandles = [];
+        for (let i = 0; i < timestamps.length; i++) {
+          if (
+            timestamps[i] !== null &&
+            quote.open?.[i] !== null &&
+            quote.high?.[i] !== null &&
+            quote.low?.[i] !== null &&
+            quote.close?.[i] !== null
+          ) {
+            rawCandles.push({
+              time: timestamps[i],
+              open: parseFloat(quote.open[i].toFixed(2)),
+              high: parseFloat(quote.high[i].toFixed(2)),
+              low: parseFloat(quote.low[i].toFixed(2)),
+              close: parseFloat(quote.close[i].toFixed(2)),
+            });
+          }
+        }
+
+        if (config.aggregate && config.aggregate > 1 && rawCandles.length > 0) {
+          const aggregated = [];
+          for (let i = 0; i < rawCandles.length; i += config.aggregate) {
+            const chunk = rawCandles.slice(i, i + config.aggregate);
+            if (chunk.length > 0) {
+              aggregated.push({
+                time: chunk[0].time,
+                open: chunk[0].open,
+                close: chunk[chunk.length - 1].close,
+                high: parseFloat(Math.max(...chunk.map(c => c.high)).toFixed(2)),
+                low: parseFloat(Math.min(...chunk.map(c => c.low)).toFixed(2))
+              });
+            }
+          }
+          return aggregated;
+        }
+
+        return rawCandles;
+      }
+    }
+  } catch (error) {
+    console.warn("API Fetch failed for historical candles:", error);
+  }
+
+  return [];
+};
+
