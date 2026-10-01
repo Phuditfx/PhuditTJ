@@ -9,7 +9,6 @@ import {
   logoutUser,
   getUserStatus,
   savePlans,
-  saveDividends,
   saveFundingHistory,
   getUserVipStatus,
   subscribeToUserData,
@@ -29,7 +28,7 @@ import OwnerDashboard from './components/OwnerDashboard';
 import PennyStocksTab from './components/PennyStocksTab';
 import CalendarView from './components/CalendarView';
 import TradingPlans from './components/TradingPlans';
-import DividendTracker from './components/DividendTracker';
+import BetaGridTrading from './components/BetaGridTrading';
 import Analytics from './components/Analytics';
 import Sidebar from './components/Sidebar';
 import FeedComponent from './components/FeedComponent';
@@ -74,7 +73,6 @@ export default function App() {
   const [profile, setProfile] = useState({ name: '', photo: '', fontSize: 'normal' });
   const [plans, setPlans] = useState([]);
   const [setups, setSetups] = useState([]);
-  const [dividends, setDividends] = useState([]);
   const [fundingHistory, setFundingHistory] = useState([]);
   const [accounts, setAccounts] = useState([{ id: 'default', name: 'Main Account' }]);
   const [feedPosts, setFeedPosts] = useState([]);
@@ -235,7 +233,6 @@ export default function App() {
         setProfile(data.profile);
         setPlans(data.plans || []);
         setSetups(data.customSetups || ['Day Breakout', 'Pullback/Dip', 'Reversal', 'Trend Following', 'Range Trading']);
-        setDividends(data.dividends || []);
         setFundingHistory(data.fundingHistory || []);
         const loadedAccounts = data.accounts || [{ id: 'default', name: 'Main Account' }];
         setAccounts(loadedAccounts);
@@ -255,7 +252,6 @@ export default function App() {
       setTrades([]);
       setPlans([]);
       setSetups([]);
-      setDividends([]);
       setFundingHistory([]);
       setIsVip(false);
       setIsTiPicks(false);
@@ -529,18 +525,6 @@ export default function App() {
     saveCustomSetups(currentUser, updatedSetups);
   };
 
-  // จัดการ Dividends
-  const handleSaveDividend = (newDivData) => {
-    const updatedDivs = [...dividends, newDivData];
-    setDividends(updatedDivs);
-    saveDividends(currentUser, updatedDivs);
-  };
-  const handleDeleteDividend = (id) => {
-    const updatedDivs = dividends.filter(d => d.id !== id);
-    setDividends(updatedDivs);
-    saveDividends(currentUser, updatedDivs);
-  };
-
   // จัดการ Feed Posts (Global)
   const handleSaveFeedPost = (newPost) => {
     // Ensure author.email is always stored for profile linking
@@ -618,10 +602,6 @@ export default function App() {
       if (importedData.plans) {
         setPlans(importedData.plans);
         savePlans(currentUser, importedData.plans);
-      }
-      if (importedData.dividends) {
-        setDividends(importedData.dividends);
-        saveDividends(currentUser, importedData.dividends);
       }
       // other non-subcollection data
       if (importedData.accounts) {
@@ -1220,17 +1200,16 @@ export default function App() {
                     <VipLockScreen featureName="Plans & Playbooks" onBack={() => setActiveTab('dashboard')} />
                   )
                 )}
-                {activeTab === 'dividends' && (
+                {activeTab === 'betaGrid' && (
                   isVip || isAlphaPicks ? (
-                    <DividendTracker
-                      dividends={dividends}
-                      onSaveDividend={handleSaveDividend}
-                      onDeleteDividend={handleDeleteDividend}
+                    <BetaGridTrading
+                      currentUser={currentUser}
+                      isVip={isVip || isAlphaPicks}
                       requestConfirm={requestConfirm}
                       requestAlert={requestAlert}
                     />
                   ) : (
-                    <VipLockScreen featureName="Dividend Tracker" onBack={() => setActiveTab('dashboard')} />
+                    <VipLockScreen featureName="Beta Portfolio (Grid Trading)" onBack={() => setActiveTab('dashboard')} />
                   )
                 )}
                 {/* ✅ Task 4 & 5: Feed with Lightbox + Profile navigation */}
@@ -1255,7 +1234,6 @@ export default function App() {
                     trades={trades} setTrades={setTrades}
                     feedPosts={feedPosts} setFeedPosts={setFeedPosts}
                     plans={plans} setPlans={setPlans}
-                    dividends={dividends} setDividends={setDividends}
                     requestAlert={requestAlert}
                     requestConfirm={requestConfirm}
                   />

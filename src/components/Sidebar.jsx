@@ -33,10 +33,10 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
     { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
     { id: 'alphaPicks', icon: '🏛️', label: 'Alpha Picks Inv.' },
+    { id: 'betaGrid', icon: '⚡', label: t('app.betaGrid', 'Beta Grid Trading').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'swing', icon: '📐', label: 'Swing Calculator' },
     { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
-    { id: 'dividends', icon: '💰', label: t('app.dividends', 'Dividends').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'pennyStocks', icon: '🪙', label: 'Penny Stocks Pro' },
   ];
 
@@ -52,7 +52,11 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     let ordered = [];
     const currentMap = new Map(defaultItems.map(i => [i.id, i]));
     if (order.length > 0) {
-      ordered = order.filter(id => id !== 'portfolioRebalancer').map(id => currentMap.get(id)).filter(Boolean);
+      ordered = order
+        .filter(id => id !== 'portfolioRebalancer')
+        .map(id => id === 'dividends' ? 'betaGrid' : id)
+        .map(id => currentMap.get(id))
+        .filter(Boolean);
     }
     defaultItems.forEach(item => {
       if (!ordered.find(m => m.id === item.id)) ordered.push(item);
@@ -86,7 +90,8 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
   const checkAccess = (tabId) => {
     if (isVip) return true;
     if (isTiPicks && ['positionSizing', 'weeklyPicks', 'swing', 'calendar', 'plans'].includes(tabId)) return true;
-    if (isAlphaPicks && ['alphaPicks', 'plans', 'dividends'].includes(tabId)) return true;
+    if (isAlphaPicks && ['alphaPicks', 'plans', 'betaGrid'].includes(tabId)) return true;
+    if (tabId === 'betaGrid') return isVip || isAlphaPicks;
     if (tabId === 'pennyStocks') return isPennyStocks;
     return false;
   };

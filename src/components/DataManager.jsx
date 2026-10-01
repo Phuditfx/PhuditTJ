@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { calculateStorageUsage, getSupabaseStorageUsage, deleteGlobalFeedPost, clearGlobalFeedPostsByMonth, saveTrades, savePlans, saveDividends } from '../db/journalDB';
+import { calculateStorageUsage, getSupabaseStorageUsage, deleteGlobalFeedPost, clearGlobalFeedPostsByMonth, saveTrades, savePlans } from '../db/journalDB';
 import { Trash2, Download, AlertTriangle, Database, HardDrive, RefreshCw, CalendarDays } from 'lucide-react';
 
-export default function DataManager({ currentUser, trades, setTrades, feedPosts, setFeedPosts, plans, setPlans, dividends, setDividends, requestConfirm, requestAlert }) {
+export default function DataManager({ currentUser, trades, setTrades, feedPosts, setFeedPosts, plans, setPlans, requestConfirm, requestAlert }) {
   const [firebaseSize, setFirebaseSize] = useState(0);
   const [supabaseSize, setSupabaseSize] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -26,7 +26,7 @@ export default function DataManager({ currentUser, trades, setTrades, feedPosts,
 
   useEffect(() => {
     refreshStorageSize();
-  }, [currentUser, trades, feedPosts, plans, dividends]);
+  }, [currentUser, trades, feedPosts, plans]);
 
   const usagePercent = Math.min((firebaseSize / MAX_LOCAL_SIZE) * 100, 100);
   const cloudUsagePercent = Math.min((supabaseSize / MAX_CLOUD_SIZE) * 100, 100);
