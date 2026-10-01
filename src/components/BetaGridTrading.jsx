@@ -228,15 +228,184 @@ export default function BetaGridTrading({
     persistProfiles(updatedProfiles);
   };
 
-  // 6. Profile Management
+  // 6. Dynamic Grid Expansion (Upper & Lower)
+  const handleExpandUpperZone = () => {
+    if (!currentProfile) return;
+    const plan = currentProfile.plan || {};
+    const step = parseFloat(plan.gridStep) || 1.0;
+    const currentUpper = parseFloat(plan.upperPrice) || (currentProfile.zones?.[0]?.priceLevel || 35);
+    const newUpper = Math.round((currentUpper + step) * 100) / 100;
+    const targetSell = Math.round((newUpper + step) * 100) / 100;
+    const isAction = newUpper >= (parseFloat(plan.actionZoneLowerLimit) || 0);
+    const shares = isAction ? (parseInt(plan.actionZoneShares, 10) || 10) : (parseInt(plan.safetyZoneShares, 10) || 20);
+    const capital = Math.round(newUpper * shares * 100) / 100;
+
+    const newZone = {
+      id: `zone_${Date.now()}_upper_${Math.random().toString(36).substring(2, 6)}`,
+      levelIndex: 1,
+      priceLevel: newUpper,
+      targetSellPrice: targetSell,
+      sharesAllocated: shares,
+      capitalRequired: capital,
+      zoneType: isAction ? 'ACTION' : 'SAFETY',
+      status: 'EMPTY',
+      filledAt: null,
+      filledPrice: null
+    };
+
+    const updatedZones = [newZone, ...currentProfile.zones];
+    updatedZones.forEach((z, i) => { z.levelIndex = i + 1; });
+
+    const updatedProfile = {
+      ...currentProfile,
+      plan: {
+        ...plan,
+        upperPrice: newUpper
+      },
+      zones: updatedZones,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
+    persistProfiles(updatedProfiles);
+
+    if (requestAlert) {
+      requestAlert('🚀 ขยายโซนบนสำเร็จ!', `เพิ่มโซนใหม่ $${newUpper.toFixed(2)} → $${targetSell.toFixed(2)} (${shares} หุ้น) เรียบร้อยแล้ว`);
+    }
+  };
+
+  const handleExpandLowerZone = () => {
+    if (!currentProfile) return;
+    const plan = currentProfile.plan || {};
+    const step = parseFloat(plan.gridStep) || 1.0;
+    const currentLower = parseFloat(plan.lowerPrice) || 20;
+    const newLower = Math.max(0.01, Math.round((currentLower - step) * 100) / 100);
+    const targetSell = Math.round((newLower + step) * 100) / 100;
+    const isAction = newLower >= (parseFloat(plan.actionZoneLowerLimit) || 0);
+    const shares = isAction ? (parseInt(plan.actionZoneShares, 10) || 10) : (parseInt(plan.safetyZoneShares, 10) || 20);
+    const capital = Math.round(newLower * shares * 100) / 100;
+
+    const newZone = {
+      id: `zone_${Date.now()}_lower_${Math.random().toString(36).substring(2, 6)}`,
+      levelIndex: currentProfile.zones.length + 1,
+      priceLevel: newLower,
+      targetSellPrice: targetSell,
+      sharesAllocated: shares,
+      capitalRequired: capital,
+      zoneType: isAction ? 'ACTION' : 'SAFETY',
+      status: 'EMPTY',
+      filledAt: null,
+      filledPrice: null
+    };
+
+    const updatedZones = [...currentProfile.zones, newZone];
+    updatedZones.forEach((z, i) => { z.levelIndex = i + 1; });
+
+    const updatedProfile = {
+      ...currentProfile,
+      plan: {
+        ...plan,
+        lowerPrice: newLower
+      },
+      zones: updatedZones,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
+    persistProfiles(updatedProfiles);
+
+    if (requestAlert) {
+      requestAlert('🛡️ ขยายโซนล่างสำเร็จ!', `เพิ่มโซนรับลึก $${newLower.toFixed(2)} → $${targetSell.toFixed(2)} (${shares} หุ้น) เรียบร้อยแล้ว`);
+    }
+  };
+
+  const handleExpandToLivePrice = () => {
+    if (!currentProfile || !currentLivePrice) return;
+    const plan = currentProfile.plan || {};
+    const step = parseFloat(plan.gridStep) || 1.0;
+    let currentUpper = parseFloat(plan.upperPrice) || 35;
+    if (currentLivePrice <= currentUpper) return;
+
+    let newZones = [];
+    while (currentUpper < currentLivePrice) {
+      currentUpper = Math.round((currentUpper + step) * 100) / 100;
+      const targetSell = Math.round((currentUpper + step) * 100) / 100;
+      const isAction = currentUpper >= (parseFloat(plan.actionZoneLowerLimit) || 0);
+      const shares = isAction ? (parseInt(plan.actionZoneShares, 10) || 10) : (parseInt(plan.safetyZoneShares, 10) || 20);
+      newZones.unshift({
+        id: `zone_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        priceLevel: currentUpper,
+        targetSellPrice: targetSell,
+        sharesAllocated: shares,
+        capitalRequired: Math.round(currentUpper * shares * 100) / 100,
+        zoneType: isAction ? 'ACTION' : 'SAFETY',
+        status: 'EMPTY',
+        filledAt: null,
+        filledPrice: null
+      });
+    }
+
+    const updatedZones = [...newZones, ...currentProfile.zones];
+    updatedZones.forEach((z, i) => { z.levelIndex = i + 1; });
+
+    const updatedProfile = {
+      ...currentProfile,
+      plan: {
+        ...plan,
+        upperPrice: currentUpper
+      },
+      zones: updatedZones,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
+    persistProfiles(updatedProfiles);
+
+    if (requestAlert) {
+      requestAlert('🚀 ขยายโซนบนครอบคลุมราคาปัจจุบันสำเร็จ!', `เพิ่ม ${newZones.length} โซนใหม่จนถึงราคา $${currentUpper.toFixed(2)} เรียบร้อยแล้ว`);
+    }
+  };
+
+  // 7. Profile Management (Strictly preserving filled orders)
   const handleSavePlan = (savedProfileData) => {
     let updatedProfiles;
-    const exists = profiles.some(p => p.id === savedProfileData.id);
-    if (exists) {
+    const existingIndex = profiles.findIndex(p => p.id === savedProfileData.id);
+    
+    // Ensure any previously FILLED zones are preserved even on external plan regeneration
+    if (existingIndex >= 0) {
+      const oldProfile = profiles[existingIndex];
+      const oldFilledZones = oldProfile.zones?.filter(z => z.status === 'FILLED') || [];
+      
+      const mergedZones = savedProfileData.zones.map(newZone => {
+        const match = oldFilledZones.find(oz => Math.abs(oz.priceLevel - newZone.priceLevel) < 0.001);
+        if (match) {
+          return {
+            ...newZone,
+            status: 'FILLED',
+            filledAt: match.filledAt,
+            filledPrice: match.filledPrice,
+            sharesAllocated: match.sharesAllocated || newZone.sharesAllocated,
+            capitalRequired: match.capitalRequired || (newZone.priceLevel * (match.sharesAllocated || newZone.sharesAllocated)),
+            targetSellPrice: match.targetSellPrice || newZone.targetSellPrice
+          };
+        }
+        return newZone;
+      });
+
+      // Preserve any filled zones outside new bounds
+      const outsideFilled = oldFilledZones.filter(
+        oz => !mergedZones.some(mz => Math.abs(mz.priceLevel - oz.priceLevel) < 0.001)
+      );
+
+      const finalZones = [...mergedZones, ...outsideFilled].sort((a, b) => b.priceLevel - a.priceLevel);
+      finalZones.forEach((z, i) => { z.levelIndex = i + 1; });
+
+      savedProfileData.zones = finalZones;
       updatedProfiles = profiles.map(p => p.id === savedProfileData.id ? { ...p, ...savedProfileData, updatedAt: new Date().toISOString() } : p);
     } else {
       updatedProfiles = [savedProfileData, ...profiles];
     }
+
     persistProfiles(updatedProfiles);
     setSelectedProfileId(savedProfileData.id);
   };
@@ -283,7 +452,7 @@ export default function BetaGridTrading({
         {/* Branding & Spec Title */}
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-xl shadow-indigo-500/25">
-            <span className="text-2xl">⚡</span>
+            <span className="text-2xl font-black font-serif italic text-white drop-shadow-md leading-none">β</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -409,6 +578,9 @@ export default function BetaGridTrading({
         setAutoRefresh={setAutoRefresh}
         totalRealizedProfit={totalRealizedProfit}
         completedCyclesCount={currentProfileHistory.length}
+        onExpandUpperZone={handleExpandUpperZone}
+        onExpandLowerZone={handleExpandLowerZone}
+        onExpandToLivePrice={handleExpandToLivePrice}
       />
 
       {/* Main Content Area */}
@@ -420,6 +592,8 @@ export default function BetaGridTrading({
           onHarvestZone={handleHarvestZone}
           onUpdateZoneShares={handleUpdateZoneShares}
           onResetAllZones={handleResetAllZones}
+          onExpandUpperZone={handleExpandUpperZone}
+          onExpandLowerZone={handleExpandLowerZone}
           requestConfirm={requestConfirm}
         />
       )}

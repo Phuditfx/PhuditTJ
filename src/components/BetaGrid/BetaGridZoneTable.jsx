@@ -20,6 +20,8 @@ export default function BetaGridZoneTable({
   onHarvestZone,
   onUpdateZoneShares,
   onResetAllZones,
+  onExpandUpperZone,
+  onExpandLowerZone,
   requestConfirm
 }) {
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'FILLED' | 'EMPTY'
@@ -124,6 +126,27 @@ export default function BetaGridZoneTable({
             <ArrowDownUp size={13} />
             <span>{sortOrder === 'DESC' ? 'ราคา สูง → ต่ำ' : 'ราคา ต่ำ → สูง'}</span>
           </button>
+
+          {/* Quick Expand Zones Buttons */}
+          {onExpandUpperZone && (
+            <button
+              onClick={onExpandUpperZone}
+              className="p-1.5 px-2.5 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/60 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-black transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+              title="เพิ่ม 1 โซนใหม่ด้านบนสุด"
+            >
+              <span>➕ โซนบน</span>
+            </button>
+          )}
+
+          {onExpandLowerZone && (
+            <button
+              onClick={onExpandLowerZone}
+              className="p-1.5 px-2.5 rounded-xl border border-indigo-300 dark:border-indigo-800/60 bg-indigo-50/60 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-black transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+              title="เพิ่ม 1 โซนใหม่ด้านล่างสุด"
+            >
+              <span>➕ โซนล่าง</span>
+            </button>
+          )}
 
           {/* Reset All Zones Button */}
           <button

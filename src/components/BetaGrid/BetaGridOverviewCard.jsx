@@ -10,7 +10,10 @@ export default function BetaGridOverviewCard({
   autoRefresh,
   setAutoRefresh,
   totalRealizedProfit,
-  completedCyclesCount
+  completedCyclesCount,
+  onExpandUpperZone,
+  onExpandLowerZone,
+  onExpandToLivePrice
 }) {
   if (!profile) return null;
 
@@ -64,7 +67,7 @@ export default function BetaGridOverviewCard({
       <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/20 dark:shadow-black/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 flex-shrink-0">
-            <Zap className="w-6 h-6 animate-pulse" />
+            <span className="text-2xl font-black font-serif italic text-white drop-shadow-md leading-none">β</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -134,6 +137,74 @@ export default function BetaGridOverviewCard({
           </div>
         </div>
       </div>
+
+      {/* ⚠️ Out-of-Bounds Breakout Alert Banners with 1-Click Expansion */}
+      {livePrice && profile.plan?.upperPrice && livePrice > profile.plan.upperPrice && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/30 dark:border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/5 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚡</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400">
+                  ราคาวิ่งทะลุกรอบบน ($ {livePrice.toFixed(2)} &gt; $ {profile.plan.upperPrice.toFixed(2)})
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                  +{((livePrice - profile.plan.upperPrice) / profile.plan.upperPrice * 100).toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                ราคาสูงกว่าโซนบนสุดในแผน คุณสามารถกดขยายโซนบนเพื่อเริ่มรับรอบใหม่ได้ทันที (ไม้ที่ถือครองอยู่จะไม่หาย)
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+            {onExpandUpperZone && (
+              <button
+                onClick={onExpandUpperZone}
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black shadow-md shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>➕ ขยายโซนบน (+1 ไม้)</span>
+              </button>
+            )}
+            {onExpandToLivePrice && (
+              <button
+                onClick={onExpandToLivePrice}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-black shadow-md shadow-indigo-500/25 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🚀 ขยายให้ถึง ${livePrice.toFixed(2)}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {livePrice && profile.plan?.lowerPrice && livePrice < profile.plan.lowerPrice && (
+        <div className="p-4 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/30 border border-indigo-500/30 dark:border-indigo-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-indigo-500/5 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🛡️</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400">
+                  ราคาย่อหลุดต่ำกว่ากรอบล่าง ($ {livePrice.toFixed(2)} &lt; $ {profile.plan.lowerPrice.toFixed(2)})
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                ราคาย่อลงลึกกว่าแผน คุณสามารถกดขยายโซนล่างเพื่อเพิ่มไม้ Safety Zone รับของราคาต่ำได้ทันที
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+            {onExpandLowerZone && (
+              <button
+                onClick={onExpandLowerZone}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-md shadow-indigo-500/25 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>➕ ขยายโซนล่าง (+1 ไม้)</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 4 Core Financial Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

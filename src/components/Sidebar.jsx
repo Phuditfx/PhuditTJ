@@ -33,7 +33,7 @@ export default function Sidebar({ activeTab, setActiveTab, accountId, setAccount
     { id: 'positionSizing', icon: '🛡️', label: 'Position Sizing & Risk' },
     { id: 'weeklyPicks', icon: '🎯', label: 'TI Weekly Picks' },
     { id: 'alphaPicks', icon: '🏛️', label: 'Alpha Picks Inv.' },
-    { id: 'betaGrid', icon: '⚡', label: t('app.betaGrid', 'Beta Grid Trading').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
+    { id: 'betaGrid', icon: 'β', label: t('app.betaGrid', 'Beta Grid Trading').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'swing', icon: '📐', label: 'Swing Calculator' },
     { id: 'calendar', icon: '📅', label: t('app.calendar', 'Calendars').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },
     { id: 'plans', icon: '📝', label: t('app.plans', 'Plans & Playbooks').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]\s*/g, '') },

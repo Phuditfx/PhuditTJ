@@ -78,6 +78,7 @@ export default function BetaGridPlanModal({
     });
   }
 
+  const existingFilledZones = existingProfile?.zones?.filter(z => z.status === 'FILLED') || [];
   const actionZonesCount = previewZones.filter(z => z.zoneType === 'ACTION').length;
   const safetyZonesCount = previewZones.filter(z => z.zoneType === 'SAFETY').length;
   const totalRequiredCapital = previewZones.reduce((s, z) => s + z.capitalRequired, 0);
@@ -98,14 +99,42 @@ export default function BetaGridPlanModal({
       safetyZoneShares: safeShares
     };
 
+    // Merge existing filled zones so active positions are NEVER lost
+    const mergedZones = previewZones.map(newZone => {
+      const match = existingFilledZones.find(
+        ez => Math.abs(ez.priceLevel - newZone.priceLevel) < 0.001
+      );
+      if (match) {
+        return {
+          ...newZone,
+          status: 'FILLED',
+          filledAt: match.filledAt,
+          filledPrice: match.filledPrice,
+          sharesAllocated: match.sharesAllocated || newZone.sharesAllocated,
+          capitalRequired: match.capitalRequired || (newZone.priceLevel * (match.sharesAllocated || newZone.sharesAllocated)),
+          targetSellPrice: match.targetSellPrice || newZone.targetSellPrice
+        };
+      }
+      return newZone;
+    });
+
+    // Also include any filled zones that might fall outside the new bounds so they aren't lost
+    const outsideFilledZones = existingFilledZones.filter(
+      ez => !mergedZones.some(mz => Math.abs(mz.priceLevel - ez.priceLevel) < 0.001)
+    );
+
+    const finalZones = [...mergedZones, ...outsideFilledZones].sort((a, b) => b.priceLevel - a.priceLevel);
+    finalZones.forEach((z, idx) => {
+      z.levelIndex = idx + 1;
+    });
+
     onSave({
       id: existingProfile?.id || `profile_${Date.now()}`,
       name: name.trim() || `${assetTicker.toUpperCase()} Grid`,
       assetTicker: assetTicker.trim().toUpperCase(),
       initialCashReserve: parseFloat(initialCashReserve) || 0,
       plan,
-      // If editing, preserve existing filled zones matching the price levels if possible
-      zones: previewZones
+      zones: finalZones
     });
     onClose();
   };
@@ -118,7 +147,7 @@ export default function BetaGridPlanModal({
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-black">
-              ⚡
+              <span className="text-2xl font-black font-serif italic text-indigo-600 dark:text-indigo-400">β</span>
             </div>
             <div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white">
@@ -339,6 +368,13 @@ export default function BetaGridPlanModal({
                   </span>
                 </div>
               </div>
+
+              {existingFilledZones.length > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                  <Check size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>ระบบจะรักษาสถานะไม้ที่ถือครองอยู่เดิม ({existingFilledZones.length} ไม้ FILLED) ไว้ 100% ไม่ถูกลบ</span>
+                </div>
+              )}
             </div>
           )}
 

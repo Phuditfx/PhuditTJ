@@ -6,7 +6,7 @@ const VIP_BENEFITS = [
   { icon: '📊', text: 'Advanced Analytics & Stats' },
   { icon: '⚙️', text: 'Trade Simulator (Fighter Engine)' },
   { icon: '📅', text: 'Calendar & Trading Plans' },
-  { icon: '⚡', text: 'Beta Portfolio (Grid Trading)' },
+  { icon: 'β', text: 'Beta Portfolio (Grid Trading)' },
   { icon: '📰', text: 'Full Feed Access & Posting' },
   { icon: '📐', text: 'TI Swing Pick Budget Calculator' },
 ];
