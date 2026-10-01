@@ -66,6 +66,21 @@ export default function BetaGridZoneTable({
     }
   };
 
+  const handleFillConfirm = (zone) => {
+    const doFill = () => {
+      onFillZone(zone);
+    };
+    if (requestConfirm) {
+      requestConfirm(
+        `ยืนยันการซื้อ — โซน #${zone.levelIndex}`,
+        `ซื้อที่ราคา $${zone.priceLevel.toFixed(2)} จำนวน ${zone.sharesAllocated} หุ้น (ทุน $${(zone.priceLevel * zone.sharesAllocated).toFixed(2)}) ใช่ไหม?`,
+        doFill
+      );
+    } else if (window.confirm(`ยืนยันซื้อโซน #${zone.levelIndex} ที่ $${zone.priceLevel.toFixed(2)}?`)) {
+      doFill();
+    }
+  };
+
   return (
     <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 rounded-3xl shadow-xl shadow-slate-200/20 dark:shadow-black/30 overflow-hidden flex flex-col">
       
@@ -341,9 +356,9 @@ export default function BetaGridZoneTable({
                   <td className="py-3.5 px-4 text-right">
                     {!isFilled ? (
                       <button
-                        onClick={() => onFillZone(zone)}
+                        onClick={() => handleFillConfirm(zone)}
                         className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white dark:bg-slate-800 dark:hover:bg-indigo-600 dark:text-slate-200 text-xs font-black transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm"
-                        title="บันทึกว่าราคาลงมาถึงจุดนี้และซื้อแล้ว"
+                        title="บันทึกว่าราคาลงมาถึงจุดนี้และซื้อแล้ว (จะขอยืนยันก่อน)"
                       >
                         <ShoppingBag size={13} />
                         <span>ซื้อไม้ (Buy)</span>
