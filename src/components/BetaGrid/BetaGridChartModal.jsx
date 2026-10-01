@@ -201,8 +201,17 @@ export default function BetaGridChartModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
-      <div className="bg-[#0b1329] border border-slate-800 rounded-3xl w-full max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/60 overflow-hidden text-slate-100">
-        
+      <div className="relative bg-[#0b1329] border border-slate-800 rounded-3xl w-full max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/60 overflow-hidden text-slate-100">
+
+        {/* Close (X) Button — absolute top-right corner */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-2 text-slate-400 hover:text-white hover:bg-slate-700/70 rounded-xl transition-colors cursor-pointer"
+          title="ปิด"
+        >
+          <X size={20} />
+        </button>
+
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-4 bg-slate-900/60">
           <div className="flex items-center gap-3">
@@ -241,8 +250,8 @@ export default function BetaGridChartModal({
             </div>
           </div>
 
-          {/* Top Controls: Timeframe + Chart Type + Close */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* Top Controls: Timeframe + Chart Type */}
+          <div className="flex flex-wrap items-center gap-2.5 pr-10">
             {/* Timeframe Selector (1h / 4h / D / W / M) */}
             <div className="flex p-1 rounded-xl bg-slate-800/90 border border-slate-700/70 text-xs font-bold shadow-inner">
               {['1h', '4h', 'D', 'W', 'M'].map((tf) => (
@@ -285,12 +294,6 @@ export default function BetaGridChartModal({
               </button>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
-            >
-              <X size={20} />
-            </button>
           </div>
         </div>
 

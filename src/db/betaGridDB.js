@@ -87,28 +87,14 @@ export function createDefaultProfile(email) {
 
 /**
  * Load beta grid profiles for user
+ * Strategy: Supabase-first (cross-device sync), then localStorage cache, then default.
  */
 export async function getBetaGridProfiles(email) {
   if (!email) return [];
   const cleanEmail = email.trim().toLowerCase();
   const storageKey = `${STORAGE_PREFIX}${cleanEmail}`;
 
-  // 1. Try local storage first for instant response
-  let localProfiles = null;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      localProfiles = JSON.parse(raw);
-    }
-  } catch (err) {
-    console.warn('Error reading local beta grid profiles:', err);
-  }
-
-  if (Array.isArray(localProfiles) && localProfiles.length > 0) {
-    return localProfiles;
-  }
-
-  // 2. Try fetching from Supabase if table exists
+  // 1. Always try Supabase first for cross-device sync
   try {
     const { data, error } = await supabase
       .from('beta_grid_profiles')
@@ -118,16 +104,30 @@ export async function getBetaGridProfiles(email) {
 
     if (!error && data && data.length > 0) {
       const dbProfiles = data.map(item => item.data);
+      // Update local cache with latest cloud data
       try {
         localStorage.setItem(storageKey, JSON.stringify(dbProfiles));
       } catch (e) {}
       return dbProfiles;
     }
   } catch (e) {
-    // Supabase table might not exist yet, continue with fallback
+    console.warn('Supabase fetch failed, falling back to localStorage:', e);
   }
 
-  // 3. Fallback: Initialize with default profile
+  // 2. Fallback to localStorage cache (e.g. offline or table not created yet)
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const localProfiles = JSON.parse(raw);
+      if (Array.isArray(localProfiles) && localProfiles.length > 0) {
+        return localProfiles;
+      }
+    }
+  } catch (err) {
+    console.warn('Error reading local beta grid profiles:', err);
+  }
+
+  // 3. Last resort: Initialize with default profile
   const defaultProfile = createDefaultProfile(cleanEmail);
   const initialProfiles = [defaultProfile];
   try {
@@ -171,19 +171,14 @@ export async function saveBetaGridProfiles(email, profiles) {
 
 /**
  * Load completed cycle history log
+ * Strategy: Supabase-first (cross-device sync), then localStorage cache.
  */
 export async function getBetaCycleHistory(email) {
   if (!email) return [];
   const cleanEmail = email.trim().toLowerCase();
   const storageKey = `${HISTORY_PREFIX}${cleanEmail}`;
 
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch (e) {}
-
+  // 1. Always try Supabase first for cross-device sync
   try {
     const { data, error } = await supabase
       .from('beta_grid_history')
@@ -193,13 +188,25 @@ export async function getBetaCycleHistory(email) {
 
     if (!error && data) {
       const items = data.map(d => d.data);
+      // Update local cache with latest cloud data
       try { localStorage.setItem(storageKey, JSON.stringify(items)); } catch(e) {}
       return items;
+    }
+  } catch (e) {
+    console.warn('Supabase history fetch failed, falling back to localStorage:', e);
+  }
+
+  // 2. Fallback to localStorage cache (offline / table not created)
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      return JSON.parse(raw);
     }
   } catch (e) {}
 
   return [];
 }
+
 
 /**
  * Save completed cycle history log
