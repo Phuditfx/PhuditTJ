@@ -22,6 +22,7 @@ import BetaGridOverviewCard from './BetaGrid/BetaGridOverviewCard';
 import BetaGridZoneTable from './BetaGrid/BetaGridZoneTable';
 import BetaGridCycleHistory from './BetaGrid/BetaGridCycleHistory';
 import BetaGridPlanModal from './BetaGrid/BetaGridPlanModal';
+import BetaGridChartModal from './BetaGrid/BetaGridChartModal';
 
 export default function BetaGridTrading({
   currentUser,
@@ -46,6 +47,7 @@ export default function BetaGridTrading({
   // Modal State
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [modalEditProfile, setModalEditProfile] = useState(null);
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
   // Accounting Method: 'NON_FIFO' | 'FIFO'
   const [accountingMode, setAccountingMode] = useState('NON_FIFO');
@@ -622,6 +624,7 @@ export default function BetaGridTrading({
         onExpandUpperZone={handleExpandUpperZone}
         onExpandLowerZone={handleExpandLowerZone}
         onExpandToLivePrice={handleExpandToLivePrice}
+        onOpenChart={() => setIsChartModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -665,6 +668,16 @@ export default function BetaGridTrading({
         onSave={handleSavePlan}
         existingProfile={modalEditProfile}
         currentLivePrice={currentLivePrice}
+      />
+
+      {/* Grid Chart Visualizer Modal */}
+      <BetaGridChartModal
+        isOpen={isChartModalOpen}
+        onClose={() => setIsChartModalOpen(false)}
+        profile={currentProfile}
+        livePrice={currentLivePrice}
+        onFillZone={handleFillZone}
+        onHarvestZone={handleHarvestZone}
       />
 
     </div>

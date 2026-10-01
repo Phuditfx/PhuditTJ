@@ -5,9 +5,10 @@ import FundingGuidanceCard from './AlphaPicks/FundingGuidanceCard';
 import NewPickForm from './AlphaPicks/NewPickForm';
 import HoldingsBoard from './AlphaPicks/HoldingsBoard';
 import PortfolioRebalancer from './PortfolioRebalancer';
+import AlphaPicksAnalytics from './AlphaPicks/Analytics/AlphaPicksAnalytics';
 
 export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, requestConfirm, initialSubTab = 'portfolio' }) {
-  const { setUserEmail, loading, selectedPortfolioId, setSelectedPortfolioId } = useMoonbagStore();
+  const { setUserEmail, loading, selectedPortfolioId, setSelectedPortfolioId, portfolios } = useMoonbagStore();
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
 
   useEffect(() => {
@@ -57,10 +58,10 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
         </div>
 
         {/* Sub-tab Pill Buttons */}
-        <div className="flex p-1.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 shadow-lg shadow-slate-200/10 dark:shadow-black/20 self-start sm:self-auto">
+        <div className="flex flex-wrap p-1.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 shadow-lg shadow-slate-200/10 dark:shadow-black/20 self-start sm:self-auto gap-1">
           <button
             onClick={() => setActiveSubTab('portfolio')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
               activeSubTab === 'portfolio'
                 ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/30'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -71,7 +72,7 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           </button>
           <button
             onClick={() => setActiveSubTab('rebalancer')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
               activeSubTab === 'rebalancer'
                 ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/30'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -79,6 +80,17 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
           >
             <span>⚖️</span>
             <span>Portfolio Rebalancer</span>
+          </button>
+          <button
+            onClick={() => setActiveSubTab('analytics')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+              activeSubTab === 'analytics'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>📊</span>
+            <span>Analytics</span>
           </button>
         </div>
       </div>
@@ -101,6 +113,19 @@ export default function AlphaPickPlanner({ userEmail, isVip, requestAlert, reque
             requestAlert={requestAlert}
             initialPortfolioId={selectedPortfolioId}
             onPortfolioChange={(id) => setSelectedPortfolioId(id)}
+          />
+        </div>
+      )}
+
+      {/* Tab 3: Analytics */}
+      {activeSubTab === 'analytics' && (
+        <div className="animate-fade-in">
+          <AlphaPicksAnalytics
+            userEmail={userEmail}
+            selectedPortfolioId={selectedPortfolioId}
+            portfolios={portfolios}
+            requestAlert={requestAlert}
+            requestConfirm={requestConfirm}
           />
         </div>
       )}

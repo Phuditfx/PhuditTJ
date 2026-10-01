@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, TrendingUp, DollarSign, Layers, Activity, ShieldCheck, Zap } from 'lucide-react';
+import { RefreshCw, TrendingUp, DollarSign, Layers, Activity, ShieldCheck, Zap, LineChart } from 'lucide-react';
 
 export default function BetaGridOverviewCard({
   profile,
@@ -18,7 +18,8 @@ export default function BetaGridOverviewCard({
   setAccountingMode,
   onExpandUpperZone,
   onExpandLowerZone,
-  onExpandToLivePrice
+  onExpandToLivePrice,
+  onOpenChart
 }) {
   if (!profile) return null;
 
@@ -153,16 +154,28 @@ export default function BetaGridOverviewCard({
           </div>
 
           <div className="flex flex-col gap-1.5 items-center">
-            <button
-              onClick={onRefreshPrice}
-              disabled={isFetchingPrice}
-              className={`p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-sm ${
-                isFetchingPrice ? 'opacity-60 cursor-not-allowed' : ''
-              }`}
-              title="Refresh live price"
-            >
-              <RefreshCw className={`w-4 h-4 ${isFetchingPrice ? 'animate-spin text-indigo-500' : ''}`} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {onOpenChart && (
+                <button
+                  onClick={onOpenChart}
+                  className="p-2.5 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/80 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-black transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                  title="เปิดกราฟและแสดงเส้นแนวนอนของทุกโซน Grid"
+                >
+                  <LineChart className="w-4 h-4" />
+                  <span className="hidden sm:inline">ดูกราฟโซน</span>
+                </button>
+              )}
+              <button
+                onClick={onRefreshPrice}
+                disabled={isFetchingPrice}
+                className={`p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-sm ${
+                  isFetchingPrice ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
+                title="Refresh live price"
+              >
+                <RefreshCw className={`w-4 h-4 ${isFetchingPrice ? 'animate-spin text-indigo-500' : ''}`} />
+              </button>
+            </div>
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${
