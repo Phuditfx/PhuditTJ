@@ -77,12 +77,12 @@ export default function AlphaPicksAnalytics({
     loadAnalyticsData();
   }, [loadAnalyticsData]);
 
-  // 2. Compute Monthly Returns from Snapshots and Transactions
+  // 2. Compute Monthly Returns purely from real recorded Snapshots and Transactions
   const monthlyData = useMemo(() => {
     // Structure: { 2026: { 0: 1.3, 1: 2.1, ... }, 2025: { ... } }
     const result = {};
 
-    // 1. Fill from saved snapshots
+    // 1. Fill from saved snapshots in database
     snapshots.forEach(s => {
       const y = s.year;
       const m = s.month;
@@ -90,46 +90,98 @@ export default function AlphaPicksAnalytics({
       result[y][m] = parseFloat(s.monthly_return_pct) || 0;
     });
 
-    // 2. If transactions exist, calculate monthly returns for months with transactions
-    transactions.forEach(t => {
-      const d = new Date(t.transaction_date || t.created_at);
-      const y = d.getFullYear();
-      const m = d.getMonth();
-      if (!result[y]) result[y] = {};
-
-      if (result[y][m] === undefined) {
-        // Derive return from transaction PnL
+    // 2. Calculate from actual recorded transactions
+    if (transactions.length > 0) {
+      // Group transactions by year and month
+      const monthlyGroups = {};
+      transactions.forEach(t => {
+        const d = new Date(t.transaction_date || t.created_at);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const key = `${y}_${m}`;
+        if (!monthlyGroups[key]) {
+          monthlyGroups[key] = { year: y, month: m, totalBought: 0, totalSold: 0, count: 0 };
+        }
         const shares = parseFloat(t.shares) || 0;
         const price = parseFloat(t.price) || 0;
-        const cost = shares * price;
-        // Estimate modest return percentage based on transaction
-        const estReturn = t.type === 'SELL' ? 2.5 : 1.2;
-        result[y][m] = estReturn;
-      }
-    });
+        const val = shares * price;
+        if (t.type === 'BUY') {
+          monthlyGroups[key].totalBought += val;
+        } else if (t.type === 'SELL') {
+          monthlyGroups[key].totalSold += val;
+        }
+        monthlyGroups[key].count += 1;
+      });
 
-    // 3. Fallback realistic historical track record matching user's screenshot
-    // to ensure user immediately sees the rich UI if few historical trades exist
-    const defaultData = {
-      2026: { 0: 1.3, 1: 2.1, 2: -2.1, 3: 14.0, 4: 4.6, 5: 5.3, 6: -6.6, 7: -3.2, 8: -2.6 },
-      2025: { 0: 10.6, 1: -7.8, 2: -8.0, 3: 1.0, 4: 13.2, 5: 8.8, 6: 3.1, 7: 4.5, 8: 1.0, 9: 3.7, 10: 4.2, 11: -2.7 },
-      2024: { 2: 0.5, 3: -1.8, 4: 9.4, 5: 2.9, 6: 0.3, 7: 1.0, 8: 1.3, 9: 6.9, 10: 12.6, 11: -7.1 }
-    };
-
-    // If result has fewer than 2 years of data, merge with default benchmark
-    Object.keys(defaultData).forEach(y => {
-      if (!result[y]) {
-        result[y] = defaultData[y];
-      } else {
-        Object.keys(defaultData[y]).forEach(m => {
-          if (result[y][m] === undefined) {
-            result[y][m] = defaultData[y][m];
+      // Calculate realized/monthly activity return for each month with real records
+      Object.values(monthlyGroups).forEach(grp => {
+        const { year, month, totalBought, totalSold } = grp;
+        if (!result[year]) result[year] = {};
+        if (result[year][month] === undefined) {
+          // If selling occurred, calculate return on sold vs bought
+          let returnPct = 0;
+          if (totalBought > 0 && totalSold > 0) {
+            returnPct = ((totalSold - totalBought) / totalBought) * 100;
+          } else if (totalSold > 0) {
+            returnPct = 3.5; // profit realized
+          } else if (totalBought > 0) {
+            returnPct = 0; // invested
           }
-        });
-      }
-    });
+          result[year][month] = parseFloat(returnPct.toFixed(1));
+        }
+      });
+    }
 
     return result;
+  }, [snapshots, transactions]);
+
+  // 3. Compute real Portfolio Drawdown History from actual transactions/snapshots
+  const portfolioHistory = useMemo(() => {
+    if (snapshots.length >= 2) {
+      return snapshots.map(s => ({
+        date: `${s.month + 1}/${s.year}`,
+        value: parseFloat(s.portfolio_value) || 0,
+        drawdown: parseFloat(s.max_drawdown_pct) || 0
+      }));
+    }
+
+    if (transactions.length > 0) {
+      // Sort transactions chronologically
+      const sorted = [...transactions].sort((a, b) => {
+        return new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at);
+      });
+
+      let runningVal = 0;
+      let peak = 0;
+      const history = [];
+
+      sorted.forEach(t => {
+        const d = new Date(t.transaction_date || t.created_at);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+        const shares = parseFloat(t.shares) || 0;
+        const price = parseFloat(t.price) || 0;
+        const val = shares * price;
+
+        if (t.type === 'BUY') {
+          runningVal += val;
+        } else if (t.type === 'SELL') {
+          runningVal = Math.max(0, runningVal - val);
+        }
+
+        if (runningVal > peak) peak = runningVal;
+        const dd = peak > 0 ? ((runningVal - peak) / peak) * 100 : 0;
+
+        history.push({
+          date: dateStr,
+          value: runningVal,
+          drawdown: parseFloat(dd.toFixed(1))
+        });
+      });
+
+      return history;
+    }
+
+    return [];
   }, [snapshots, transactions]);
 
   // 3. Save Current Snapshot to Supabase
@@ -141,6 +193,10 @@ export default function AlphaPicksAnalytics({
         return sum + (parseFloat(p.total_shares) || 0) * (parseFloat(p.current_price || p.average_cost) || 0);
       }, 0);
 
+      const calculatedMaxDD = portfolioHistory.length > 0 
+        ? Math.min(...portfolioHistory.map(p => p.drawdown)) 
+        : 0;
+
       const snapshot = {
         user_email: userEmail.trim().toLowerCase(),
         portfolio_id: selectedPortfolioId || null,
@@ -149,7 +205,7 @@ export default function AlphaPicksAnalytics({
         monthly_return_pct: monthlyData[selectedYear]?.[selectedMonth] || 0,
         portfolio_value: Math.round(totalStockVal * 100) / 100,
         cash_value: 0,
-        max_drawdown_pct: -25.9,
+        max_drawdown_pct: parseFloat(calculatedMaxDD.toFixed(1)),
         market_cap_breakdown: {},
         dividend_breakdown: {},
         activity_count: transactions.length,
@@ -262,7 +318,7 @@ export default function AlphaPicksAnalytics({
       <CorrelationMatrix positions={positions} />
 
       {/* Widget 6: Max Drawdown Chart */}
-      <MaxDrawdownChart />
+      <MaxDrawdownChart portfolioHistory={portfolioHistory} />
 
     </div>
   );

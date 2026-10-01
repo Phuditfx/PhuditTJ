@@ -6,14 +6,14 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
 
   // Generate or calculate drawdown data points
   const { dataPoints, maxDrawdown, maxDrawdownIndex } = useMemo(() => {
-    // If portfolio history is passed, calculate drawdown from peak
-    if (portfolioHistory && portfolioHistory.length >= 5) {
+    // Calculate drawdown purely from actual portfolio history
+    if (portfolioHistory && portfolioHistory.length >= 2) {
       let peak = -Infinity;
       let minDD = 0;
       let minDDIdx = 0;
 
       const points = portfolioHistory.map((item, idx) => {
-        const val = parseFloat(item.value || item.portfolio_value) || 10000;
+        const val = parseFloat(item.value || item.portfolio_value) || 0;
         if (val > peak) peak = val;
         const dd = peak > 0 ? ((val - peak) / peak) * 100 : 0;
         if (dd < minDD) {
@@ -21,7 +21,7 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
           minDDIdx = idx;
         }
         return {
-          date: item.date || item.snapshot_date || `Point ${idx + 1}`,
+          date: item.date || item.snapshot_date || `T${idx + 1}`,
           drawdown: parseFloat(dd.toFixed(1)),
           peak,
           value: val
@@ -35,40 +35,14 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
       };
     }
 
-    // Realistic baseline matching the user's screenshot curve
-    const months = [
-      'Apr 24', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      'Jan 25', 'Feb', 'Mar', 'Apr 25', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      'Jan 26', 'Feb', 'Mar', 'Apr 26', 'May', 'Jun', 'Jul 26', 'Aug'
-    ];
-
-    // Simulated series mimicking the screenshot
-    const rawDD = [
-      0, -5.2, -1.1, -6.8, -2.0, -10.4, -4.5, -9.2, -1.0,
-      0, -3.2, -8.5, -25.9, -18.2, -7.5, 0, -2.1, -4.8, -9.5, -1.2, 0,
-      -3.4, -8.1, -2.0, -9.2, -4.5, -11.2, -13.5, -14.2
-    ];
-
-    let minDD = 0;
-    let minIdx = 0;
-    const points = months.map((m, idx) => {
-      const val = rawDD[idx] !== undefined ? rawDD[idx] : -5;
-      if (val < minDD) {
-        minDD = val;
-        minIdx = idx;
-      }
-      return {
-        date: m,
-        drawdown: val
-      };
-    });
-
     return {
-      dataPoints: points,
-      maxDrawdown: minDD,
-      maxDrawdownIndex: minIdx
+      dataPoints: [],
+      maxDrawdown: 0,
+      maxDrawdownIndex: 0
     };
   }, [portfolioHistory]);
+
+  const hasSufficientData = dataPoints.length >= 2;
 
   // SVG dimensions
   const width = 800;
@@ -85,6 +59,7 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
   const yMax = 0;
 
   const getX = (index) => {
+    if (!hasSufficientData) return paddingLeft;
     return paddingLeft + (index / (dataPoints.length - 1)) * chartWidth;
   };
 
@@ -93,18 +68,20 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
   };
 
   // Build SVG path
-  const linePath = dataPoints.reduce((acc, pt, idx) => {
+  const linePath = hasSufficientData ? dataPoints.reduce((acc, pt, idx) => {
     const x = getX(idx);
     const y = getY(pt.drawdown);
     return `${acc} ${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }, '');
+  }, '') : '';
 
   // Build Area Path under 0%
   const zeroY = getY(0);
-  const areaPath = `${linePath} L ${getX(dataPoints.length - 1)} ${zeroY} L ${getX(0)} ${zeroY} Z`;
+  const areaPath = hasSufficientData 
+    ? `${linePath} L ${getX(dataPoints.length - 1)} ${zeroY} L ${getX(0)} ${zeroY} Z`
+    : '';
 
   // Drawdown trough X position
-  const troughX = getX(maxDrawdownIndex);
+  const troughX = hasSufficientData ? getX(maxDrawdownIndex) : paddingLeft;
   const troughY = getY(maxDrawdown);
 
   return (
@@ -164,7 +141,7 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
             })}
 
             {/* Deepest Drawdown Highlighting Band */}
-            {troughX && (
+            {hasSufficientData && troughX && (
               <rect
                 x={troughX - 25}
                 y={paddingTop}
@@ -176,38 +153,58 @@ export default function MaxDrawdownChart({ portfolioHistory = [] }) {
             )}
 
             {/* Max Drawdown Horizontal Dashed Line */}
-            <line
-              x1={paddingLeft}
-              y1={troughY}
-              x2={width - paddingRight}
-              y2={troughY}
-              stroke="#ef4444"
-              strokeWidth="1.2"
-              strokeDasharray="4 4"
-            />
+            {hasSufficientData && (
+              <line
+                x1={paddingLeft}
+                y1={troughY}
+                x2={width - paddingRight}
+                y2={troughY}
+                stroke="#ef4444"
+                strokeWidth="1.2"
+                strokeDasharray="4 4"
+              />
+            )}
 
             {/* Filled Area */}
-            <path d={areaPath} fill="url(#drawdownGradient)" />
+            {hasSufficientData && <path d={areaPath} fill="url(#drawdownGradient)" />}
 
             {/* Red Line */}
-            <path
-              d={linePath}
-              fill="none"
-              stroke="#ef4444"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            {hasSufficientData && (
+              <path
+                d={linePath}
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
 
             {/* Highlight point on max drawdown */}
-            <circle
-              cx={troughX}
-              cy={troughY}
-              r="4.5"
-              fill="#ef4444"
-              stroke="#ffffff"
-              strokeWidth="2"
-            />
+            {hasSufficientData && (
+              <circle
+                cx={troughX}
+                cy={troughY}
+                r="4.5"
+                fill="#ef4444"
+                stroke="#ffffff"
+                strokeWidth="2"
+              />
+            )}
+
+            {/* Empty state message when insufficient data */}
+            {!hasSufficientData && (
+              <text
+                x={width / 2}
+                y={height / 2 + 5}
+                fill="#64748b"
+                fontSize="13"
+                textAnchor="middle"
+                className="select-none font-medium"
+              >
+                ยังไม่มีข้อมูลประวัติการย่อตัวในพอร์ต (ต้องมีอย่างน้อย 2 บันทึก)
+              </text>
+            )}
 
             {/* X Axis Labels */}
             {dataPoints.map((pt, idx) => {

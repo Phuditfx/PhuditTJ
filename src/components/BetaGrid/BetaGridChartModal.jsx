@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
-  Maximize2, 
   TrendingUp, 
   Layers, 
   ShoppingBag, 
@@ -9,12 +8,12 @@ import {
   Clock, 
   CheckCircle2, 
   Info,
-  Sliders,
-  Eye,
+  Maximize2,
+  Minimize2,
+  Activity,
   Zap,
   ShieldCheck
 } from 'lucide-react';
-import { createChart, ColorType, LineStyle } from 'lightweight-charts';
 
 export default function BetaGridChartModal({
   isOpen,
@@ -24,272 +23,155 @@ export default function BetaGridChartModal({
   onFillZone,
   onHarvestZone
 }) {
-  const chartContainerRef = useRef(null);
-  const chartInstanceRef = useRef(null);
-  const [selectedZone, setSelectedZone] = useState(null);
+  const [hoveredZone, setHoveredZone] = useState(null);
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
-  const [candleType, setCandleType] = useState('candle'); // 'candle' | 'line'
+  const [chartType, setChartType] = useState('candle'); // 'candle' | 'line'
 
   const zones = useMemo(() => profile?.zones || [], [profile?.zones]);
   const plan = profile?.plan || {};
   const ticker = profile?.assetTicker || 'TQQQ';
 
-  // Calculate stats
   const filledCount = zones.filter(z => z.status === 'FILLED').length;
   const emptyCount = zones.filter(z => z.status === 'EMPTY').length;
 
-  useEffect(() => {
-    if (!isOpen || !chartContainerRef.current) return;
+  // Chart Y-Axis Price Range
+  const { minPrice, maxPrice, priceRange } = useMemo(() => {
+    let min = Infinity;
+    let max = -Infinity;
 
-    // Detect dark mode
-    const isDark = document.documentElement.classList.contains('dark') || 
-                   window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    // Clean up previous instance
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.remove();
-      chartInstanceRef.current = null;
-    }
-
-    const container = chartContainerRef.current;
-    const width = container.clientWidth || 800;
-    const height = container.clientHeight || 520;
-
-    const chart = createChart(container, {
-      width,
-      height,
-      layout: {
-        background: { type: ColorType.Solid, color: isDark ? '#0b1329' : '#ffffff' },
-        textColor: isDark ? '#94a3b8' : '#64748b',
-        fontSize: 11,
-      },
-      grid: {
-        vertLines: { color: isDark ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.7)' },
-        horzLines: { color: isDark ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.7)' },
-      },
-      crosshair: {
-        vertLine: {
-          color: isDark ? '#64748b' : '#94a3b8',
-          width: 1,
-          style: LineStyle.Dashed,
-        },
-        horzLine: {
-          color: isDark ? '#64748b' : '#94a3b8',
-          width: 1,
-          style: LineStyle.Dashed,
-        },
-      },
-      rightPriceScale: {
-        borderColor: isDark ? '#334155' : '#cbd5e1',
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
-        },
-      },
-      timeScale: {
-        borderColor: isDark ? '#334155' : '#cbd5e1',
-        timeVisible: true,
-      },
+    zones.forEach(z => {
+      if (z.priceLevel < min) min = z.priceLevel;
+      if (z.targetSellPrice > max) max = z.targetSellPrice;
     });
 
-    chartInstanceRef.current = chart;
-
-    // Generate realistic historical daily candles centering around current price / grid bounds
-    const basePrice = livePrice || (plan.upperPrice ? (plan.upperPrice + plan.lowerPrice) / 2 : 30);
-    const dayCount = 60;
-    const candleData = [];
-    const now = new Date();
-    let currentBarClose = basePrice * 0.92;
-
-    for (let i = dayCount; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const timeStr = d.toISOString().split('T')[0];
-
-      // Simulated walk oscillating toward current price
-      const volatility = basePrice * 0.02;
-      const targetDiff = (basePrice - currentBarClose) / (i + 1);
-      const open = currentBarClose;
-      const change = targetDiff + (Math.random() - 0.48) * volatility;
-      const close = Math.max(1, open + change);
-      const high = Math.max(open, close) + Math.random() * (volatility * 0.6);
-      const low = Math.min(open, close) - Math.random() * (volatility * 0.6);
-
-      currentBarClose = i === 0 && livePrice ? livePrice : close;
-
-      candleData.push({
-        time: timeStr,
-        open: parseFloat(open.toFixed(2)),
-        high: parseFloat(high.toFixed(2)),
-        low: parseFloat(low.toFixed(2)),
-        close: parseFloat(currentBarClose.toFixed(2)),
-      });
-    }
-
-    let mainSeries;
-    if (candleType === 'candle') {
-      mainSeries = chart.addCandlestickSeries({
-        upColor: '#10b981',
-        downColor: '#ef4444',
-        borderVisible: false,
-        wickUpColor: '#10b981',
-        wickDownColor: '#ef4444',
-      });
-      mainSeries.setData(candleData);
-    } else {
-      mainSeries = chart.addLineSeries({
-        color: '#6366f1',
-        lineWidth: 2,
-      });
-      mainSeries.setData(candleData.map(c => ({ time: c.time, value: c.close })));
-    }
-
-    // Add Horizontal Price Lines for Grid Zones
-    zones.forEach(zone => {
-      const isFilled = zone.status === 'FILLED';
-      const isAction = zone.zoneType === 'ACTION';
-
-      // 1. Buy Price Line
-      mainSeries.createPriceLine({
-        price: zone.priceLevel,
-        color: isFilled ? '#10b981' : (isAction ? '#6366f1' : '#a855f7'),
-        lineWidth: isFilled ? 2 : 1,
-        lineStyle: isFilled ? LineStyle.Solid : LineStyle.Dotted,
-        axisLabelVisible: true,
-        title: `#${zone.levelIndex} ${isFilled ? '🟢 FILLED' : '🔵 BUY'} $${zone.priceLevel.toFixed(2)} (${zone.sharesAllocated} sh)`,
-      });
-
-      // 2. Target Sell Price Line
-      mainSeries.createPriceLine({
-        price: zone.targetSellPrice,
-        color: '#059669',
-        lineWidth: 1,
-        lineStyle: LineStyle.Dashed,
-        axisLabelVisible: false,
-        title: `#${zone.levelIndex} SELL $${zone.targetSellPrice.toFixed(2)}`,
-      });
-    });
-
-    // Add Grid Bounds Reference Lines
-    if (plan.upperPrice) {
-      mainSeries.createPriceLine({
-        price: plan.upperPrice,
-        color: '#f59e0b',
-        lineWidth: 2,
-        lineStyle: LineStyle.LargeDashed,
-        axisLabelVisible: true,
-        title: `⚡ UPPER GRID ($${plan.upperPrice.toFixed(2)})`,
-      });
-    }
-
-    if (plan.lowerPrice) {
-      mainSeries.createPriceLine({
-        price: plan.lowerPrice,
-        color: '#8b5cf6',
-        lineWidth: 2,
-        lineStyle: LineStyle.LargeDashed,
-        axisLabelVisible: true,
-        title: `🛡️ LOWER GRID ($${plan.lowerPrice.toFixed(2)})`,
-      });
-    }
-
-    // Add Live Price Line
+    if (plan.upperPrice && plan.upperPrice > max) max = plan.upperPrice;
+    if (plan.lowerPrice && plan.lowerPrice < min) min = plan.lowerPrice;
     if (livePrice) {
-      mainSeries.createPriceLine({
-        price: livePrice,
-        color: '#06b6d4',
-        lineWidth: 2,
-        lineStyle: LineStyle.Solid,
-        axisLabelVisible: true,
-        title: `📍 LIVE: $${livePrice.toFixed(2)}`,
-      });
+      if (livePrice < min) min = livePrice;
+      if (livePrice > max) max = livePrice;
     }
 
-    chart.timeScale().fitContent();
+    if (min === Infinity || max === -Infinity) {
+      min = 20;
+      max = 40;
+    }
 
-    // Resize observer
-    const handleResize = () => {
-      if (chartContainerRef.current && chartInstanceRef.current) {
-        chartInstanceRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
+    // Add 8% padding to top and bottom
+    const pad = (max - min) * 0.08 || 2;
+    return {
+      minPrice: Math.max(0.01, min - pad),
+      maxPrice: max + pad,
+      priceRange: (max + pad) - Math.max(0.01, min - pad)
     };
+  }, [zones, plan, livePrice]);
 
-    const resizeObserver = new ResizeObserver(handleResize);
-    resizeObserver.observe(container);
+  // Chart dimensions
+  const svgWidth = 840;
+  const svgHeight = 480;
+  const padLeft = 70;
+  const padRight = 140;
+  const padTop = 30;
+  const padBottom = 40;
+  const chartW = svgWidth - padLeft - padRight;
+  const chartH = svgHeight - padTop - padBottom;
 
-    return () => {
-      resizeObserver.disconnect();
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.remove();
-        chartInstanceRef.current = null;
-      }
-    };
-  }, [isOpen, zones, livePrice, plan.upperPrice, plan.lowerPrice, candleType]);
+  const getY = (price) => {
+    if (priceRange <= 0) return padTop + chartH / 2;
+    const ratio = (price - minPrice) / priceRange;
+    return padTop + (1 - ratio) * chartH;
+  };
+
+  // Generate realistic price action candles that oscillate across the grid zones
+  const candles = useMemo(() => {
+    const count = 36;
+    const items = [];
+    const base = livePrice || (maxPrice + minPrice) / 2;
+    let current = base * 0.96;
+
+    for (let i = 0; i < count; i++) {
+      const isLast = i === count - 1;
+      const target = isLast && livePrice ? livePrice : base + Math.sin(i / 3) * (priceRange * 0.28);
+      const open = current;
+      const diff = (target - open) * 0.5 + (Math.sin(i * 1.5) * (priceRange * 0.04));
+      const close = isLast && livePrice ? livePrice : open + diff;
+      const high = Math.max(open, close) + Math.abs(Math.sin(i * 2)) * (priceRange * 0.03);
+      const low = Math.min(open, close) - Math.abs(Math.cos(i * 2)) * (priceRange * 0.03);
+      current = close;
+
+      items.push({
+        index: i,
+        open,
+        close,
+        high,
+        low,
+        isUp: close >= open
+      });
+    }
+    return items;
+  }, [livePrice, minPrice, maxPrice, priceRange]);
 
   if (!isOpen) return null;
 
+  const currentZone = zones.find(z => livePrice && livePrice >= z.priceLevel && livePrice < z.targetSellPrice);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-white dark:bg-[#0b1329] border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+      <div className="bg-[#0b1329] border border-slate-800 rounded-3xl w-full max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/60 overflow-hidden text-slate-100">
         
-        {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-4 bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 flex-shrink-0">
-              <span className="text-xl font-black font-serif italic">β</span>
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 flex-shrink-0">
+              <span className="text-2xl font-black font-serif italic">β</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono">
+                <h2 className="text-xl font-black text-white font-mono tracking-tight">
                   {ticker} Grid Visualizer Chart
                 </h2>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
                   {zones.length} โซน
                 </span>
                 {livePrice && (
-                  <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                  <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 animate-pulse">
                     Live: ${livePrice.toFixed(2)}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 เส้นแนวนอนแสดงระดับราคาซื้อ (Buy) และเป้าหมายขาย (Target Sell) ในแต่ละโซนของกลยุทธ์
               </p>
             </div>
           </div>
 
-          {/* Controls & Close */}
-          <div className="flex items-center gap-2">
-            {/* Candle/Line Switcher */}
-            <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+          {/* Top Controls */}
+          <div className="flex items-center gap-3">
+            <div className="flex p-1 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-bold">
               <button
-                onClick={() => setCandleType('candle')}
+                onClick={() => setChartType('candle')}
                 className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  candleType === 'candle'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  chartType === 'candle'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 แท่งเทียน
               </button>
               <button
-                onClick={() => setCandleType('line')}
+                onClick={() => setChartType('line')}
                 className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  candleType === 'line'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  chartType === 'line'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                เส้นกราฟ
+                เส้นราคา
               </button>
             </div>
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -297,48 +179,203 @@ export default function BetaGridChartModal({
         </div>
 
         {/* Legend Bar */}
-        <div className="px-5 py-2.5 bg-slate-100/70 dark:bg-slate-900/40 border-b border-slate-200/60 dark:border-slate-800/60 flex flex-wrap items-center justify-between text-xs gap-3">
+        <div className="px-5 py-2.5 bg-slate-900/40 border-b border-slate-800/60 flex flex-wrap items-center justify-between text-xs gap-3">
           <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold">
-            <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-              <span className="w-3 h-0.5 bg-[#06b6d4]"></span>
+            <span className="flex items-center gap-1.5 text-cyan-400">
+              <span className="w-3.5 h-0.5 bg-cyan-400"></span>
               <span>ราคาตลาดปัจจุบัน (Live Market)</span>
             </span>
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-              <span className="w-3 h-0.5 bg-[#10b981]"></span>
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <span className="w-3.5 h-1 bg-emerald-500 rounded"></span>
               <span>โซนที่มีหุ้น (FILLED)</span>
             </span>
-            <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-              <span className="w-3 h-0.5 border-t border-dashed border-[#6366f1]"></span>
+            <span className="flex items-center gap-1.5 text-indigo-400">
+              <span className="w-3.5 h-0.5 border-t border-dashed border-indigo-400"></span>
               <span>โซนรอรับ (EMPTY Buy)</span>
             </span>
             <span className="flex items-center gap-1.5 text-emerald-500">
-              <span className="w-3 h-0.5 border-t border-dashed border-[#059669]"></span>
-              <span>เป้าขายทำกำไร (Target Sell)</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-amber-500">
-              <span className="w-3 h-0.5 border-t-2 border-dashed border-[#f59e0b]"></span>
-              <span>กรอบบน (Upper Bound)</span>
+              <span className="w-3.5 h-0.5 border-t border-dashed border-emerald-500"></span>
+              <span>เป้าขาย (Target Sell)</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              ถือครอง {filledCount} / {zones.length} ไม้
-            </span>
+          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
+            <span>ถือครอง: <strong className="text-emerald-400">{filledCount}</strong> ไม้</span>
+            <span>•</span>
+            <span>รอรับ: <strong className="text-indigo-400">{emptyCount}</strong> ไม้</span>
           </div>
         </div>
 
-        {/* Main Content: Chart (70%) + Quick Zone List (30%) */}
+        {/* Content: Chart + Sidebar */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 min-h-[480px] overflow-hidden">
-          {/* Chart Canvas Area */}
-          <div className="lg:col-span-3 p-4 flex flex-col justify-between relative bg-white dark:bg-[#0b1329]">
-            <div ref={chartContainerRef} className="w-full h-full min-h-[440px] rounded-2xl overflow-hidden" />
+          
+          {/* Main Chart Area */}
+          <div className="lg:col-span-3 p-4 flex flex-col justify-between relative bg-[#0b1329] overflow-x-auto custom-scrollbar">
+            <div className="min-w-[650px] relative">
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-[460px] select-none">
+                
+                {/* Background Grid */}
+                <rect x={padLeft} y={padTop} width={chartW} height={chartH} fill="#090d1f" rx={8} />
+
+                {/* Shaded bands for FILLED zones */}
+                {zones.map(z => {
+                  if (z.status !== 'FILLED') return null;
+                  const y1 = getY(z.targetSellPrice);
+                  const y2 = getY(z.priceLevel);
+                  const h = Math.abs(y2 - y1);
+                  return (
+                    <rect
+                      key={`band_${z.id}`}
+                      x={padLeft}
+                      y={Math.min(y1, y2)}
+                      width={chartW}
+                      height={Math.max(2, h)}
+                      fill="#10b981"
+                      fillOpacity={0.12}
+                    />
+                  );
+                })}
+
+                {/* Candlesticks or Price Line */}
+                {chartType === 'candle' ? (
+                  candles.map(c => {
+                    const candleW = (chartW / candles.length) * 0.65;
+                    const x = padLeft + (c.index / (candles.length - 1)) * (chartW - 20) + 10;
+                    const openY = getY(c.open);
+                    const closeY = getY(c.close);
+                    const highY = getY(c.high);
+                    const lowY = getY(c.low);
+                    const bodyTop = Math.min(openY, closeY);
+                    const bodyH = Math.max(2, Math.abs(closeY - openY));
+                    const color = c.isUp ? '#10b981' : '#ef4444';
+
+                    return (
+                      <g key={c.index}>
+                        {/* Wick */}
+                        <line x1={x} y1={highY} x2={x} y2={lowY} stroke={color} strokeWidth={1.2} opacity={0.7} />
+                        {/* Body */}
+                        <rect
+                          x={x - candleW / 2}
+                          y={bodyTop}
+                          width={candleW}
+                          height={bodyH}
+                          fill={color}
+                          rx={1.5}
+                        />
+                      </g>
+                    );
+                  })
+                ) : (
+                  <path
+                    d={candles.reduce((acc, c, idx) => {
+                      const x = padLeft + (c.index / (candles.length - 1)) * (chartW - 20) + 10;
+                      const y = getY(c.close);
+                      return `${acc} ${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+                    }, '')}
+                    fill="none"
+                    stroke="#6366f1"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                  />
+                )}
+
+                {/* Horizontal Lines for Each Zone */}
+                {zones.map(z => {
+                  const isFilled = z.status === 'FILLED';
+                  const isHovered = hoveredZone?.id === z.id;
+                  const buyY = getY(z.priceLevel);
+                  const sellY = getY(z.targetSellPrice);
+
+                  return (
+                    <g key={z.id} onMouseEnter={() => setHoveredZone(z)} onMouseLeave={() => setHoveredZone(null)}>
+                      {/* Target Sell Line */}
+                      <line
+                        x1={padLeft}
+                        y1={sellY}
+                        x2={padLeft + chartW}
+                        y2={sellY}
+                        stroke="#059669"
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        opacity={isFilled ? 0.8 : 0.4}
+                      />
+
+                      {/* Buy Price Line */}
+                      <line
+                        x1={padLeft}
+                        y1={buyY}
+                        x2={padLeft + chartW}
+                        y2={buyY}
+                        stroke={isFilled ? '#10b981' : '#6366f1'}
+                        strokeWidth={isFilled ? 2 : (isHovered ? 1.8 : 1)}
+                        strokeDasharray={isFilled ? 'none' : '3 3'}
+                        opacity={isFilled ? 0.95 : 0.65}
+                      />
+
+                      {/* Right-side Price Axis Badges */}
+                      <g transform={`translate(${padLeft + chartW + 8}, ${buyY - 9})`}>
+                        <rect
+                          width={125}
+                          height={18}
+                          rx={4}
+                          fill={isFilled ? '#065f46' : '#1e1b4b'}
+                          stroke={isFilled ? '#10b981' : '#4f46e5'}
+                          strokeWidth={1}
+                        />
+                        <text x={6} y={13} fill="#ffffff" fontSize="9.5" fontFamily="monospace" fontWeight="bold">
+                          #{z.levelIndex} {isFilled ? 'FILLED' : 'BUY'} ${z.priceLevel.toFixed(2)}
+                        </text>
+                      </g>
+                    </g>
+                  );
+                })}
+
+                {/* Live Price Horizontal Line */}
+                {livePrice && (
+                  <g>
+                    <line
+                      x1={padLeft}
+                      y1={getY(livePrice)}
+                      x2={padLeft + chartW}
+                      y2={getY(livePrice)}
+                      stroke="#06b6d4"
+                      strokeWidth={2}
+                    />
+                    <g transform={`translate(${padLeft + chartW + 8}, ${getY(livePrice) - 10})`}>
+                      <rect width={125} height={20} rx={5} fill="#0891b2" />
+                      <text x={6} y={14} fill="#ffffff" fontSize="10" fontFamily="monospace" fontWeight="black">
+                        📍 LIVE ${livePrice.toFixed(2)}
+                      </text>
+                    </g>
+                  </g>
+                )}
+
+                {/* Y-Axis Price Ticks on Left */}
+                {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
+                  const price = minPrice + ratio * priceRange;
+                  const y = padTop + (1 - ratio) * chartH;
+                  return (
+                    <text
+                      key={ratio}
+                      x={padLeft - 10}
+                      y={y + 4}
+                      fill="#64748b"
+                      fontSize="10"
+                      fontFamily="monospace"
+                      textAnchor="end"
+                    >
+                      ${price.toFixed(2)}
+                    </text>
+                  );
+                })}
+              </svg>
+            </div>
           </div>
 
           {/* Quick Zone Sidebar */}
-          <div className="border-t lg:border-t-0 lg:border-l border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col max-h-[480px]">
-            <div className="p-3 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300 tracking-wider">
+          <div className="border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/40 flex flex-col max-h-[500px]">
+            <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-slate-300 tracking-wider">
                 ระดับราคาในแต่ละโซน
               </span>
               <button
@@ -346,7 +383,7 @@ export default function BetaGridChartModal({
                 className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
                   showOnlyFilled
                     ? 'bg-emerald-500 text-white'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
                 {showOnlyFilled ? 'เฉพาะที่มีหุ้น' : 'ทุกโซน'}
@@ -364,22 +401,23 @@ export default function BetaGridChartModal({
                   return (
                     <div
                       key={zone.id}
-                      onClick={() => setSelectedZone(zone)}
+                      onMouseEnter={() => setHoveredZone(zone)}
+                      onMouseLeave={() => setHoveredZone(null)}
                       className={`p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
                         isCurrent
-                          ? 'border-cyan-500 bg-cyan-50/60 dark:bg-cyan-950/30 shadow-sm'
+                          ? 'border-cyan-500 bg-cyan-950/40 shadow-sm'
                           : isFilled
-                            ? 'border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
-                            : 'border-slate-200/60 dark:border-slate-800/60 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+                            ? 'border-emerald-500/40 bg-emerald-950/20'
+                            : 'border-slate-800/80 hover:bg-slate-800/50'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-slate-500">#{zone.levelIndex}</span>
+                          <span className="font-mono font-bold text-slate-400">#{zone.levelIndex}</span>
                           <span className={`text-[9px] font-black px-1.5 py-0.2 rounded uppercase ${
                             zone.zoneType === 'ACTION'
-                              ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                              : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                              ? 'bg-indigo-500/20 text-indigo-300'
+                              : 'bg-purple-500/20 text-purple-300'
                           }`}>
                             {zone.zoneType}
                           </span>
@@ -389,22 +427,22 @@ export default function BetaGridChartModal({
                             </span>
                           )}
                         </div>
-                        <span className={`text-[10px] font-black ${isFilled ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        <span className={`text-[10px] font-black ${isFilled ? 'text-emerald-400' : 'text-slate-500'}`}>
                           {isFilled ? 'FILLED' : 'EMPTY'}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between mt-1.5 font-mono">
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                        <span className="font-bold text-slate-200">
                           ${zone.priceLevel.toFixed(2)} → ${zone.targetSellPrice.toFixed(2)}
                         </span>
-                        <span className="text-emerald-500 font-bold">
+                        <span className="text-emerald-400 font-bold">
                           +${profit.toFixed(1)}
                         </span>
                       </div>
 
                       {/* Action buttons inside sidebar */}
-                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/40 dark:border-slate-800/40">
+                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-800/60">
                         <span className="text-[10px] text-slate-400">
                           {zone.sharesAllocated} หุ้น
                         </span>

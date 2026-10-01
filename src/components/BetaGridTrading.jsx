@@ -8,7 +8,8 @@ import {
   LayoutGrid, 
   Layers, 
   TrendingUp, 
-  RotateCcw 
+  RotateCcw,
+  LineChart 
 } from 'lucide-react';
 import { 
   getBetaGridProfiles, 
@@ -590,6 +591,14 @@ export default function BetaGridTrading({
           >
             <History size={14} />
             <span>ประวัติรอบ & กระแสเงินสด ({cycleHistory.length})</span>
+          </button>
+          <button
+            onClick={() => setIsChartModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 ml-1"
+            title="ดูกราฟโซน Grid พร้อมเส้นราคาแนวนอนและระดับไม้"
+          >
+            <LineChart size={14} />
+            <span>📈 ดูกราฟโซน Grid</span>
           </button>
         </div>
 
