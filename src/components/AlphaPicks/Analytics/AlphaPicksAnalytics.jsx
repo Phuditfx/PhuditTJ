@@ -78,6 +78,10 @@ export default function AlphaPicksAnalytics({
     loadAnalyticsData();
   }, [loadAnalyticsData]);
 
+  const currentPortfolio = useMemo(() => {
+    return (portfolios || []).find(p => p.id === selectedPortfolioId) || (portfolios || [])[0] || null;
+  }, [portfolios, selectedPortfolioId]);
+
   // 2. Compute Monthly Returns purely from real recorded Snapshots and Transactions
   const monthlyData = useMemo(() => {
     // Structure: { 2026: { 0: 1.3, 1: 2.1, ... }, 2025: { ... } }
@@ -361,8 +365,14 @@ export default function AlphaPicksAnalytics({
       {/* Widget 5: Correlation Matrix */}
       <CorrelationMatrix positions={positions} />
 
-      {/* Widget 6: Max Drawdown Chart */}
-      <MaxDrawdownChart portfolioHistory={portfolioHistory} />
+      {/* Widget 6: Max Drawdown Chart with Compare Feature */}
+      <MaxDrawdownChart 
+        portfolioHistory={portfolioHistory} 
+        portfolioName={currentPortfolio?.name || 'AP Quantitative analysis'}
+        portfolios={portfolios}
+        selectedPortfolioId={selectedPortfolioId}
+        userEmail={userEmail}
+      />
 
     </div>
   );

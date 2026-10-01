@@ -35,36 +35,102 @@ export default function BetaGridChartModal({
   const filledCount = zones.filter(z => z.status === 'FILLED').length;
   const emptyCount = zones.filter(z => z.status === 'EMPTY').length;
 
-  // Chart Y-Axis Price Range
-  const { minPrice, maxPrice, priceRange } = useMemo(() => {
-    let min = Infinity;
-    let max = -Infinity;
+  // 1. Generate realistic price action candles anchored backward from livePrice
+  const candles = useMemo(() => {
+    const config = {
+      '1h': { count: 42, stepPct: 0.004, waveFreq: 0.16 },
+      '4h': { count: 36, stepPct: 0.008, waveFreq: 0.13 },
+      'D':  { count: 32, stepPct: 0.015, waveFreq: 0.10 },
+      'W':  { count: 24, stepPct: 0.026, waveFreq: 0.08 },
+      'M':  { count: 18, stepPct: 0.042, waveFreq: 0.06 }
+    }[selectedTF] || { count: 32, stepPct: 0.015, waveFreq: 0.10 };
 
-    zones.forEach(z => {
-      if (z.priceLevel < min) min = z.priceLevel;
-      if (z.targetSellPrice > max) max = z.targetSellPrice;
+    const count = config.count;
+    const currentPrice = livePrice || (plan.upperPrice ? (plan.upperPrice + plan.lowerPrice) / 2 : 30);
+    const step = plan.gridStep || 1;
+    const maxBound = plan.upperPrice ? plan.upperPrice + step * 1.5 : currentPrice * 1.35;
+    const minBound = plan.lowerPrice ? Math.max(0.5, plan.lowerPrice - step * 1.5) : currentPrice * 0.65;
+
+    // Walk backwards from currentPrice
+    const rawReversed = [];
+    let cur = currentPrice;
+    rawReversed.push({ close: cur });
+
+    for (let i = 1; i < count; i++) {
+      const wave = Math.sin(i * config.waveFreq * 3.14159) * (step * 0.9);
+      const noise = Math.cos(i * 1.7) * (step * 0.3);
+      const delta = (wave + noise) * (config.stepPct * 12);
+      
+      let nextPrice = cur - delta;
+      if (nextPrice > maxBound) nextPrice = maxBound - (step * 0.2);
+      if (nextPrice < minBound) nextPrice = minBound + (step * 0.2);
+      
+      rawReversed.push({ close: nextPrice });
+      cur = nextPrice;
+    }
+
+    const rawChronological = rawReversed.reverse();
+    
+    // Build OHLC candles
+    return rawChronological.map((item, idx) => {
+      const isLast = idx === count - 1;
+      const close = isLast ? currentPrice : item.close;
+      const prevClose = idx > 0 ? rawChronological[idx - 1].close : close * 0.995;
+      const open = prevClose;
+      
+      const wickSpread = step * (config.stepPct * 14 + 0.15);
+      const high = Math.max(open, close) + Math.abs(Math.sin(idx * 2.3)) * wickSpread;
+      const low = Math.min(open, close) - Math.abs(Math.cos(idx * 2.1)) * wickSpread;
+
+      return {
+        index: idx,
+        open,
+        close,
+        high,
+        low,
+        isUp: close >= open
+      };
+    });
+  }, [livePrice, plan, selectedTF]);
+
+  // 2. Chart Y-Axis Price Range encompassing BOTH candles AND grid zones
+  const { minPrice, maxPrice, priceRange, visibleZones } = useMemo(() => {
+    if (!candles || candles.length === 0) {
+      return { minPrice: 20, maxPrice: 40, priceRange: 20, visibleZones: zones };
+    }
+
+    const candleHighs = candles.map(c => c.high);
+    const candleLows = candles.map(c => c.low);
+    let minC = Math.min(...candleLows);
+    let maxC = Math.max(...candleHighs);
+
+    if (livePrice) {
+      minC = Math.min(minC, livePrice);
+      maxC = Math.max(maxC, livePrice);
+    }
+
+    // In macro timeframes (D, W, M) include the full grid upper & lower limits
+    if (selectedTF === 'D' || selectedTF === 'W' || selectedTF === 'M') {
+      if (plan.lowerPrice) minC = Math.min(minC, plan.lowerPrice);
+      if (plan.upperPrice) maxC = Math.max(maxC, plan.upperPrice);
+    }
+
+    // Add 6% padding top and bottom
+    const pad = Math.max(0.5, (maxC - minC) * 0.06);
+    const finalMin = Math.max(0.01, minC - pad);
+    const finalMax = maxC + pad;
+
+    const vz = zones.filter(z => {
+      return z.targetSellPrice >= finalMin && z.priceLevel <= finalMax;
     });
 
-    if (plan.upperPrice && plan.upperPrice > max) max = plan.upperPrice;
-    if (plan.lowerPrice && plan.lowerPrice < min) min = plan.lowerPrice;
-    if (livePrice) {
-      if (livePrice < min) min = livePrice;
-      if (livePrice > max) max = livePrice;
-    }
-
-    if (min === Infinity || max === -Infinity) {
-      min = 20;
-      max = 40;
-    }
-
-    // Add 8% padding to top and bottom
-    const pad = (max - min) * 0.08 || 2;
     return {
-      minPrice: Math.max(0.01, min - pad),
-      maxPrice: max + pad,
-      priceRange: (max + pad) - Math.max(0.01, min - pad)
+      minPrice: finalMin,
+      maxPrice: finalMax,
+      priceRange: finalMax - finalMin,
+      visibleZones: vz.length > 0 ? vz : zones
     };
-  }, [zones, plan, livePrice]);
+  }, [candles, livePrice, plan, selectedTF, zones]);
 
   // Chart dimensions
   const svgWidth = 840;
@@ -81,48 +147,6 @@ export default function BetaGridChartModal({
     const ratio = (price - minPrice) / priceRange;
     return padTop + (1 - ratio) * chartH;
   };
-
-  // Timeframe configurations
-  const TF_CONFIGS = {
-    '1h': { count: 48, speed: 1.5, amp: 0.12, noise: 0.02 },
-    '4h': { count: 40, speed: 1.2, amp: 0.20, noise: 0.025 },
-    'D':  { count: 32, speed: 0.9, amp: 0.28, noise: 0.035 },
-    'W':  { count: 24, speed: 0.6, amp: 0.38, noise: 0.045 },
-    'M':  { count: 18, speed: 0.4, amp: 0.48, noise: 0.055 }
-  };
-
-  // Generate realistic price action candles that oscillate across the grid zones based on chosen TF
-  const candles = useMemo(() => {
-    const config = TF_CONFIGS[selectedTF] || TF_CONFIGS['D'];
-    const count = config.count;
-    const items = [];
-    const base = livePrice || (maxPrice + minPrice) / 2;
-    let current = base * (1 - (config.amp * 0.2));
-
-    for (let i = 0; i < count; i++) {
-      const isLast = i === count - 1;
-      const wave = Math.sin((i / 4) * config.speed) * (priceRange * config.amp);
-      const target = isLast && livePrice ? livePrice : base + wave;
-      const open = current;
-      const noiseDiff = (Math.sin(i * 1.7) * (priceRange * config.noise));
-      const diff = (target - open) * 0.55 + noiseDiff;
-      const close = isLast && livePrice ? livePrice : open + diff;
-      const wickSpread = (priceRange * (0.015 + (config.amp * 0.04)));
-      const high = Math.max(open, close) + Math.abs(Math.sin(i * 2.3)) * wickSpread;
-      const low = Math.min(open, close) - Math.abs(Math.cos(i * 2.1)) * wickSpread;
-      current = close;
-
-      items.push({
-        index: i,
-        open,
-        close,
-        high,
-        low,
-        isUp: close >= open
-      });
-    }
-    return items;
-  }, [livePrice, minPrice, maxPrice, priceRange, selectedTF]);
 
   if (!isOpen) return null;
 
@@ -251,7 +275,7 @@ export default function BetaGridChartModal({
                 <rect x={padLeft} y={padTop} width={chartW} height={chartH} fill="#090d1f" rx={8} />
 
                 {/* Shaded bands for FILLED zones */}
-                {zones.map(z => {
+                {visibleZones.map(z => {
                   if (z.status !== 'FILLED') return null;
                   const y1 = getY(z.targetSellPrice);
                   const y2 = getY(z.priceLevel);
@@ -313,7 +337,7 @@ export default function BetaGridChartModal({
                 )}
 
                 {/* Horizontal Lines for Each Zone */}
-                {zones.map(z => {
+                {visibleZones.map(z => {
                   const isFilled = z.status === 'FILLED';
                   const isHovered = hoveredZone?.id === z.id;
                   const buyY = getY(z.priceLevel);
