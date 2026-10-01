@@ -50,11 +50,17 @@ export default function BetaGridTrading({
   // Accounting Method: 'NON_FIFO' | 'FIFO'
   const [accountingMode, setAccountingMode] = useState('NON_FIFO');
 
+  // Current Active Profile (Declared before effects that reference it)
+  const currentProfile = profiles.find(p => p.id === selectedProfileId) || profiles[0] || null;
+  const currentTicker = currentProfile?.assetTicker || 'TQQQ';
+  const currentLivePrice = livePrices[currentTicker] || null;
+
+  // Sync accountingMode when active profile changes
   useEffect(() => {
     if (currentProfile?.accountingMode) {
       setAccountingMode(currentProfile.accountingMode);
     }
-  }, [currentProfile?.accountingMode]);
+  }, [currentProfile?.accountingMode, currentProfile?.id]);
 
   // 1. Initial Load of Profiles & History
   useEffect(() => {
@@ -84,11 +90,6 @@ export default function BetaGridTrading({
     }
     return () => { isMounted = false; };
   }, [currentUser]);
-
-  // Current Active Profile
-  const currentProfile = profiles.find(p => p.id === selectedProfileId) || profiles[0] || null;
-  const currentTicker = currentProfile?.assetTicker || 'TQQQ';
-  const currentLivePrice = livePrices[currentTicker] || null;
 
   // 2. Fetch Live Price for Current Ticker
   const updateLivePrice = useCallback(async () => {
