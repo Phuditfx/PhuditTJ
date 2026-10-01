@@ -16,6 +16,7 @@ import {
 export default function BetaGridZoneTable({
   zones = [],
   livePrice = null,
+  accountingMode = 'NON_FIFO',
   onFillZone,
   onHarvestZone,
   onUpdateZoneShares,
