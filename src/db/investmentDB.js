@@ -500,6 +500,159 @@ export async function addPortfolioFunding(userEmail, portfolioId, type, amount, 
   if (updateError) throw updateError;
 }
 
+// ----------------------------------------------------
+// TRANSACTION EDIT & DELETE (within 15-minute window)
+// ----------------------------------------------------
+
+/**
+ * Delete a single transaction and recalculate position state
+ * from all remaining transactions.
+ * Also reverses the cash balance impact.
+ */
+export async function deleteTransactionAndRecalculate(
+  userEmail,
+  portfolioId,
+  transactionId
+) {
+  // 1. Fetch the transaction to delete
+  const { data: txData, error: txFetchErr } = await supabase
+    .from('investment_transactions')
+    .select('*, investment_positions(ticker, id, user_email)')
+    .eq('id', transactionId)
+    .single();
+
+  if (txFetchErr || !txData) throw new Error('Transaction not found');
+
+  const positionId = txData.position_id;
+  const txType = txData.type;
+  const txShares = parseFloat(txData.shares || 0);
+  const txPrice = parseFloat(txData.price || 0);
+  const txValue = txShares * txPrice;
+
+  // 2. Delete the transaction record
+  const { error: deleteErr } = await supabase
+    .from('investment_transactions')
+    .delete()
+    .eq('id', transactionId);
+  if (deleteErr) throw deleteErr;
+
+  // 3. Fetch all REMAINING transactions for this position (BUY + SELL only)
+  const { data: remainingTxs, error: remainErr } = await supabase
+    .from('investment_transactions')
+    .select('*')
+    .eq('position_id', positionId)
+    .in('type', ['BUY', 'SELL'])
+    .order('created_at', { ascending: true });
+
+  if (remainErr) throw remainErr;
+
+  // 4. Recalculate position from scratch
+  let totalShares = 0;
+  let averageCost = 0;
+
+  for (const t of remainingTxs || []) {
+    const s = parseFloat(t.shares || 0);
+    const p = parseFloat(t.price || 0);
+    if (t.type === 'BUY') {
+      const oldValue = totalShares * averageCost;
+      const newValue = s * p;
+      totalShares += s;
+      averageCost = totalShares > 0 ? (oldValue + newValue) / totalShares : 0;
+    } else if (t.type === 'SELL') {
+      totalShares -= s;
+      // average cost unchanged on sell
+    }
+  }
+
+  totalShares = Math.max(0, totalShares);
+
+  // 5. Determine new status
+  let newStatus = 'ACTIVE';
+  if (totalShares <= 0) newStatus = 'CLOSED';
+
+  // 6. Update position
+  const { error: updatePosErr } = await supabase
+    .from('investment_positions')
+    .update({
+      total_shares: totalShares,
+      average_cost: averageCost,
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', positionId);
+  if (updatePosErr) throw updatePosErr;
+
+  // 7. Reverse cash balance impact
+  const { data: portData } = await supabase
+    .from('investment_portfolios')
+    .select('cash_balance')
+    .eq('id', portfolioId)
+    .single();
+
+  if (portData) {
+    let cash = parseFloat(portData.cash_balance || 0);
+    // If the deleted tx was a BUY, we spent cash → reverse by adding back
+    // If it was a SELL, we received cash → reverse by subtracting
+    if (txType === 'BUY') cash += txValue;
+    else if (txType === 'SELL') cash -= txValue;
+
+    const { error: cashErr } = await supabase
+      .from('investment_portfolios')
+      .update({ cash_balance: cash })
+      .eq('id', portfolioId);
+    if (cashErr) throw cashErr;
+  }
+
+  // 8. If position has zero shares remaining and no other transactions, delete position
+  if (totalShares <= 0 && (remainingTxs || []).length === 0) {
+    await supabase.from('investment_positions').delete().eq('id', positionId);
+  }
+
+  return { success: true, newTotalShares: totalShares, newAverageCost: averageCost };
+}
+
+/**
+ * Edit a transaction: delete old record → reverse position → re-insert with new values.
+ * Only allowed within the 15-minute window (enforced in UI).
+ */
+export async function editTransactionAndRecalculate(
+  userEmail,
+  portfolioId,
+  transactionId,
+  newShares,
+  newPrice
+) {
+  // 1. Fetch the old transaction
+  const { data: txData, error: txFetchErr } = await supabase
+    .from('investment_transactions')
+    .select('*, investment_positions(ticker)')
+    .eq('id', transactionId)
+    .single();
+
+  if (txFetchErr || !txData) throw new Error('Transaction not found');
+
+  const ticker = txData.investment_positions?.ticker || '';
+  const txType = txData.type;
+
+  // 2. Delete old transaction and recalculate
+  await deleteTransactionAndRecalculate(userEmail, portfolioId, transactionId);
+
+  // 3. Re-add with new values
+  const txDate = txData.transaction_date || new Date().toISOString().split('T')[0];
+  await addInvestmentTransaction(
+    userEmail,
+    portfolioId,
+    ticker,
+    txType,
+    newShares,
+    newPrice,
+    txDate,
+    `Edited (original ID: ${transactionId})`
+  );
+
+  return { success: true };
+}
+
 export async function getPortfolioFundingHistory(portfolioId) {
   if (!portfolioId) return [];
   const { data, error } = await supabase

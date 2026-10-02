@@ -3,8 +3,11 @@ import {
   getInvestmentPortfolios, 
   getInvestmentPositions, 
   executeRecoupTransaction,
-  addInvestmentTransaction
+  addInvestmentTransaction,
+  deleteTransactionAndRecalculate,
+  editTransactionAndRecalculate
 } from '../db/investmentDB';
+
 
 export const useMoonbagStore = create((set, get) => ({
   userEmail: null,
@@ -239,6 +242,38 @@ export const useMoonbagStore = create((set, get) => ({
       await get().loadPositions(selectedPortfolioId);
     } catch (error) {
       console.error("Failed to add transaction:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  handleDeleteTransaction: async (transactionId) => {
+    const { userEmail, selectedPortfolioId } = get();
+    if (!userEmail || !selectedPortfolioId) throw new Error('Missing user or portfolio');
+    set({ loading: true });
+    try {
+      await deleteTransactionAndRecalculate(userEmail, selectedPortfolioId, transactionId);
+      await get().loadPortfolios(userEmail);
+      await get().loadPositions(selectedPortfolioId);
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  handleEditTransaction: async (transactionId, newShares, newPrice) => {
+    const { userEmail, selectedPortfolioId } = get();
+    if (!userEmail || !selectedPortfolioId) throw new Error('Missing user or portfolio');
+    set({ loading: true });
+    try {
+      await editTransactionAndRecalculate(userEmail, selectedPortfolioId, transactionId, parseFloat(newShares), parseFloat(newPrice));
+      await get().loadPortfolios(userEmail);
+      await get().loadPositions(selectedPortfolioId);
+    } catch (error) {
+      console.error('Failed to edit transaction:', error);
       throw error;
     } finally {
       set({ loading: false });
