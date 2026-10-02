@@ -1,6 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertCircle, Info, Calculator, Check } from 'lucide-react';
+import { X, Sparkles, AlertCircle, Info, Calculator, Check, Lock } from 'lucide-react';
 import { generateGridZones } from '../../db/betaGridDB';
+
+const ACCOUNTING_MODES = [
+  {
+    id: 'NON_FIFO',
+    label: 'Non-FIFO (Discrete Zone)',
+    badge: 'แนะนำสำหรับ Grid',
+    badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    dot: 'bg-emerald-500',
+    borderActive: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 dark:border-emerald-500 shadow-md shadow-emerald-500/10',
+    desc: 'คิดกำไรแยกอิสระรายไม้ตามโซน (Target Sell − Zone Buy Price) ป้องกัน Fake Loss ช่วงตลาดขาลง',
+    formula: 'Profit = Target Sell − Zone Buy Price',
+  },
+  {
+    id: 'FIFO',
+    label: 'FIFO (First-In, First-Out)',
+    badge: 'ตามโบรกเกอร์',
+    badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    dot: 'bg-amber-500',
+    borderActive: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 dark:border-amber-500 shadow-md shadow-amber-500/10',
+    desc: 'คิดกำไรเทียบกับราคาซื้อ "เข้าก่อน" ตามลำดับ timestamp รองรับ partial sell เป็นเศษหุ้น',
+    formula: 'Profit = Target Sell − Oldest Held Buy Price',
+  },
+  {
+    id: 'AVERAGE_COST',
+    label: 'Average Cost (ราคาเฉลี่ย)',
+    badge: 'แบบกองทุน',
+    badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    dot: 'bg-purple-500',
+    borderActive: 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/30 dark:border-purple-500 shadow-md shadow-purple-500/10',
+    desc: 'คิดกำไรเทียบกับต้นทุนเฉลี่ยของทุกหุ้นที่ถือครองอยู่ (weighted average) อัปเดตทุกครั้งที่ซื้อเพิ่ม',
+    formula: 'Profit = Target Sell − Weighted Avg Cost Basis',
+  },
+];
 
 export default function BetaGridPlanModal({
   isOpen,
@@ -17,14 +50,16 @@ export default function BetaGridPlanModal({
   const [upperPrice, setUpperPrice] = useState('36.00');
   const [lowerPrice, setLowerPrice] = useState('24.00');
   const [gridStep, setGridStep] = useState('1.00');
-  
+
   // Asymmetric Grid Support
   const [actionZoneLowerLimit, setActionZoneLowerLimit] = useState('30.00');
   const [actionZoneShares, setActionZoneShares] = useState('10');
   const [safetyZoneShares, setSafetyZoneShares] = useState('20');
 
-  // Accounting Method (Non-FIFO vs FIFO)
+  // Accounting Method — IMMUTABLE after creation
   const [accountingMode, setAccountingMode] = useState('NON_FIFO');
+  const isEditMode = Boolean(existingProfile);
+  const isModeLocked = isEditMode; // lock after creation
 
   useEffect(() => {
     if (existingProfile) {
@@ -41,7 +76,6 @@ export default function BetaGridPlanModal({
         setSafetyZoneShares(String(existingProfile.plan.safetyZoneShares ?? '20'));
       }
     } else {
-      // Default new profile preset
       const basePrice = currentLivePrice ? Math.round(currentLivePrice) : 30;
       setName(`${assetTicker} Grid Strategy`);
       setUpperPrice(String((basePrice * 1.2).toFixed(2)));
@@ -57,7 +91,6 @@ export default function BetaGridPlanModal({
 
   if (!isOpen) return null;
 
-  // Live calculation preview
   const up = parseFloat(upperPrice) || 0;
   const low = parseFloat(lowerPrice) || 0;
   const step = parseFloat(gridStep) || 1;
@@ -104,7 +137,6 @@ export default function BetaGridPlanModal({
       safetyZoneShares: safeShares
     };
 
-    // Merge existing filled zones so active positions are NEVER lost
     const mergedZones = previewZones.map(newZone => {
       const match = existingFilledZones.find(
         ez => Math.abs(ez.priceLevel - newZone.priceLevel) < 0.001
@@ -116,6 +148,7 @@ export default function BetaGridPlanModal({
           filledAt: match.filledAt,
           filledPrice: match.filledPrice,
           sharesAllocated: match.sharesAllocated || newZone.sharesAllocated,
+          sharesRemaining: match.sharesRemaining !== undefined ? match.sharesRemaining : (match.sharesAllocated || newZone.sharesAllocated),
           capitalRequired: match.capitalRequired || (newZone.priceLevel * (match.sharesAllocated || newZone.sharesAllocated)),
           targetSellPrice: match.targetSellPrice || newZone.targetSellPrice
         };
@@ -123,7 +156,6 @@ export default function BetaGridPlanModal({
       return newZone;
     });
 
-    // Also include any filled zones that might fall outside the new bounds so they aren't lost
     const outsideFilledZones = existingFilledZones.filter(
       ez => !mergedZones.some(mz => Math.abs(mz.priceLevel - ez.priceLevel) < 0.001)
     );
@@ -145,10 +177,12 @@ export default function BetaGridPlanModal({
     onClose();
   };
 
+  const selectedMode = ACCOUNTING_MODES.find(m => m.id === accountingMode);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/40 flex flex-col">
-        
+
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
@@ -174,7 +208,7 @@ export default function BetaGridPlanModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-6">
-          
+
           {/* Section 1: Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -218,67 +252,71 @@ export default function BetaGridPlanModal({
             </div>
           </div>
 
-          {/* Section: Accounting Method (Non-FIFO vs FIFO) */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/5 via-slate-500/5 to-purple-500/5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-3">
+          {/* Section: Accounting Method — 3 TAB SELECTOR */}
+          <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-base">⚖️</span>
                 <span className="text-sm font-black text-slate-900 dark:text-white">
-                  ประเภทการคำนวณกำไร (Accounting Method)
+                  ประเภทการคำนวณกำไร (Accounting Mode)
                 </span>
+                {isModeLocked && (
+                  <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                    <Lock size={9} />
+                    LOCKED — ไม่สามารถเปลี่ยนได้
+                  </span>
+                )}
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 uppercase tracking-wider">
-                {accountingMode === 'NON_FIFO' ? 'Discrete Zone' : 'Broker FIFO'}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${selectedMode?.badgeColor}`}>
+                {selectedMode?.badge}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Option 1: Non-FIFO */}
-              <div
-                onClick={() => setAccountingMode('NON_FIFO')}
-                className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col gap-1.5 ${
-                  accountingMode === 'NON_FIFO'
-                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 dark:border-indigo-500 shadow-md shadow-indigo-500/10'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Non-FIFO (Discrete Zone)
-                  </span>
-                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    แนะนำสำหรับ Grid
-                  </span>
+            {isModeLocked ? (
+              /* Locked display when editing */
+              <div className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/40 flex items-center gap-3">
+                <Lock size={18} className="text-slate-400 flex-shrink-0" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${selectedMode?.dot}`}></span>
+                    <span className="text-sm font-black text-slate-700 dark:text-slate-300">{selectedMode?.label}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{selectedMode?.desc}</p>
+                  <p className="text-[11px] font-mono font-bold text-indigo-500 dark:text-indigo-400 mt-1 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md inline-block">{selectedMode?.formula}</p>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                  คิดกำไรแยกอิสระรายไม้ตามโซน (Target Sell - Zone Buy) ป้องกันปัญหาขาดทุนหลอก (Fake Losses) ในช่วงตลาดขาลง
-                </p>
               </div>
-
-              {/* Option 2: FIFO */}
-              <div
-                onClick={() => setAccountingMode('FIFO')}
-                className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col gap-1.5 ${
-                  accountingMode === 'FIFO'
-                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 dark:border-indigo-500 shadow-md shadow-indigo-500/10'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    FIFO (First-In, First-Out)
-                  </span>
-                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                    ตามโบรกเกอร์
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                  คิดกำไรแบบเข้าก่อนออกก่อน เทียบกับไม้แรกสุดที่ซื้อเข้ามา เพื่อให้ตัวเลขตรงกับรายงานของโบรกเกอร์
-                </p>
+            ) : (
+              /* 3-Tab selector for new profiles */
+              <div className="grid grid-cols-1 gap-3">
+                {ACCOUNTING_MODES.map((mode) => (
+                  <div
+                    key={mode.id}
+                    onClick={() => setAccountingMode(mode.id)}
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col gap-1.5 ${
+                      accountingMode === mode.id
+                        ? mode.borderActive
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${mode.dot}`}></span>
+                        {mode.label}
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded ${mode.badgeColor}`}>
+                        {mode.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal ml-4.5">
+                      {mode.desc}
+                    </p>
+                    <code className="text-[10px] font-mono font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md ml-4 self-start">
+                      {mode.formula}
+                    </code>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Section 2: Core Grid Parameters */}
@@ -409,7 +447,7 @@ export default function BetaGridPlanModal({
             </div>
           )}
 
-          {/* Real-time Calculation Summary Breakdown */}
+          {/* Real-time Calculation Summary */}
           {!errorMsg && previewZones.length > 0 && (
             <div className="p-4 rounded-2xl bg-slate-900 text-white dark:bg-slate-800/90 border border-slate-700/60 flex flex-col gap-3">
               <span className="text-xs font-black uppercase tracking-wider text-slate-400">

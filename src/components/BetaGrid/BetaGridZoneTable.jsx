@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { 
-  ArrowDownUp, 
-  CheckCircle2, 
-  Clock, 
-  DollarSign, 
-  Edit3, 
-  Filter, 
-  Layers, 
-  TrendingUp, 
-  Zap, 
+import {
+  ArrowDownUp,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  Edit3,
+  Filter,
+  Layers,
+  TrendingUp,
+  Zap,
   ShoppingBag,
-  RotateCcw
+  RotateCcw,
+  Hash
 } from 'lucide-react';
 
 export default function BetaGridZoneTable({
   zones = [],
   livePrice = null,
   accountingMode = 'NON_FIFO',
+  averageCostBasis = 0,
   onFillZone,
   onHarvestZone,
   onUpdateZoneShares,
@@ -29,6 +31,8 @@ export default function BetaGridZoneTable({
   const [sortOrder, setSortOrder] = useState('DESC'); // 'DESC' (high to low) | 'ASC' (low to high)
   const [editingZoneId, setEditingZoneId] = useState(null);
   const [editSharesValue, setEditSharesValue] = useState('');
+  // Partial sell state: zoneId -> number of shares to sell
+  const [sellSharesMap, setSellSharesMap] = useState({});
 
   // Filtering
   const filteredZones = zones.filter(zone => {
@@ -81,15 +85,46 @@ export default function BetaGridZoneTable({
     }
   };
 
+  const getSellShares = (zone) => {
+    const sharesRemaining = zone.sharesRemaining !== undefined ? zone.sharesRemaining : zone.sharesAllocated;
+    return sellSharesMap[zone.id] !== undefined ? sellSharesMap[zone.id] : sharesRemaining;
+  };
+
+  const handleHarvestWithPartial = (zone) => {
+    const sellShares = getSellShares(zone);
+    const sharesRemaining = zone.sharesRemaining !== undefined ? zone.sharesRemaining : zone.sharesAllocated;
+    const validSell = Math.min(Math.max(1, sellShares), sharesRemaining);
+    onHarvestZone(zone, validSell);
+    // Reset sell shares input after harvest
+    setSellSharesMap(prev => {
+      const n = { ...prev };
+      delete n[zone.id];
+      return n;
+    });
+  };
+
+  // Column profit label
+  const profitColumnLabel = accountingMode === 'NON_FIFO'
+    ? 'Discrete Profit / ไม้'
+    : accountingMode === 'FIFO'
+    ? 'FIFO Broker Profit'
+    : 'Avg Cost Profit';
+
+  const actionColumnLabel = accountingMode === 'NON_FIFO'
+    ? 'Non-FIFO Action'
+    : accountingMode === 'FIFO'
+    ? 'FIFO Action'
+    : 'Avg Cost Action';
+
   return (
     <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 rounded-3xl shadow-xl shadow-slate-200/20 dark:shadow-black/30 overflow-hidden flex flex-col">
-      
+
       {/* Table Header Bar & Filter Controls */}
       <div className="p-4 sm:p-5 border-b border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <Layers className="w-5 h-5 text-indigo-500" />
           <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-            Discrete Zone Grid Board
+            {accountingMode === 'NON_FIFO' ? 'Discrete Zone Grid Board' : accountingMode === 'FIFO' ? 'FIFO Grid Board' : 'Average Cost Grid Board'}
           </h3>
           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
             {zones.length} โซน
@@ -98,7 +133,7 @@ export default function BetaGridZoneTable({
 
         {/* Filter Pills & Actions */}
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          
+
           {/* Status Filter */}
           <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs font-bold">
             <button
@@ -187,32 +222,45 @@ export default function BetaGridZoneTable({
               <th className="py-3 px-3">Target Sell (เป้าขาย)</th>
               <th className="py-3 px-3">Shares (หุ้น)</th>
               <th className="py-3 px-3">Capital (เงินทุน)</th>
-              <th className="py-3 px-3">
-                {accountingMode === 'NON_FIFO' ? 'Discrete Profit / ไม้' : 'FIFO Broker Profit'}
-              </th>
+              <th className="py-3 px-3">{profitColumnLabel}</th>
               <th className="py-3 px-3">Live Status & Unrealized P&L</th>
-              <th className="py-3 px-4 text-right">
-                {accountingMode === 'NON_FIFO' ? 'Non-FIFO Action' : 'FIFO Action'}
-              </th>
+              <th className="py-3 px-4 text-right">{actionColumnLabel}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
             {sortedZones.map((zone) => {
               const isCurrentMarketZone = livePrice && livePrice >= zone.priceLevel && livePrice < zone.targetSellPrice;
               const isFilled = zone.status === 'FILLED';
-              const discreteProfitDollars = (zone.targetSellPrice - zone.priceLevel) * zone.sharesAllocated;
+              const sharesRemaining = zone.sharesRemaining !== undefined ? zone.sharesRemaining : zone.sharesAllocated;
+              const isPartiallyFilled = isFilled && sharesRemaining < zone.sharesAllocated;
+
+              // Discrete (Non-FIFO) profit
+              const discreteProfitDollars = (zone.targetSellPrice - zone.priceLevel) * sharesRemaining;
               const discreteProfitPct = ((zone.targetSellPrice - zone.priceLevel) / zone.priceLevel) * 100;
 
-              // FIFO comparison
-              const filledLots = zones.filter(z => z.status === 'FILLED').sort((a, b) => new Date(a.filledAt || 0) - new Date(b.filledAt || 0));
+              // FIFO profit — find oldest FILLED zone by filledAt
+              const filledLots = zones
+                .filter(z => z.status === 'FILLED')
+                .sort((a, b) => new Date(a.filledAt || 0) - new Date(b.filledAt || 0));
               const fifoLot = filledLots[0] || zone;
               const fifoCostBasis = fifoLot.priceLevel;
-              const fifoProfitDollars = (zone.targetSellPrice - fifoCostBasis) * zone.sharesAllocated;
-              const fifoProfitPct = ((zone.targetSellPrice - fifoCostBasis) / fifoCostBasis) * 100;
+              const fifoProfitDollars = (zone.targetSellPrice - fifoCostBasis) * sharesRemaining;
+              const fifoProfitPct = fifoCostBasis > 0 ? ((zone.targetSellPrice - fifoCostBasis) / fifoCostBasis) * 100 : 0;
 
-              // Unrealized PnL when FILLED
-              const unrealizedDollars = livePrice ? (livePrice - zone.priceLevel) * zone.sharesAllocated : null;
+              // Average Cost profit
+              const avgCostProfitDollars = averageCostBasis > 0
+                ? (zone.targetSellPrice - averageCostBasis) * sharesRemaining
+                : null;
+              const avgCostProfitPct = averageCostBasis > 0
+                ? ((zone.targetSellPrice - averageCostBasis) / averageCostBasis) * 100
+                : null;
+
+              // Unrealized PnL when FILLED (vs zone buy price)
+              const unrealizedDollars = livePrice ? (livePrice - zone.priceLevel) * sharesRemaining : null;
               const unrealizedPct = livePrice ? ((livePrice - zone.priceLevel) / zone.priceLevel) * 100 : null;
+
+              // Sell shares for partial
+              const currentSellShares = getSellShares(zone);
 
               return (
                 <tr
@@ -244,6 +292,11 @@ export default function BetaGridZoneTable({
                           <span>LIVE ZONE</span>
                         </span>
                       )}
+                      {isPartiallyFilled && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          PARTIAL
+                        </span>
+                      )}
                     </div>
                   </td>
 
@@ -270,7 +323,7 @@ export default function BetaGridZoneTable({
                     </span>
                   </td>
 
-                  {/* Column 4: Shares Allocated (Editable) */}
+                  {/* Column 4: Shares Allocated (Editable) with sharesRemaining display */}
                   <td className="py-3.5 px-3">
                     {editingZoneId === zone.id ? (
                       <div className="flex items-center gap-1">
@@ -294,23 +347,30 @@ export default function BetaGridZoneTable({
                         </button>
                       </div>
                     ) : (
-                      <div 
+                      <div
                         onClick={() => handleStartEditShares(zone)}
-                        className="group flex items-center gap-1.5 cursor-pointer font-mono font-bold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        className="group flex flex-col cursor-pointer"
                         title="Click to edit shares for this zone"
                       >
-                        <span>{zone.sharesAllocated} หุ้น</span>
-                        <Edit3 size={11} className="text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" />
+                        <div className="flex items-center gap-1.5 font-mono font-bold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400">
+                          <span>{zone.sharesAllocated} หุ้น</span>
+                          <Edit3 size={11} className="text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" />
+                        </div>
+                        {isFilled && sharesRemaining !== zone.sharesAllocated && (
+                          <span className="text-[10px] text-amber-500 font-mono">
+                            เหลือ {sharesRemaining} หุ้น
+                          </span>
+                        )}
                       </div>
                     )}
                   </td>
 
                   {/* Column 5: Capital Required */}
                   <td className="py-3.5 px-3 font-mono text-slate-700 dark:text-slate-300">
-                    ${(zone.priceLevel * zone.sharesAllocated).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${(zone.priceLevel * sharesRemaining).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
-                  {/* Column 6: Profit per Cycle (Non-FIFO vs FIFO) */}
+                  {/* Column 6: Profit per Cycle (varies by accounting mode) */}
                   <td className="py-3.5 px-3">
                     {accountingMode === 'NON_FIFO' ? (
                       <div>
@@ -318,10 +378,10 @@ export default function BetaGridZoneTable({
                           +${discreteProfitDollars.toFixed(2)}
                         </div>
                         <span className="text-[10px] text-slate-400 font-medium">
-                          {(discreteProfitPct).toFixed(1)}% ต่อรอบ
+                          {discreteProfitPct.toFixed(1)}% ต่อรอบ
                         </span>
                       </div>
-                    ) : (
+                    ) : accountingMode === 'FIFO' ? (
                       <div>
                         <div className={`font-mono font-bold ${fifoProfitDollars >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                           {fifoProfitDollars >= 0 ? '+' : ''}${fifoProfitDollars.toFixed(2)}
@@ -329,6 +389,22 @@ export default function BetaGridZoneTable({
                         <span className="text-[10px] text-slate-400 font-mono block">
                           จริง: +${discreteProfitDollars.toFixed(0)}
                         </span>
+                      </div>
+                    ) : (
+                      /* AVERAGE_COST */
+                      <div>
+                        {avgCostProfitDollars !== null ? (
+                          <>
+                            <div className={`font-mono font-bold ${avgCostProfitDollars >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              {avgCostProfitDollars >= 0 ? '+' : ''}${avgCostProfitDollars.toFixed(2)}
+                            </div>
+                            <span className={`text-[10px] font-medium ${avgCostProfitPct >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              {avgCostProfitPct >= 0 ? '+' : ''}{avgCostProfitPct.toFixed(1)}% vs avg ${averageCostBasis.toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">รอข้อมูล avg cost</span>
+                        )}
                       </div>
                     )}
                   </td>
@@ -339,11 +415,9 @@ export default function BetaGridZoneTable({
                       <div className="flex items-center gap-1.5">
                         <span className={`w-2 h-2 rounded-full ${isFilled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
                         <span className={`text-xs font-black tracking-wide ${isFilled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
-                          {isFilled ? 'FILLED (ถือครอง)' : 'EMPTY (ว่าง)'}
+                          {isFilled ? (isPartiallyFilled ? `PARTIAL (${sharesRemaining}/${zone.sharesAllocated})` : 'FILLED (ถือครอง)') : 'EMPTY (ว่าง)'}
                         </span>
                       </div>
-
-                      {/* If FILLED, show Unrealized P&L against live price */}
                       {isFilled && livePrice && (
                         <div className={`text-[11px] font-mono font-bold ${unrealizedDollars >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                           {unrealizedDollars >= 0 ? '+' : ''}${unrealizedDollars.toFixed(2)} ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(1)}%)
@@ -352,7 +426,7 @@ export default function BetaGridZoneTable({
                     </div>
                   </td>
 
-                  {/* Column 8: Action Buttons (Buy vs Sell Harvest) */}
+                  {/* Column 8: Action Buttons (Buy vs Partial Sell Harvest) */}
                   <td className="py-3.5 px-4 text-right">
                     {!isFilled ? (
                       <button
@@ -364,20 +438,46 @@ export default function BetaGridZoneTable({
                         <span>ซื้อไม้ (Buy)</span>
                       </button>
                     ) : (
-                      <button
-                        onClick={() => onHarvestZone(zone)}
-                        className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-black shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5 ${
-                          accountingMode === 'FIFO' && fifoProfitDollars < 0
-                            ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-rose-500/20'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-emerald-500/20 ring-1 ring-emerald-400/30'
-                        }`}
-                        title={accountingMode === 'FIFO' ? `FIFO Profit: $${fifoProfitDollars.toFixed(2)} (กำไรจริงตามโซน: +$${discreteProfitDollars.toFixed(2)})` : 'ขายทำกำไรเป้าหมายรอบนี้ (Non-FIFO Discrete Profit) และรีเซ็ตโซน'}
-                      >
-                        <DollarSign size={13} />
-                        <span>
-                          ขาย ({accountingMode === 'NON_FIFO' ? `+$${discreteProfitDollars.toFixed(0)}` : `${fifoProfitDollars >= 0 ? '+' : ''}$${fifoProfitDollars.toFixed(0)}`})
-                        </span>
-                      </button>
+                      /* Partial Sell + Harvest */
+                      <div className="flex flex-col items-end gap-1.5">
+                        {/* Shares to sell input */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 font-bold">ขาย</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={sharesRemaining}
+                            value={currentSellShares}
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value);
+                              setSellSharesMap(prev => ({ ...prev, [zone.id]: isNaN(v) ? sharesRemaining : v }));
+                            }}
+                            className="w-16 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 text-right"
+                            title={`Max: ${sharesRemaining} หุ้น`}
+                          />
+                          <span className="text-[10px] text-slate-400">/ {sharesRemaining}</span>
+                        </div>
+                        {/* Sell button */}
+                        <button
+                          onClick={() => handleHarvestWithPartial(zone)}
+                          className={`px-3 py-1.5 rounded-xl text-white text-xs font-black shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                            (accountingMode === 'FIFO' && fifoProfitDollars < 0) ||
+                            (accountingMode === 'AVERAGE_COST' && avgCostProfitDollars !== null && avgCostProfitDollars < 0)
+                              ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-rose-500/20'
+                              : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-emerald-500/20 ring-1 ring-emerald-400/30'
+                          }`}
+                        >
+                          <DollarSign size={13} />
+                          <span>
+                            {accountingMode === 'NON_FIFO'
+                              ? `ขาย (+$${((zone.targetSellPrice - zone.priceLevel) * Math.min(currentSellShares || sharesRemaining, sharesRemaining)).toFixed(0)})`
+                              : accountingMode === 'FIFO'
+                              ? `ขาย (${fifoProfitDollars >= 0 ? '+' : ''}$${fifoProfitDollars.toFixed(0)})`
+                              : `ขาย (${avgCostProfitDollars !== null ? (avgCostProfitDollars >= 0 ? '+' : '') + '$' + avgCostProfitDollars.toFixed(0) : '?'})`
+                            }
+                          </span>
+                        </button>
+                      </div>
                     )}
                   </td>
 

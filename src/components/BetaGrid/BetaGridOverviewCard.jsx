@@ -1,5 +1,30 @@
 import React from 'react';
-import { RefreshCw, TrendingUp, DollarSign, Layers, Activity, ShieldCheck, Zap, LineChart } from 'lucide-react';
+import { RefreshCw, TrendingUp, DollarSign, Layers, Activity, ShieldCheck, Zap, LineChart, Lock, BarChart2 } from 'lucide-react';
+
+// Helper: accounting mode display config
+const MODE_CONFIG = {
+  NON_FIFO: {
+    label: 'Non-FIFO Discrete',
+    color: 'bg-indigo-500/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+    dot: 'bg-indigo-500',
+    metricColor: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400',
+  },
+  FIFO: {
+    label: 'FIFO Broker Mode',
+    color: 'bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    dot: 'bg-amber-500',
+    metricColor: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-500/10 text-amber-500 dark:text-amber-400',
+  },
+  AVERAGE_COST: {
+    label: 'Avg Cost Mode',
+    color: 'bg-purple-500/10 dark:bg-purple-400/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    dot: 'bg-purple-500',
+    metricColor: 'text-purple-600 dark:text-purple-400',
+    iconBg: 'bg-purple-500/10 text-purple-500 dark:text-purple-400',
+  }
+};
 
 export default function BetaGridOverviewCard({
   profile,
@@ -12,16 +37,18 @@ export default function BetaGridOverviewCard({
   totalRealizedProfit,
   totalRealizedProfitNonFIFO = 0,
   totalRealizedProfitFIFO = 0,
+  totalRealizedProfitAvgCost = 0,
   comparisonProfit = 0,
   completedCyclesCount,
   accountingMode = 'NON_FIFO',
-  setAccountingMode,
   onExpandUpperZone,
   onExpandLowerZone,
   onExpandToLivePrice,
   onOpenChart
 }) {
   if (!profile) return null;
+
+  const modeConf = MODE_CONFIG[accountingMode] || MODE_CONFIG.NON_FIFO;
 
   const zones = profile.zones || [];
   const filledZones = zones.filter(z => z.status === 'FILLED');
@@ -60,12 +87,28 @@ export default function BetaGridOverviewCard({
 
   // Calculate Unrealized PnL of all FILLED zones
   let totalUnrealizedPnL = 0;
+  let totalSharesHeld = 0;
   if (livePrice) {
     filledZones.forEach(z => {
-      const pnl = (livePrice - z.priceLevel) * z.sharesAllocated;
+      const sharesHeld = z.sharesRemaining !== undefined ? z.sharesRemaining : z.sharesAllocated;
+      totalSharesHeld += sharesHeld;
+      const pnl = (livePrice - z.priceLevel) * sharesHeld;
       totalUnrealizedPnL += pnl;
     });
+  } else {
+    filledZones.forEach(z => {
+      const sharesHeld = z.sharesRemaining !== undefined ? z.sharesRemaining : z.sharesAllocated;
+      totalSharesHeld += sharesHeld;
+    });
   }
+
+  // Average Cost Basis from profile data (auto-calculated and stored in profile)
+  const averageCostBasis = profile.averageCostBasis || 0;
+
+  // Unrealized P&L vs Avg Cost (only for AVERAGE_COST mode)
+  const unrealizedVsAvgCost = (livePrice && averageCostBasis > 0)
+    ? (livePrice - averageCostBasis) * totalSharesHeld
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,12 +123,10 @@ export default function BetaGridOverviewCard({
               <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {profile.assetTicker}
               </span>
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${
-                accountingMode === 'NON_FIFO'
-                  ? 'bg-indigo-500/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-                  : 'bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-              }`}>
-                {accountingMode === 'NON_FIFO' ? 'Non-FIFO Discrete' : 'FIFO Broker Mode'}
+              {/* Immutable Mode Badge */}
+              <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${modeConf.color}`}>
+                <Lock size={9} />
+                {modeConf.label}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
                 • {profile.name}
@@ -100,39 +141,8 @@ export default function BetaGridOverviewCard({
           </div>
         </div>
 
-        {/* Live Price & Accounting Mode Switcher Controls */}
+        {/* Live Price Display & Controls (mode switcher removed — now immutable) */}
         <div className="flex flex-wrap items-center gap-3.5 self-end md:self-auto">
-          
-          {/* Quick Toggle: Non-FIFO vs FIFO */}
-          {setAccountingMode && (
-            <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-black shadow-inner">
-              <button
-                onClick={() => setAccountingMode('NON_FIFO')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  accountingMode === 'NON_FIFO'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-1 ring-indigo-400/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-                title="โหมด Non-FIFO: คำนวณกำไรแยกอิสระเฉพาะไม้ของโซนนั้นๆ (Discrete Zone)"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span>Non-FIFO</span>
-              </button>
-              <button
-                onClick={() => setAccountingMode('FIFO')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  accountingMode === 'FIFO'
-                    ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-                title="โหมด FIFO: คำนวณกำไรตามไม้ที่ซื้อเข้ามาก่อนหลังตามรายงานของโบรกเกอร์"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                <span>FIFO (โบรกเกอร์)</span>
-              </button>
-            </div>
-          )}
-
           <div className="flex flex-col text-right">
             <div className="flex items-center justify-end gap-1.5">
               <span className="relative flex h-2 w-2">
@@ -191,7 +201,7 @@ export default function BetaGridOverviewCard({
         </div>
       </div>
 
-      {/* ⚠️ Out-of-Bounds Breakout Alert Banners with 1-Click Expansion */}
+      {/* ⚠️ Out-of-Bounds Breakout Alert Banners */}
       {livePrice && profile.plan?.upperPrice && livePrice > profile.plan.upperPrice && (
         <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/30 dark:border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/5 animate-fade-in">
           <div className="flex items-center gap-3">
@@ -261,7 +271,7 @@ export default function BetaGridOverviewCard({
 
       {/* 4 Core Financial Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        
+
         {/* Metric 1: Capital Deployed */}
         <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 shadow-lg shadow-slate-200/10 dark:shadow-black/20 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
@@ -281,17 +291,15 @@ export default function BetaGridOverviewCard({
           </div>
         </div>
 
-        {/* Metric 2: Realized Cash Flow (Profit Collected) */}
+        {/* Metric 2: Realized Cash Flow */}
         <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 shadow-lg shadow-slate-200/10 dark:shadow-black/20 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">
-              {accountingMode === 'NON_FIFO' ? 'Realized Cash Flow' : 'FIFO Broker Realized'}
+              {accountingMode === 'NON_FIFO' ? 'Realized Cash Flow' :
+               accountingMode === 'FIFO' ? 'FIFO Broker Realized' :
+               'Avg Cost Realized'}
             </span>
-            <div className={`p-2 rounded-xl ${
-              accountingMode === 'NON_FIFO'
-                ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
-                : 'bg-amber-500/10 text-amber-500 dark:text-amber-400'
-            }`}>
+            <div className={`p-2 rounded-xl ${modeConf.iconBg}`}>
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -305,8 +313,10 @@ export default function BetaGridOverviewCard({
               <span>{completedCyclesCount} รอบปิดแล้ว</span>
               <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                 {accountingMode === 'NON_FIFO'
-                  ? `FIFO: ${comparisonProfit >= 0 ? '+' : ''}$${comparisonProfit.toFixed(0)}`
-                  : `Non-FIFO: +$${comparisonProfit.toFixed(0)}`}
+                  ? `FIFO: ${totalRealizedProfitFIFO >= 0 ? '+' : ''}$${totalRealizedProfitFIFO.toFixed(0)}`
+                  : accountingMode === 'FIFO'
+                  ? `Non-FIFO: +$${totalRealizedProfitNonFIFO.toFixed(0)}`
+                  : `Non-FIFO: +$${totalRealizedProfitNonFIFO.toFixed(0)}`}
               </span>
             </div>
           </div>
@@ -327,7 +337,7 @@ export default function BetaGridOverviewCard({
               {totalUnrealizedPnL >= 0 ? '+' : ''}${totalUnrealizedPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              <span>On Open Zones</span>
+              <span>{totalSharesHeld} หุ้นถือครอง</span>
               <span className="font-semibold text-slate-400">
                 {totalCapitalDeployed > 0 ? `${((totalUnrealizedPnL / totalCapitalDeployed) * 100).toFixed(2)}%` : '0.00%'}
               </span>
@@ -335,7 +345,7 @@ export default function BetaGridOverviewCard({
           </div>
         </div>
 
-        {/* Metric 4: Available Cash Pool & Capacity */}
+        {/* Metric 4: Available Cash Pool */}
         <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 shadow-lg shadow-slate-200/10 dark:shadow-black/20 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Available Cash Pool</span>
@@ -363,6 +373,81 @@ export default function BetaGridOverviewCard({
         </div>
 
       </div>
+
+      {/* AVERAGE_COST Mode — Extra Stats Row */}
+      {accountingMode === 'AVERAGE_COST' && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+
+          {/* Avg Cost Basis */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/40 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+            <div className="flex items-center justify-between text-purple-500 dark:text-purple-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">Avg Cost Basis</span>
+              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500 dark:text-purple-400">
+                <BarChart2 className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <div className="text-xl sm:text-2xl font-black font-mono text-purple-700 dark:text-purple-300">
+                {averageCostBasis > 0 ? `$${averageCostBasis.toFixed(4)}` : '—'}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                ต้นทุนเฉลี่ยถ่วงน้ำหนักทั้งหมด
+              </div>
+            </div>
+          </div>
+
+          {/* Total Shares Held */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/40 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+            <div className="flex items-center justify-between text-purple-500 dark:text-purple-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">Total Shares Held</span>
+              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500 dark:text-purple-400">
+                <Layers className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <div className="text-xl sm:text-2xl font-black font-mono text-purple-700 dark:text-purple-300">
+                {totalSharesHeld.toLocaleString()} หุ้น
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                ใน {filledZones.length} โซนที่ถือครองอยู่
+              </div>
+            </div>
+          </div>
+
+          {/* Unrealized P&L vs Avg Cost */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/40 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+            <div className="flex items-center justify-between text-purple-500 dark:text-purple-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">Unrealized vs Avg Cost</span>
+              <div className={`p-2 rounded-xl ${unrealizedVsAvgCost !== null && unrealizedVsAvgCost >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              {unrealizedVsAvgCost !== null ? (
+                <>
+                  <div className={`text-xl sm:text-2xl font-black font-mono ${
+                    unrealizedVsAvgCost >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {unrealizedVsAvgCost >= 0 ? '+' : ''}${unrealizedVsAvgCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  {averageCostBasis > 0 && livePrice && (
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {livePrice >= averageCostBasis ? '+' : ''}
+                      {(((livePrice - averageCostBasis) / averageCostBasis) * 100).toFixed(2)}% vs Avg ${averageCostBasis.toFixed(2)}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="text-xl sm:text-2xl font-black font-mono text-slate-400">—</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">รอ Live Price</div>
+                </>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }

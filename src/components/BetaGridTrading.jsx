@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Zap, 
-  Plus, 
-  Settings2, 
-  Trash2, 
-  History, 
-  LayoutGrid, 
-  Layers, 
-  TrendingUp, 
+import {
+  Zap,
+  Plus,
+  Settings2,
+  Trash2,
+  History,
+  LayoutGrid,
+  Layers,
+  TrendingUp,
   RotateCcw,
-  LineChart 
+  LineChart,
+  AlertTriangle
 } from 'lucide-react';
-import { 
-  getBetaGridProfiles, 
-  saveBetaGridProfiles, 
-  getBetaCycleHistory, 
+import {
+  getBetaGridProfiles,
+  saveBetaGridProfiles,
+  getBetaCycleHistory,
   saveBetaCycleHistory,
   createDefaultProfile
 } from '../db/betaGridDB';
@@ -24,6 +25,23 @@ import BetaGridZoneTable from './BetaGrid/BetaGridZoneTable';
 import BetaGridCycleHistory from './BetaGrid/BetaGridCycleHistory';
 import BetaGridPlanModal from './BetaGrid/BetaGridPlanModal';
 import BetaGridChartModal from './BetaGrid/BetaGridChartModal';
+import { supabase } from '../supabaseClient';
+
+// ────────────────────────────────────────────────────────────
+// Helper: Compute weighted Average Cost Basis from filled zones
+// ────────────────────────────────────────────────────────────
+function computeAverageCostBasis(zones) {
+  const filled = zones.filter(z => z.status === 'FILLED');
+  if (filled.length === 0) return 0;
+  let totalCost = 0;
+  let totalShares = 0;
+  filled.forEach(z => {
+    const shares = z.sharesRemaining !== undefined ? z.sharesRemaining : z.sharesAllocated;
+    totalCost += z.priceLevel * shares;
+    totalShares += shares;
+  });
+  return totalShares > 0 ? totalCost / totalShares : 0;
+}
 
 export default function BetaGridTrading({
   currentUser,
@@ -50,22 +68,21 @@ export default function BetaGridTrading({
   const [modalEditProfile, setModalEditProfile] = useState(null);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
-  // Accounting Method: 'NON_FIFO' | 'FIFO'
-  const [accountingMode, setAccountingMode] = useState('NON_FIFO');
+  // Hard Reset confirm state
+  const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
 
-  // Current Active Profile (Declared before effects that reference it)
+  // Current Active Profile
   const currentProfile = profiles.find(p => p.id === selectedProfileId) || profiles[0] || null;
   const currentTicker = currentProfile?.assetTicker || 'TQQQ';
   const currentLivePrice = livePrices[currentTicker] || null;
 
-  // Sync accountingMode when active profile changes
-  useEffect(() => {
-    if (currentProfile?.accountingMode) {
-      setAccountingMode(currentProfile.accountingMode);
-    }
-  }, [currentProfile?.accountingMode, currentProfile?.id]);
+  // accountingMode is READ from profile — IMMUTABLE
+  const accountingMode = currentProfile?.accountingMode || 'NON_FIFO';
 
-  // 1. Initial Load of Profiles & History
+  // Computed averageCostBasis from current profile's filled zones
+  const averageCostBasis = currentProfile ? computeAverageCostBasis(currentProfile.zones || []) : 0;
+
+  // 1. Initial Load
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
@@ -73,7 +90,7 @@ export default function BetaGridTrading({
       try {
         const loadedProfiles = await getBetaGridProfiles(currentUser);
         const loadedHistory = await getBetaCycleHistory(currentUser);
-        
+
         if (isMounted) {
           setProfiles(loadedProfiles);
           setCycleHistory(loadedHistory);
@@ -94,7 +111,7 @@ export default function BetaGridTrading({
     return () => { isMounted = false; };
   }, [currentUser]);
 
-  // 2. Fetch Live Price for Current Ticker
+  // 2. Fetch Live Price
   const updateLivePrice = useCallback(async () => {
     if (!currentTicker) return;
     setIsFetchingPrice(true);
@@ -115,28 +132,30 @@ export default function BetaGridTrading({
     updateLivePrice();
   }, [updateLivePrice]);
 
-  // Auto-refresh interval
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       updateLivePrice();
-    }, 30000); // 30 seconds
+    }, 30000);
     return () => clearInterval(interval);
   }, [autoRefresh, updateLivePrice]);
 
-  // 3. Save Profiles Helper
+  // 3. Persist helpers
   const persistProfiles = (updatedProfiles) => {
     setProfiles(updatedProfiles);
     saveBetaGridProfiles(currentUser, updatedProfiles);
   };
 
-  // 4. Save History Helper
   const persistHistory = (updatedHistory) => {
     setCycleHistory(updatedHistory);
     saveBetaCycleHistory(currentUser, updatedHistory);
   };
 
-  // 5. Zone Actions (Discrete Non-FIFO)
+  // ────────────────────────────────────────────────────────────
+  // ZONE ACTIONS
+  // ────────────────────────────────────────────────────────────
+
+  // 4. Fill Zone (Buy)
   const handleFillZone = (zoneToFill) => {
     if (!currentProfile) return;
 
@@ -146,51 +165,117 @@ export default function BetaGridTrading({
           ...z,
           status: 'FILLED',
           filledAt: new Date().toISOString(),
-          filledPrice: z.priceLevel
+          filledPrice: z.priceLevel,
+          sharesRemaining: z.sharesAllocated // init full shares on buy
         };
       }
       return z;
     });
 
     const updatedProfile = { ...currentProfile, zones: updatedZones, updatedAt: new Date().toISOString() };
+    // Recalculate averageCostBasis and store in profile
+    updatedProfile.averageCostBasis = computeAverageCostBasis(updatedZones);
     const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
     persistProfiles(updatedProfiles);
 
     if (requestAlert) {
-      requestAlert(`📥 ซื้อไม้ #${zoneToFill.levelIndex} สำเร็จ`, `บันทึกซื้อ ${zoneToFill.sharesAllocated} หุ้นที่ราคา $${zoneToFill.priceLevel.toFixed(2)} (เป้าขาย $${zoneToFill.targetSellPrice.toFixed(2)})`);
+      requestAlert(
+        `📥 ซื้อไม้ #${zoneToFill.levelIndex} สำเร็จ`,
+        `บันทึกซื้อ ${zoneToFill.sharesAllocated} หุ้นที่ราคา $${zoneToFill.priceLevel.toFixed(2)} (เป้าขาย $${zoneToFill.targetSellPrice.toFixed(2)})`
+      );
     }
   };
 
-  const handleHarvestZone = (zoneToHarvest) => {
+  // 5. Harvest Zone (Sell) — supports partial sell + all 3 accounting modes
+  const handleHarvestZone = (zoneToHarvest, sellShares = null) => {
     if (!currentProfile) return;
 
-    // 1. Non-FIFO Discrete Zone Calculation
-    const discreteProfitDollars = (zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) * zoneToHarvest.sharesAllocated;
+    const sharesRemaining = zoneToHarvest.sharesRemaining !== undefined
+      ? zoneToHarvest.sharesRemaining
+      : zoneToHarvest.sharesAllocated;
+
+    const actualSellShares = sellShares !== null
+      ? Math.min(Math.max(1, sellShares), sharesRemaining)
+      : sharesRemaining;
+
+    const isPartialSell = actualSellShares < sharesRemaining;
+    const sharesAfterSell = sharesRemaining - actualSellShares;
+
+    // ── NON_FIFO (Discrete) ──
+    const discreteProfitDollars = (zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) * actualSellShares;
     const discreteProfitPercent = ((zoneToHarvest.targetSellPrice - zoneToHarvest.priceLevel) / zoneToHarvest.priceLevel) * 100;
 
-    // 2. FIFO Broker Calculation (earliest filled zone by timestamp or price)
+    // ── FIFO: earliest filled zone by filledAt timestamp ──
     const filledLots = (currentProfile.zones || [])
       .filter(z => z.status === 'FILLED')
       .sort((a, b) => new Date(a.filledAt || 0) - new Date(b.filledAt || 0));
-    const fifoLot = filledLots[0] || zoneToHarvest;
-    const fifoCostBasis = fifoLot.priceLevel;
-    const fifoProfitDollars = (zoneToHarvest.targetSellPrice - fifoCostBasis) * zoneToHarvest.sharesAllocated;
-    const fifoProfitPercent = ((zoneToHarvest.targetSellPrice - fifoCostBasis) / fifoCostBasis) * 100;
 
-    // Reset zone to EMPTY
-    const updatedZones = currentProfile.zones.map(z => {
-      if (z.id === zoneToHarvest.id) {
-        return {
-          ...z,
-          status: 'EMPTY',
-          filledAt: null,
-          filledPrice: null
-        };
-      }
-      return z;
-    });
+    // FIFO: pop from the oldest lot
+    let fifoCostBasis = zoneToHarvest.priceLevel;
+    let remainingToSell = actualSellShares;
+    let fifoTotalCost = 0;
+    const fifoSellLots = [];
 
-    // Record in History with Dual Non-FIFO & FIFO tracking
+    for (const lot of filledLots) {
+      if (remainingToSell <= 0) break;
+      const lotShares = lot.sharesRemaining !== undefined ? lot.sharesRemaining : lot.sharesAllocated;
+      const takFromLot = Math.min(remainingToSell, lotShares);
+      fifoTotalCost += lot.priceLevel * takFromLot;
+      fifoSellLots.push({ zoneId: lot.id, shares: takFromLot });
+      remainingToSell -= takFromLot;
+    }
+
+    fifoCostBasis = actualSellShares > 0 ? fifoTotalCost / actualSellShares : zoneToHarvest.priceLevel;
+    const fifoProfitDollars = (zoneToHarvest.targetSellPrice - fifoCostBasis) * actualSellShares;
+    const fifoProfitPercent = fifoCostBasis > 0 ? ((zoneToHarvest.targetSellPrice - fifoCostBasis) / fifoCostBasis) * 100 : 0;
+
+    // ── AVERAGE_COST ──
+    const avgCost = averageCostBasis;
+    const avgCostProfitDollars = (zoneToHarvest.targetSellPrice - avgCost) * actualSellShares;
+    const avgCostProfitPercent = avgCost > 0 ? ((zoneToHarvest.targetSellPrice - avgCost) / avgCost) * 100 : 0;
+
+    // ── Update zones based on accounting mode ──
+    let updatedZones;
+
+    if (accountingMode === 'FIFO') {
+      // FIFO: deduct from oldest lots
+      const fifoDeductMap = {};
+      fifoSellLots.forEach(({ zoneId, shares }) => { fifoDeductMap[zoneId] = shares; });
+
+      updatedZones = currentProfile.zones.map(z => {
+        const deduct = fifoDeductMap[z.id] || 0;
+        if (deduct === 0) return z;
+        const rem = (z.sharesRemaining !== undefined ? z.sharesRemaining : z.sharesAllocated) - deduct;
+        if (rem <= 0) {
+          return { ...z, status: 'EMPTY', filledAt: null, filledPrice: null, sharesRemaining: z.sharesAllocated };
+        }
+        return { ...z, sharesRemaining: rem };
+      });
+    } else {
+      // NON_FIFO and AVERAGE_COST: deduct from the sold zone itself
+      updatedZones = currentProfile.zones.map(z => {
+        if (z.id !== zoneToHarvest.id) return z;
+        if (isPartialSell) {
+          return { ...z, sharesRemaining: sharesAfterSell };
+        }
+        return { ...z, status: 'EMPTY', filledAt: null, filledPrice: null, sharesRemaining: z.sharesAllocated };
+      });
+    }
+
+    // ── Pick profit to record based on active mode ──
+    let recordedProfit, recordedPercent;
+    if (accountingMode === 'NON_FIFO') {
+      recordedProfit = discreteProfitDollars;
+      recordedPercent = discreteProfitPercent;
+    } else if (accountingMode === 'FIFO') {
+      recordedProfit = fifoProfitDollars;
+      recordedPercent = fifoProfitPercent;
+    } else {
+      recordedProfit = avgCostProfitDollars;
+      recordedPercent = avgCostProfitPercent;
+    }
+
+    // ── History record ──
     const historyItem = {
       id: `cycle_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       profileId: currentProfile.id,
@@ -201,14 +286,21 @@ export default function BetaGridTrading({
       priceLevel: zoneToHarvest.priceLevel,
       targetSellPrice: zoneToHarvest.targetSellPrice,
       sharesAllocated: zoneToHarvest.sharesAllocated,
-      // Discrete Non-FIFO
+      sharesSold: actualSellShares,
+      isPartialSell,
+      // All 3 modes recorded for reference
       profitDollars: discreteProfitDollars,
       profitPercent: discreteProfitPercent,
-      // Broker FIFO
-      fifoPriceLevel: fifoCostBasis,
-      fifoProfitDollars: fifoProfitDollars,
-      fifoProfitPercent: fifoProfitPercent,
-      accountingMode: accountingMode,
+      fifoCostBasis,
+      fifoProfitDollars,
+      fifoProfitPercent,
+      avgCostBasis: avgCost,
+      avgCostProfitDollars,
+      avgCostProfitPercent,
+      // Active mode
+      accountingMode,
+      activeProfitDollars: recordedProfit,
+      activeProfitPercent: recordedPercent,
       buyTimestamp: zoneToHarvest.filledAt || new Date().toISOString(),
       sellTimestamp: new Date().toISOString()
     };
@@ -216,22 +308,28 @@ export default function BetaGridTrading({
     const updatedHistory = [historyItem, ...cycleHistory];
     persistHistory(updatedHistory);
 
-    const updatedProfile = { ...currentProfile, zones: updatedZones, updatedAt: new Date().toISOString() };
+    // Update averageCostBasis in profile after sell
+    const newAvgCost = computeAverageCostBasis(updatedZones);
+    const updatedProfile = {
+      ...currentProfile,
+      zones: updatedZones,
+      averageCostBasis: newAvgCost,
+      updatedAt: new Date().toISOString()
+    };
     const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
     persistProfiles(updatedProfiles);
 
-    const activeProfit = accountingMode === 'NON_FIFO' ? discreteProfitDollars : fifoProfitDollars;
-    const activePct = accountingMode === 'NON_FIFO' ? discreteProfitPercent : fifoProfitPercent;
-    const isFakeLoss = accountingMode === 'FIFO' && activeProfit < 0;
+    const isFakeLoss = accountingMode === 'FIFO' && recordedProfit < 0;
 
     if (requestAlert) {
       requestAlert(
-        `💰 ปิดรอบทำกำไร (${accountingMode === 'NON_FIFO' ? 'Non-FIFO' : 'FIFO'} Harvest) สำเร็จ!`,
-        `${isFakeLoss ? '⚠️ โบรกเกอร์รายงานขาดทุน FIFO: ' : 'เก็บกระแสเงินสด: '} ${activeProfit >= 0 ? '+' : ''}$${activeProfit.toFixed(2)} (${activePct >= 0 ? '+' : ''}${activePct.toFixed(1)}%) (กำไรจริงตามโซนคือ +$${discreteProfitDollars.toFixed(2)}) และรีเซ็ตโซนพร้อมรับรอบถัดไปแล้ว`
+        `💰 ปิดรอบทำกำไร (${accountingMode}) สำเร็จ!`,
+        `${isFakeLoss ? '⚠️ โบรกเกอร์รายงานขาดทุน FIFO: ' : ''}${recordedProfit >= 0 ? '+' : ''}$${recordedProfit.toFixed(2)} (${recordedPercent >= 0 ? '+' : ''}${recordedPercent.toFixed(1)}%) — ขาย ${actualSellShares} หุ้น${isPartialSell ? ` (เหลือ ${sharesAfterSell} หุ้น)` : ''}`
       );
     }
   };
 
+  // 6. Update Zone Shares
   const handleUpdateZoneShares = (zoneId, newShares) => {
     if (!currentProfile) return;
     const updatedZones = currentProfile.zones.map(z => {
@@ -239,32 +337,45 @@ export default function BetaGridTrading({
         return {
           ...z,
           sharesAllocated: newShares,
+          sharesRemaining: z.status === 'FILLED' ? newShares : newShares,
           capitalRequired: Math.round(z.priceLevel * newShares * 100) / 100
         };
       }
       return z;
     });
 
-    const updatedProfile = { ...currentProfile, zones: updatedZones, updatedAt: new Date().toISOString() };
+    const updatedProfile = {
+      ...currentProfile,
+      zones: updatedZones,
+      averageCostBasis: computeAverageCostBasis(updatedZones),
+      updatedAt: new Date().toISOString()
+    };
     const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
     persistProfiles(updatedProfiles);
   };
 
+  // 7. Reset All Zones
   const handleResetAllZones = () => {
     if (!currentProfile) return;
     const updatedZones = currentProfile.zones.map(z => ({
       ...z,
       status: 'EMPTY',
       filledAt: null,
-      filledPrice: null
+      filledPrice: null,
+      sharesRemaining: z.sharesAllocated
     }));
 
-    const updatedProfile = { ...currentProfile, zones: updatedZones, updatedAt: new Date().toISOString() };
+    const updatedProfile = {
+      ...currentProfile,
+      zones: updatedZones,
+      averageCostBasis: 0,
+      updatedAt: new Date().toISOString()
+    };
     const updatedProfiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
     persistProfiles(updatedProfiles);
   };
 
-  // 6. Dynamic Grid Expansion (Upper & Lower)
+  // 8. Dynamic Grid Expansion
   const handleExpandUpperZone = () => {
     if (!currentProfile) return;
     const plan = currentProfile.plan || {};
@@ -282,6 +393,7 @@ export default function BetaGridTrading({
       priceLevel: newUpper,
       targetSellPrice: targetSell,
       sharesAllocated: shares,
+      sharesRemaining: shares,
       capitalRequired: capital,
       zoneType: isAction ? 'ACTION' : 'SAFETY',
       status: 'EMPTY',
@@ -294,10 +406,7 @@ export default function BetaGridTrading({
 
     const updatedProfile = {
       ...currentProfile,
-      plan: {
-        ...plan,
-        upperPrice: newUpper
-      },
+      plan: { ...plan, upperPrice: newUpper },
       zones: updatedZones,
       updatedAt: new Date().toISOString()
     };
@@ -327,6 +436,7 @@ export default function BetaGridTrading({
       priceLevel: newLower,
       targetSellPrice: targetSell,
       sharesAllocated: shares,
+      sharesRemaining: shares,
       capitalRequired: capital,
       zoneType: isAction ? 'ACTION' : 'SAFETY',
       status: 'EMPTY',
@@ -339,10 +449,7 @@ export default function BetaGridTrading({
 
     const updatedProfile = {
       ...currentProfile,
-      plan: {
-        ...plan,
-        lowerPrice: newLower
-      },
+      plan: { ...plan, lowerPrice: newLower },
       zones: updatedZones,
       updatedAt: new Date().toISOString()
     };
@@ -373,6 +480,7 @@ export default function BetaGridTrading({
         priceLevel: currentUpper,
         targetSellPrice: targetSell,
         sharesAllocated: shares,
+        sharesRemaining: shares,
         capitalRequired: Math.round(currentUpper * shares * 100) / 100,
         zoneType: isAction ? 'ACTION' : 'SAFETY',
         status: 'EMPTY',
@@ -386,10 +494,7 @@ export default function BetaGridTrading({
 
     const updatedProfile = {
       ...currentProfile,
-      plan: {
-        ...plan,
-        upperPrice: currentUpper
-      },
+      plan: { ...plan, upperPrice: currentUpper },
       zones: updatedZones,
       updatedAt: new Date().toISOString()
     };
@@ -402,16 +507,15 @@ export default function BetaGridTrading({
     }
   };
 
-  // 7. Profile Management (Strictly preserving filled orders)
+  // 9. Profile Management (preserving filled orders on edit)
   const handleSavePlan = (savedProfileData) => {
     let updatedProfiles;
     const existingIndex = profiles.findIndex(p => p.id === savedProfileData.id);
-    
-    // Ensure any previously FILLED zones are preserved even on external plan regeneration
+
     if (existingIndex >= 0) {
       const oldProfile = profiles[existingIndex];
       const oldFilledZones = oldProfile.zones?.filter(z => z.status === 'FILLED') || [];
-      
+
       const mergedZones = savedProfileData.zones.map(newZone => {
         const match = oldFilledZones.find(oz => Math.abs(oz.priceLevel - newZone.priceLevel) < 0.001);
         if (match) {
@@ -421,6 +525,7 @@ export default function BetaGridTrading({
             filledAt: match.filledAt,
             filledPrice: match.filledPrice,
             sharesAllocated: match.sharesAllocated || newZone.sharesAllocated,
+            sharesRemaining: match.sharesRemaining !== undefined ? match.sharesRemaining : (match.sharesAllocated || newZone.sharesAllocated),
             capitalRequired: match.capitalRequired || (newZone.priceLevel * (match.sharesAllocated || newZone.sharesAllocated)),
             targetSellPrice: match.targetSellPrice || newZone.targetSellPrice
           };
@@ -428,7 +533,6 @@ export default function BetaGridTrading({
         return newZone;
       });
 
-      // Preserve any filled zones outside new bounds
       const outsideFilled = oldFilledZones.filter(
         oz => !mergedZones.some(mz => Math.abs(mz.priceLevel - oz.priceLevel) < 0.001)
       );
@@ -437,8 +541,18 @@ export default function BetaGridTrading({
       finalZones.forEach((z, i) => { z.levelIndex = i + 1; });
 
       savedProfileData.zones = finalZones;
+      // Preserve immutable accountingMode from old profile
+      savedProfileData.accountingMode = oldProfile.accountingMode;
+      savedProfileData.averageCostBasis = computeAverageCostBasis(finalZones);
+
       updatedProfiles = profiles.map(p => p.id === savedProfileData.id ? { ...p, ...savedProfileData, updatedAt: new Date().toISOString() } : p);
     } else {
+      // New profile — init sharesRemaining for all zones
+      savedProfileData.zones = (savedProfileData.zones || []).map(z => ({
+        ...z,
+        sharesRemaining: z.sharesRemaining !== undefined ? z.sharesRemaining : z.sharesAllocated
+      }));
+      savedProfileData.averageCostBasis = 0;
       updatedProfiles = [savedProfileData, ...profiles];
     }
 
@@ -463,12 +577,66 @@ export default function BetaGridTrading({
     }
   };
 
-  // Calculate Realized Profit for Current Profile based on accountingMode
+  // 10. HARD RESET — wipe everything and restart fresh
+  const handleHardReset = async () => {
+    try {
+      const cleanEmail = currentUser?.trim().toLowerCase();
+      if (!cleanEmail) return;
+
+      // Clear Supabase
+      try {
+        await supabase.from('beta_grid_profiles').delete().eq('email', cleanEmail);
+        await supabase.from('beta_grid_history').delete().eq('email', cleanEmail);
+      } catch (e) {
+        console.warn('Supabase clear failed (may not exist yet):', e);
+      }
+
+      // Clear localStorage
+      const storageKeys = Object.keys(localStorage).filter(k =>
+        k.includes('phudit_beta_grid') || k.includes('phudit_beta_history')
+      );
+      storageKeys.forEach(k => localStorage.removeItem(k));
+
+      // Reset state
+      setCycleHistory([]);
+      setProfiles([]);
+      setSelectedProfileId(null);
+      setShowHardResetConfirm(false);
+
+      if (requestAlert) {
+        requestAlert('🔄 Hard Reset สำเร็จ', 'ข้อมูลทั้งหมดถูกลบแล้ว กรุณาสร้าง Beta Account ใหม่');
+      }
+
+      // Open create modal
+      setTimeout(() => {
+        setModalEditProfile(null);
+        setIsPlanModalOpen(true);
+      }, 500);
+    } catch (err) {
+      console.error('Hard reset failed:', err);
+    }
+  };
+
+  // ── Computed profits for overview ──
   const currentProfileHistory = cycleHistory.filter(h => h.profileId === selectedProfileId);
   const totalRealizedProfitNonFIFO = currentProfileHistory.reduce((sum, h) => sum + (parseFloat(h.profitDollars) || 0), 0);
-  const totalRealizedProfitFIFO = currentProfileHistory.reduce((sum, h) => sum + (parseFloat(h.fifoProfitDollars !== undefined ? h.fifoProfitDollars : h.profitDollars) || 0), 0);
-  const totalRealizedProfit = accountingMode === 'NON_FIFO' ? totalRealizedProfitNonFIFO : totalRealizedProfitFIFO;
-  const comparisonProfit = accountingMode === 'NON_FIFO' ? totalRealizedProfitFIFO : totalRealizedProfitNonFIFO;
+  const totalRealizedProfitFIFO = currentProfileHistory.reduce((sum, h) => {
+    const v = h.fifoProfitDollars !== undefined ? h.fifoProfitDollars : h.profitDollars;
+    return sum + (parseFloat(v) || 0);
+  }, 0);
+  const totalRealizedProfitAvgCost = currentProfileHistory.reduce((sum, h) => {
+    const v = h.avgCostProfitDollars !== undefined ? h.avgCostProfitDollars : h.profitDollars;
+    return sum + (parseFloat(v) || 0);
+  }, 0);
+
+  const totalRealizedProfit =
+    accountingMode === 'NON_FIFO' ? totalRealizedProfitNonFIFO :
+    accountingMode === 'FIFO' ? totalRealizedProfitFIFO :
+    totalRealizedProfitAvgCost;
+
+  const comparisonProfit =
+    accountingMode === 'NON_FIFO' ? totalRealizedProfitFIFO :
+    totalRealizedProfitNonFIFO;
 
   if (!isVip) {
     return (
@@ -480,15 +648,15 @@ export default function BetaGridTrading({
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-12 px-2 sm:px-0 animate-fade-in">
-      
+
       {/* Background Ambience */}
       <div className="fixed inset-0 -z-10 bg-slate-50 dark:bg-[#0B1121] transition-colors"></div>
       <div className="fixed top-0 left-0 w-full h-[550px] bg-gradient-to-b from-indigo-600/10 via-cyan-500/5 to-transparent -z-10 pointer-events-none"></div>
 
       {/* Top Header & Strategy Selector */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/60 dark:border-slate-800/80">
-        
-        {/* Branding & Spec Title */}
+
+        {/* Branding */}
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-xl shadow-indigo-500/25">
             <span className="text-2xl font-black font-serif italic text-white drop-shadow-md leading-none">β</span>
@@ -498,9 +666,18 @@ export default function BetaGridTrading({
               <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-700 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent tracking-tight">
                 Beta Portfolio (Grid Trading)
               </h1>
-              <span className="px-2.5 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 rounded-md text-[10px] font-black tracking-widest uppercase">
-                NON-FIFO
-              </span>
+              {currentProfile?.accountingMode && (
+                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black tracking-widest uppercase border ${
+                  currentProfile.accountingMode === 'NON_FIFO'
+                    ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+                    : currentProfile.accountingMode === 'FIFO'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                    : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                }`}>
+                  {currentProfile.accountingMode === 'NON_FIFO' ? 'NON-FIFO' :
+                   currentProfile.accountingMode === 'FIFO' ? 'FIFO' : 'AVG COST'}
+                </span>
+              )}
             </div>
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">
               Discrete Zone Tracking • Asymmetric Grid Engine • Automated Cash Flow
@@ -519,7 +696,7 @@ export default function BetaGridTrading({
               >
                 {profiles.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.assetTicker} • {p.name}
+                    {p.assetTicker} • {p.name} [{p.accountingMode || 'NON_FIFO'}]
                   </option>
                 ))}
               </select>
@@ -563,11 +740,49 @@ export default function BetaGridTrading({
               <Trash2 size={16} />
             </button>
           )}
-        </div>
 
+          {/* Hard Reset Button */}
+          <button
+            onClick={() => setShowHardResetConfirm(true)}
+            className="p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-400 hover:text-rose-600 hover:border-rose-400 dark:hover:border-rose-700 transition-colors cursor-pointer"
+            title="Hard Reset — ลบข้อมูลทั้งหมดแล้วเริ่มใหม่"
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Main View Mode Selector (Grid Board vs Cycle History) */}
+      {/* Hard Reset Confirmation Banner */}
+      {showHardResetConfirm && (
+        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-6 h-6 text-rose-500 flex-shrink-0" />
+            <div>
+              <div className="font-black text-rose-700 dark:text-rose-400 text-sm">⚠️ Hard Reset — ยืนยันการลบข้อมูลทั้งหมด</div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Profiles, Zones, และประวัติรอบทั้งหมด (Supabase + localStorage) จะถูกลบถาวร ไม่สามารถกู้คืนได้
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowHardResetConfirm(false)}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              ยกเลิก
+            </button>
+            <button
+              onClick={handleHardReset}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-black shadow-md shadow-rose-500/25 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <RotateCcw size={14} />
+              <span>ยืนยัน Hard Reset</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main View Mode Selector */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex p-1.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 shadow-lg shadow-slate-200/10 dark:shadow-black/20">
           <button
@@ -602,7 +817,6 @@ export default function BetaGridTrading({
           </button>
         </div>
 
-        {/* Quick Asymmetric Spec Summary Badge */}
         {currentProfile?.plan && (
           <div className="hidden lg:flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
             <span>Range: ${currentProfile.plan.lowerPrice.toFixed(2)} - ${currentProfile.plan.upperPrice.toFixed(2)}</span>
@@ -626,10 +840,10 @@ export default function BetaGridTrading({
         totalRealizedProfit={totalRealizedProfit}
         totalRealizedProfitNonFIFO={totalRealizedProfitNonFIFO}
         totalRealizedProfitFIFO={totalRealizedProfitFIFO}
+        totalRealizedProfitAvgCost={totalRealizedProfitAvgCost}
         comparisonProfit={comparisonProfit}
         completedCyclesCount={currentProfileHistory.length}
         accountingMode={accountingMode}
-        setAccountingMode={setAccountingMode}
         onExpandUpperZone={handleExpandUpperZone}
         onExpandLowerZone={handleExpandLowerZone}
         onExpandToLivePrice={handleExpandToLivePrice}
@@ -642,6 +856,7 @@ export default function BetaGridTrading({
           zones={currentProfile.zones || []}
           livePrice={currentLivePrice}
           accountingMode={accountingMode}
+          averageCostBasis={averageCostBasis}
           onFillZone={handleFillZone}
           onHarvestZone={handleHarvestZone}
           onUpdateZoneShares={handleUpdateZoneShares}
@@ -656,7 +871,7 @@ export default function BetaGridTrading({
         <BetaGridCycleHistory
           history={cycleHistory}
           accountingMode={accountingMode}
-          setAccountingMode={setAccountingMode}
+          setAccountingMode={null} // immutable — no switching in history view
           totalRealizedProfitNonFIFO={totalRealizedProfitNonFIFO}
           totalRealizedProfitFIFO={totalRealizedProfitFIFO}
           onDeleteHistoryItem={(id) => {

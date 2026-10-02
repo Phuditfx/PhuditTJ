@@ -14,10 +14,16 @@ import {
   Info
 } from 'lucide-react';
 
+const MODE_LABELS = {
+  NON_FIFO: { label: 'Non-FIFO Discrete', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
+  FIFO: { label: 'FIFO Broker', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+  AVERAGE_COST: { label: 'Avg Cost', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+};
+
 export default function BetaGridCycleHistory({
   history = [],
   accountingMode = 'NON_FIFO',
-  setAccountingMode,
+  setAccountingMode, // ignored — immutable now, kept for backward compat
   totalRealizedProfitNonFIFO = 0,
   totalRealizedProfitFIFO = 0,
   onDeleteHistoryItem,
@@ -45,10 +51,17 @@ export default function BetaGridCycleHistory({
     const fifoVal = h.fifoProfitDollars !== undefined ? parseFloat(h.fifoProfitDollars) : parseFloat(h.profitDollars);
     return sum + (fifoVal || 0);
   }, 0);
+  const totalAvgCostProfit = filteredHistory.reduce((sum, h) => {
+    const v = h.avgCostProfitDollars !== undefined ? parseFloat(h.avgCostProfitDollars) : parseFloat(h.profitDollars);
+    return sum + (v || 0);
+  }, 0);
 
-  const activeTotalProfit = accountingMode === 'NON_FIFO' ? totalNonFIFOProfit : totalFIFOProfit;
+  const activeTotalProfit =
+    accountingMode === 'NON_FIFO' ? totalNonFIFOProfit :
+    accountingMode === 'FIFO' ? totalFIFOProfit :
+    totalAvgCostProfit;
   const profitDifference = totalNonFIFOProfit - totalFIFOProfit;
-  const totalCapitalTurnover = filteredHistory.reduce((sum, h) => sum + ((parseFloat(h.priceLevel) || 0) * (parseInt(h.sharesAllocated, 10) || 0)), 0);
+  const totalCapitalTurnover = filteredHistory.reduce((sum, h) => sum + ((parseFloat(h.priceLevel) || 0) * (parseInt(h.sharesSold || h.sharesAllocated, 10) || 0)), 0);
   const avgProfit = filteredHistory.length > 0 ? activeTotalProfit / filteredHistory.length : 0;
 
   const handleDeleteItem = (id) => {
@@ -139,37 +152,12 @@ export default function BetaGridCycleHistory({
           </p>
         </div>
 
-        {/* Action Controls & Accounting Switcher */}
+        {/* Action Controls — mode is now immutable, shown as read-only badge */}
         <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
-          {/* Quick Toggle: Non-FIFO vs FIFO */}
-          {setAccountingMode && (
-            <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-black shadow-inner">
-              <button
-                onClick={() => setAccountingMode('NON_FIFO')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  accountingMode === 'NON_FIFO'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-1 ring-indigo-400/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-                title="โหมด Non-FIFO: คำนวณกำไรแยกอิสระเฉพาะไม้ของโซนนั้นๆ (Discrete Zone)"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span>Non-FIFO</span>
-              </button>
-              <button
-                onClick={() => setAccountingMode('FIFO')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  accountingMode === 'FIFO'
-                    ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-                title="โหมด FIFO: คำนวณกำไรตามต้นทุนไม้แรกสุดเหมือนบัญชีโบรกเกอร์ทั่วไป"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                <span>FIFO Broker</span>
-              </button>
-            </div>
-          )}
+          {/* Immutable mode badge */}
+          <span className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full border ${MODE_LABELS[accountingMode]?.color || MODE_LABELS.NON_FIFO.color}`}>
+            🔒 {MODE_LABELS[accountingMode]?.label || accountingMode}
+          </span>
 
           {filteredHistory.length > 0 && (
             <button
@@ -319,17 +307,22 @@ export default function BetaGridCycleHistory({
             <tr className="border-b border-slate-200/60 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/50 text-slate-400 text-[11px] font-black uppercase tracking-wider">
               <th className="py-3 px-4">Date / Time</th>
               <th className="py-3 px-3">Ticker / Strategy</th>
-              <th className="py-3 px-3">Discrete Zone</th>
-              <th className="py-3 px-3">Shares</th>
+              <th className="py-3 px-3">Zone Price</th>
+              <th className="py-3 px-3">Shares Sold</th>
               <th className="py-3 px-3">Capital</th>
               <th className="py-3 px-3">
                 <span className={accountingMode === 'NON_FIFO' ? 'text-indigo-600 dark:text-indigo-400 underline decoration-2' : ''}>
-                  Discrete Profit (Non-FIFO)
+                  Discrete (Non-FIFO)
                 </span>
               </th>
               <th className="py-3 px-3">
                 <span className={accountingMode === 'FIFO' ? 'text-amber-600 dark:text-amber-400 underline decoration-2' : ''}>
-                  Broker FIFO Profit
+                  FIFO Broker
+                </span>
+              </th>
+              <th className="py-3 px-3">
+                <span className={accountingMode === 'AVERAGE_COST' ? 'text-purple-600 dark:text-purple-400 underline decoration-2' : ''}>
+                  Avg Cost
                 </span>
               </th>
               <th className="py-3 px-4 text-right">Action</th>
@@ -337,11 +330,14 @@ export default function BetaGridCycleHistory({
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
             {filteredHistory.map((item) => {
-              const capital = item.priceLevel * item.sharesAllocated;
+              const sharesSold = item.sharesSold || item.sharesAllocated || 0;
+              const capital = item.priceLevel * sharesSold;
               const nonFifoProfit = parseFloat(item.profitDollars) || 0;
               const nonFifoPct = parseFloat(item.profitPercent) || 0;
               const fifoProfit = item.fifoProfitDollars !== undefined ? parseFloat(item.fifoProfitDollars) : nonFifoProfit;
               const fifoPct = item.fifoProfitPercent !== undefined ? parseFloat(item.fifoProfitPercent) : nonFifoPct;
+              const avgCostProfit = item.avgCostProfitDollars !== undefined ? parseFloat(item.avgCostProfitDollars) : nonFifoProfit;
+              const avgCostPct = item.avgCostProfitPercent !== undefined ? parseFloat(item.avgCostProfitPercent) : nonFifoPct;
               const isFakeLoss = fifoProfit < 0;
 
               return (
@@ -353,6 +349,9 @@ export default function BetaGridCycleHistory({
                     <div className="text-[10px] text-slate-400">
                       {new Date(item.sellTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
+                    {item.isPartialSell && (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 mt-0.5 inline-block">PARTIAL</span>
+                    )}
                   </td>
 
                   <td className="py-3 px-3">
@@ -373,7 +372,10 @@ export default function BetaGridCycleHistory({
                   </td>
 
                   <td className="py-3 px-3 font-mono font-semibold text-slate-700 dark:text-slate-300">
-                    {item.sharesAllocated} หุ้น
+                    {sharesSold} หุ้น
+                    {item.isPartialSell && (
+                      <span className="block text-[10px] text-slate-400">จาก {item.sharesAllocated}</span>
+                    )}
                   </td>
 
                   <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-400">
@@ -388,7 +390,7 @@ export default function BetaGridCycleHistory({
                       +${nonFifoProfit.toFixed(2)}
                     </div>
                     <div className="text-[10px] font-bold text-emerald-500">
-                      +{nonFifoPct.toFixed(1)}% (ตามไม้)
+                      +{nonFifoPct.toFixed(1)}%
                     </div>
                   </td>
 
@@ -400,14 +402,30 @@ export default function BetaGridCycleHistory({
                       {fifoProfit >= 0 ? '+' : ''}${fifoProfit.toFixed(2)}
                     </div>
                     {isFakeLoss ? (
-                      <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.2 rounded mt-0.5">
+                      <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 rounded mt-0.5">
                         <AlertTriangle size={10} />
-                        <span>Fake Loss ({fifoPct.toFixed(1)}%)</span>
+                        <span>Fake Loss</span>
                       </div>
                     ) : (
-                      <div className="text-[10px] text-slate-400">
-                        {fifoPct >= 0 ? '+' : ''}{fifoPct.toFixed(1)}% (FIFO)
-                      </div>
+                      <div className="text-[10px] text-slate-400">{fifoPct >= 0 ? '+' : ''}{fifoPct.toFixed(1)}%</div>
+                    )}
+                  </td>
+
+                  {/* Average Cost Profit */}
+                  <td className={`py-3 px-3 font-mono ${
+                    accountingMode === 'AVERAGE_COST' ? 'bg-purple-50/30 dark:bg-purple-950/20' : ''
+                  }`}>
+                    {item.avgCostBasis ? (
+                      <>
+                        <div className={`font-black ${avgCostProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                          {avgCostProfit >= 0 ? '+' : ''}${avgCostProfit.toFixed(2)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          avg ${item.avgCostBasis.toFixed(2)}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-slate-400">—</span>
                     )}
                   </td>
 
