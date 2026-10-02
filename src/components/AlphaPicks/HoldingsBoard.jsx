@@ -1,12 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
 import PortfolioOverview from './PortfolioOverview';
+import { RefreshCw, ShieldCheck } from 'lucide-react';
 
 export default function HoldingsBoard({ isLoading = false }) {
-  const { positions, handleRecoup, handleAddTransaction } = useMoonbagStore();
+  const { 
+    positions, 
+    handleRecoup, 
+    handleAddTransaction,
+    refreshLivePrices,
+    isFetchingPrices,
+    lastPriceUpdated,
+    auditAndSyncPortfolio,
+    isAuditing,
+    selectedPortfolioId,
+    livePrices
+  } = useMoonbagStore();
   const [activeTab, setActiveTab] = useState('OVERVIEW');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [auditFeedback, setAuditFeedback] = useState('');
+
+  // Auto-refresh interval every 60s for Alpha Picks positions
+  useEffect(() => {
+    if (!selectedPortfolioId) return;
+    refreshLivePrices();
+
+    const interval = setInterval(() => {
+      refreshLivePrices();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [selectedPortfolioId, refreshLivePrices]);
+
+  const handleRunAudit = async () => {
+    try {
+      setAuditFeedback('');
+      const res = await auditAndSyncPortfolio();
+      setAuditFeedback(`✅ ตรวจสอบและคำนวณข้อมูลใหม่ ${res.auditedPositionsCount} หุ้นเรียบร้อย`);
+      setTimeout(() => setAuditFeedback(''), 4000);
+    } catch (err) {
+      setErrorMsg("เกิดข้อผิดพลาดในการตรวจสอบข้อมูล: " + (err.message || 'Unknown error'));
+    }
+  };
   
   // Recoup State
   const [recoupConfirmPos, setRecoupConfirmPos] = useState(null);
@@ -85,34 +121,79 @@ export default function HoldingsBoard({ isLoading = false }) {
         </div>
       )}
       
-      {/* Tabs Header */}
-      <div className="flex border-b border-slate-200/50 dark:border-slate-700/50 p-2 gap-2 bg-slate-50/50 dark:bg-slate-800/50 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('OVERVIEW')}
-          className={`py-3 px-4 rounded-2xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap ${
-            activeTab === 'OVERVIEW'
-              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50'
-              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800'
-          }`}
-        >
-          📊 Overview
-        </button>
-        {['ACTIVE', 'MOONBAG', 'CLOSED'].map(tab => (
+      {/* Tabs & Controls Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-200/50 dark:border-slate-700/50 p-2 gap-2 bg-slate-50/50 dark:bg-slate-800/50">
+        <div className="flex items-center gap-2 overflow-x-auto">
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap ${
-              activeTab === tab
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`py-2.5 px-4 rounded-xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'OVERVIEW'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50'
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800'
             }`}
           >
-            {tab === 'MOONBAG' ? '🚀 ' : ''}{tab}
-            <span className="ml-2 px-1.5 py-0.5 rounded-md bg-slate-200/50 dark:bg-slate-900/50 text-[10px]">
-              {positions.filter(p => p.status === tab).length}
-            </span>
+            📊 Overview
           </button>
-        ))}
+          {['ACTIVE', 'MOONBAG', 'CLOSED'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`py-2.5 px-3.5 rounded-xl text-xs font-black tracking-widest uppercase transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === tab
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800'
+              }`}
+            >
+              {tab === 'MOONBAG' ? '🚀 ' : ''}{tab}
+              <span className="ml-2 px-1.5 py-0.5 rounded-md bg-slate-200/50 dark:bg-slate-900/50 text-[10px]">
+                {positions.filter(p => p.status === tab).length}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Right Controls: Live Price Refresh & Audit */}
+        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto px-1">
+          {auditFeedback && (
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              {auditFeedback}
+            </span>
+          )}
+
+          {lastPriceUpdated && (
+            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 hidden sm:inline-block">
+              อัปเดตราคา: {new Date(lastPriceUpdated).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+
+          <button
+            onClick={() => refreshLivePrices()}
+            disabled={isFetchingPrices}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all border shadow-sm cursor-pointer ${
+              isFetchingPrices
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 cursor-wait'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500/30'
+            }`}
+            title="ดึงราคาตลาดสด (Yahoo Finance) ทุก 60 วินาทีอัตโนมัติ หรือกดเพื่อรีเฟรชทันที"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetchingPrices ? 'animate-spin text-emerald-500' : 'text-emerald-500'}`} />
+            <span>{isFetchingPrices ? 'ดึงราคา...' : 'รีเฟรชราคา'}</span>
+          </button>
+
+          <button
+            onClick={handleRunAudit}
+            disabled={isAuditing}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all border shadow-sm cursor-pointer ${
+              isAuditing
+                ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400 cursor-wait'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-500/30'
+            }`}
+            title="ตรวจสอบความสอดคล้องของ Transaction ทั้งหมดและคำนวณต้นทุน/ยอดหุ้นใหม่ให้ตรงกับประวัติจริง"
+          >
+            <ShieldCheck className={`w-3.5 h-3.5 ${isAuditing ? 'animate-spin text-indigo-500' : 'text-indigo-500'}`} />
+            <span>{isAuditing ? 'กำลังซิงค์...' : 'Sync & Audit'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Content Area */}
@@ -147,6 +228,7 @@ export default function HoldingsBoard({ isLoading = false }) {
                 const currentValue = currentPrice * totalShares;
                 const pnlAmt = currentValue - totalCost;
                 const pnlPct = avgCost > 0 ? ((currentPrice - avgCost) / avgCost) * 100 : 0;
+                const isLive = livePrices && livePrices[pos.ticker] !== undefined;
                 
                 return (
                   <tr key={pos.id} className={`transition-colors text-sm hover:bg-slate-50 dark:hover:bg-slate-800/30 ${isReadyForRecoup ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}>
@@ -170,7 +252,15 @@ export default function HoldingsBoard({ isLoading = false }) {
                       )}
                     </td>
                     <td className="px-2 py-4 md:px-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      ${parseFloat(pos.currentPrice).toFixed(2)}
+                      <div className="flex flex-col items-end">
+                        <span>${parseFloat(pos.currentPrice).toFixed(2)}</span>
+                        {isLive && (
+                          <span className="text-[8px] font-bold text-emerald-500 flex items-center gap-0.5 tracking-wider">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                            LIVE
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-2 py-4 md:px-4 text-right font-mono font-bold text-slate-900 dark:text-white hidden md:table-cell">
                       ${pos.currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -197,7 +287,7 @@ export default function HoldingsBoard({ isLoading = false }) {
                             disabled={!isReadyForRecoup}
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm ${
                               isReadyForRecoup 
-                                ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/30' 
+                                ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/30 cursor-pointer' 
                                 : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
                             }`}
                           >
@@ -209,8 +299,8 @@ export default function HoldingsBoard({ isLoading = false }) {
                         )}
                         {activeTab !== 'CLOSED' && (
                           <>
-                            <button onClick={() => openTradeModal(pos, 'BUY')} className="px-2 py-1.5 bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-[10px] font-black">BUY</button>
-                            <button onClick={() => openTradeModal(pos, 'SELL')} className="px-2 py-1.5 bg-rose-100 text-rose-600 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-[10px] font-black">SELL</button>
+                            <button onClick={() => openTradeModal(pos, 'BUY')} className="px-2 py-1.5 bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-[10px] font-black cursor-pointer">BUY</button>
+                            <button onClick={() => openTradeModal(pos, 'SELL')} className="px-2 py-1.5 bg-rose-100 text-rose-600 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-[10px] font-black cursor-pointer">SELL</button>
                           </>
                         )}
                       </div>

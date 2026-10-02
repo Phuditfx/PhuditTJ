@@ -536,12 +536,12 @@ export async function deleteTransactionAndRecalculate(
     .eq('id', transactionId);
   if (deleteErr) throw deleteErr;
 
-  // 3. Fetch all REMAINING transactions for this position (BUY + SELL only)
+  // 3. Fetch all REMAINING transactions for this position (all types: BUY, SELL, RECOUP)
   const { data: remainingTxs, error: remainErr } = await supabase
     .from('investment_transactions')
     .select('*')
     .eq('position_id', positionId)
-    .in('type', ['BUY', 'SELL'])
+    .order('transaction_date', { ascending: true })
     .order('created_at', { ascending: true });
 
   if (remainErr) throw remainErr;
@@ -549,6 +549,9 @@ export async function deleteTransactionAndRecalculate(
   // 4. Recalculate position from scratch
   let totalShares = 0;
   let averageCost = 0;
+  let initialInvest = 0;
+  let initialShares = 0;
+  let recoupedAmount = 0;
 
   for (const t of remainingTxs || []) {
     const s = parseFloat(t.shares || 0);
@@ -558,9 +561,14 @@ export async function deleteTransactionAndRecalculate(
       const newValue = s * p;
       totalShares += s;
       averageCost = totalShares > 0 ? (oldValue + newValue) / totalShares : 0;
+      initialInvest += newValue;
+      initialShares += s;
     } else if (t.type === 'SELL') {
       totalShares -= s;
       // average cost unchanged on sell
+    } else if (t.type === 'RECOUP') {
+      totalShares -= s;
+      recoupedAmount += (s * p);
     }
   }
 
@@ -568,7 +576,11 @@ export async function deleteTransactionAndRecalculate(
 
   // 5. Determine new status
   let newStatus = 'ACTIVE';
-  if (totalShares <= 0) newStatus = 'CLOSED';
+  if (totalShares <= 0) {
+    newStatus = 'CLOSED';
+  } else if (recoupedAmount > 0) {
+    newStatus = 'MOONBAG';
+  }
 
   // 6. Update position
   const { error: updatePosErr } = await supabase
@@ -576,29 +588,41 @@ export async function deleteTransactionAndRecalculate(
     .update({
       total_shares: totalShares,
       average_cost: averageCost,
+      initial_investment: initialInvest > 0 ? initialInvest : (averageCost * totalShares),
+      initial_shares: initialShares > 0 ? initialShares : totalShares,
+      recouped_amount: recoupedAmount,
       status: newStatus,
       updated_at: new Date().toISOString()
     })
     .eq('id', positionId);
   if (updatePosErr) throw updatePosErr;
 
-  // 7. Reverse cash balance impact
+  // 7. Reverse cash balance & total_recouped impact
   const { data: portData } = await supabase
     .from('investment_portfolios')
-    .select('cash_balance')
+    .select('cash_balance, total_recouped')
     .eq('id', portfolioId)
     .single();
 
   if (portData) {
     let cash = parseFloat(portData.cash_balance || 0);
+    let totalRecouped = parseFloat(portData.total_recouped || 0);
+
     // If the deleted tx was a BUY, we spent cash → reverse by adding back
     // If it was a SELL, we received cash → reverse by subtracting
-    if (txType === 'BUY') cash += txValue;
-    else if (txType === 'SELL') cash -= txValue;
+    // If it was a RECOUP, we received cash and added total_recouped → reverse both
+    if (txType === 'BUY') {
+      cash += txValue;
+    } else if (txType === 'SELL') {
+      cash -= txValue;
+    } else if (txType === 'RECOUP') {
+      cash -= txValue;
+      totalRecouped = Math.max(0, totalRecouped - txValue);
+    }
 
     const { error: cashErr } = await supabase
       .from('investment_portfolios')
-      .update({ cash_balance: cash })
+      .update({ cash_balance: cash, total_recouped: totalRecouped })
       .eq('id', portfolioId);
     if (cashErr) throw cashErr;
   }
@@ -609,6 +633,146 @@ export async function deleteTransactionAndRecalculate(
   }
 
   return { success: true, newTotalShares: totalShares, newAverageCost: averageCost };
+}
+
+/**
+ * Batch update positions with live market prices and recalculated unrealized PnL
+ */
+export async function batchUpdatePositionsPrices(priceUpdates) {
+  if (!priceUpdates || priceUpdates.length === 0) return;
+  const promises = priceUpdates.map(u => 
+    supabase
+      .from('investment_positions')
+      .update({
+        current_price: u.current_price,
+        unrealized_pnl: u.unrealized_pnl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', u.id)
+  );
+  await Promise.all(promises);
+}
+
+/**
+ * Comprehensive Audit & Recalculate for all positions in a portfolio.
+ * Reconciles the position state against all recorded investment_transactions.
+ */
+export async function auditAndRecalculatePortfolioPositions(userEmail, portfolioId) {
+  if (!userEmail || !portfolioId) throw new Error("Missing userEmail or portfolioId");
+
+  // 1. Fetch positions
+  const { data: positions, error: posErr } = await supabase
+    .from('investment_positions')
+    .select('*')
+    .eq('user_email', userEmail)
+    .eq('portfolio_id', portfolioId);
+
+  if (posErr) throw posErr;
+
+  // 2. Fetch all transactions in this portfolio
+  const { data: txs, error: txErr } = await supabase
+    .from('investment_transactions')
+    .select('*')
+    .eq('user_email', userEmail)
+    .eq('portfolio_id', portfolioId)
+    .order('transaction_date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (txErr) throw txErr;
+
+  // Group transactions by position_id and fallback ticker
+  const txByPos = {};
+  const txByTicker = {};
+  for (const t of txs || []) {
+    if (t.position_id) {
+      if (!txByPos[t.position_id]) txByPos[t.position_id] = [];
+      txByPos[t.position_id].push(t);
+    }
+    const tick = (t.ticker || '').toUpperCase();
+    if (tick) {
+      if (!txByTicker[tick]) txByTicker[tick] = [];
+      txByTicker[tick].push(t);
+    }
+  }
+
+  const results = [];
+  let totalRecoupedSum = 0;
+
+  for (const pos of positions || []) {
+    const posTxs = txByPos[pos.id] || txByTicker[pos.ticker?.toUpperCase()] || [];
+
+    let totalShares = 0;
+    let averageCost = 0;
+    let initialInvest = 0;
+    let initialShares = 0;
+    let recoupedAmount = 0;
+
+    for (const t of posTxs) {
+      const s = parseFloat(t.shares || 0);
+      const p = parseFloat(t.price || 0);
+
+      if (t.type === 'BUY') {
+        const oldValue = totalShares * averageCost;
+        const newValue = s * p;
+        totalShares += s;
+        averageCost = totalShares > 0 ? (oldValue + newValue) / totalShares : 0;
+        initialInvest += newValue;
+        initialShares += s;
+      } else if (t.type === 'SELL') {
+        totalShares -= s;
+      } else if (t.type === 'RECOUP') {
+        totalShares -= s;
+        const rVal = s * p;
+        recoupedAmount += rVal;
+        totalRecoupedSum += rVal;
+      }
+    }
+
+    totalShares = Math.max(0, totalShares);
+    let newStatus = pos.status || 'ACTIVE';
+    if (totalShares <= 0) {
+      newStatus = 'CLOSED';
+    } else if (recoupedAmount > 0) {
+      newStatus = 'MOONBAG';
+    } else {
+      newStatus = 'ACTIVE';
+    }
+
+    const currentPrice = parseFloat(pos.current_price) || averageCost;
+    const unrealizedPnl = totalShares * (currentPrice - averageCost);
+
+    const updatePayload = {
+      total_shares: totalShares,
+      average_cost: averageCost,
+      initial_investment: initialInvest > 0 ? initialInvest : (averageCost * totalShares),
+      initial_shares: initialShares > 0 ? initialShares : totalShares,
+      recouped_amount: recoupedAmount,
+      status: newStatus,
+      unrealized_pnl: unrealizedPnl,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: upErr } = await supabase
+      .from('investment_positions')
+      .update(updatePayload)
+      .eq('id', pos.id);
+
+    if (upErr) console.error(`Error updating position ${pos.id}:`, upErr);
+
+    results.push({
+      ticker: pos.ticker,
+      positionId: pos.id,
+      updated: updatePayload
+    });
+  }
+
+  // Update total_recouped in portfolio
+  await supabase
+    .from('investment_portfolios')
+    .update({ total_recouped: totalRecoupedSum })
+    .eq('id', portfolioId);
+
+  return { auditedPositionsCount: results.length, totalRecouped: totalRecoupedSum, results };
 }
 
 /**

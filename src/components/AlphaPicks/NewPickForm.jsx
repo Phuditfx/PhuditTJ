@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useMoonbagStore } from '../../hooks/useMoonbagStore';
+import { fetchRealTimePrice } from '../../api/priceApi';
+import { RefreshCw } from 'lucide-react';
 
 export default function NewPickForm() {
   const { handleAddTransaction } = useMoonbagStore();
@@ -9,6 +11,23 @@ export default function NewPickForm() {
   const [shares, setShares] = useState('');
   const [price, setPrice] = useState('');
   const [type, setType] = useState('BUY');
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+
+  const fetchMarketPrice = async (sym) => {
+    const s = (sym || ticker).trim().toUpperCase();
+    if (!s) return;
+    setIsFetchingPrice(true);
+    try {
+      const p = await fetchRealTimePrice(s);
+      if (p) {
+        setPrice(parseFloat(p).toFixed(2));
+      }
+    } catch (err) {
+      console.warn("Failed to fetch price for", s, err);
+    } finally {
+      setIsFetchingPrice(false);
+    }
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +45,7 @@ export default function NewPickForm() {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="mb-6 px-6 py-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-2xl text-sm font-black text-slate-700 dark:text-slate-300 shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+        className="mb-6 px-6 py-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-2xl text-sm font-black text-slate-700 dark:text-slate-300 shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"
       >
         <span>➕</span> ADD NEW TRANSACTION
       </button>
@@ -37,31 +56,52 @@ export default function NewPickForm() {
     <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 shadow-xl shadow-slate-200/20 dark:shadow-black/20 mb-6 animate-[fade-in_0.2s_ease-out]">
       <div className="flex justify-between items-center mb-4">
          <h3 className="text-lg font-black text-slate-900 dark:text-white">Record Transaction</h3>
-         <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-rose-500">
+         <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-rose-500 cursor-pointer">
            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
          </button>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-end">
         <div className="w-full md:w-32">
           <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Type</label>
-          <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+          <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
             <option value="BUY">BUY</option>
             <option value="SELL">SELL</option>
           </select>
         </div>
         <div className="flex-1 w-full">
           <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Ticker</label>
-          <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="e.g. AAPL" required />
+          <input 
+            type="text" 
+            value={ticker} 
+            onChange={e=>setTicker(e.target.value.toUpperCase())} 
+            onBlur={() => { if (!price && ticker) fetchMarketPrice(ticker); }}
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/50" 
+            placeholder="e.g. AAPL" 
+            required 
+          />
         </div>
         <div className="flex-1 w-full">
           <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Shares</label>
           <input type="number" step="any" value={shares} onChange={e=>setShares(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="0.00" required />
         </div>
         <div className="flex-1 w-full">
-          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Price ($)</label>
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Price ($)</label>
+            {ticker && (
+              <button
+                type="button"
+                onClick={() => fetchMarketPrice(ticker)}
+                disabled={isFetchingPrice}
+                className="text-[9px] font-black text-indigo-500 hover:text-indigo-400 flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw size={10} className={isFetchingPrice ? 'animate-spin' : ''} />
+                <span>ดึงราคาตลาด</span>
+              </button>
+            )}
+          </div>
           <input type="number" step="any" value={price} onChange={e=>setPrice(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="0.00" required />
         </div>
-        <button type="submit" className={`w-full md:w-auto px-8 py-3 text-white font-black rounded-xl shadow-lg transition-all active:scale-95 ${type==='BUY'?'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30':'bg-rose-500 hover:bg-rose-400 shadow-rose-500/30'}`}>
+        <button type="submit" className={`w-full md:w-auto px-8 py-3 text-white font-black rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer ${type==='BUY'?'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30':'bg-rose-500 hover:bg-rose-400 shadow-rose-500/30'}`}>
           EXECUTE
         </button>
       </form>

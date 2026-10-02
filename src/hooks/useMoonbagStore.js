@@ -5,8 +5,11 @@ import {
   executeRecoupTransaction,
   addInvestmentTransaction,
   deleteTransactionAndRecalculate,
-  editTransactionAndRecalculate
+  editTransactionAndRecalculate,
+  batchUpdatePositionsPrices,
+  auditAndRecalculatePortfolioPositions
 } from '../db/investmentDB';
+import { fetchLivePrices } from '../utils/riskManagement';
 
 
 export const useMoonbagStore = create((set, get) => ({
@@ -16,6 +19,9 @@ export const useMoonbagStore = create((set, get) => ({
   positions: [],
   livePrices: {},
   loading: false,
+  isFetchingPrices: false,
+  lastPriceUpdated: null,
+  isAuditing: false,
 
   setUserEmail: (email) => {
     if (get().userEmail !== email) {
@@ -98,16 +104,18 @@ export const useMoonbagStore = create((set, get) => ({
   },
 
   loadPositions: async (portfolioId) => {
-    const { userEmail } = get();
+    const { userEmail, livePrices } = get();
     if (!userEmail || !portfolioId) return;
     set({ loading: true });
     try {
       const posData = await getInvestmentPositions(userEmail, portfolioId);
       
-      const enhancedPositions = posData.map(pos => {
-        const cp = parseFloat(pos.current_price);
+      const enhancedPositions = (posData || []).map(pos => {
+        // Use livePrices in memory if available, otherwise pos.current_price, otherwise pos.average_cost
+        const memPrice = livePrices[pos.ticker];
+        const cp = (memPrice !== undefined && !isNaN(memPrice)) ? memPrice : parseFloat(pos.current_price);
         const ac = parseFloat(pos.average_cost);
-        const currentPrice = !isNaN(cp) ? cp : (!isNaN(ac) ? ac : 0);
+        const currentPrice = !isNaN(cp) && cp > 0 ? cp : (!isNaN(ac) ? ac : 0);
         
         const currentValue = parseFloat(pos.total_shares) * currentPrice;
         
@@ -137,10 +145,60 @@ export const useMoonbagStore = create((set, get) => ({
       });
 
       set({ positions: enhancedPositions });
+
+      // Automatically trigger live price refresh for positions in this portfolio
+      if (enhancedPositions.length > 0) {
+        setTimeout(() => {
+          get().refreshLivePrices();
+        }, 50);
+      }
     } catch (error) {
       console.error("Failed to load positions:", error);
     } finally {
       set({ loading: false });
+    }
+  },
+
+  refreshLivePrices: async () => {
+    const { positions } = get();
+    if (!positions || positions.length === 0) return;
+
+    const uniqueTickers = [...new Set(positions.map(p => p.ticker).filter(Boolean))];
+    if (uniqueTickers.length === 0) return;
+
+    set({ isFetchingPrices: true });
+    try {
+      const pricesMap = await fetchLivePrices(uniqueTickers);
+      if (pricesMap && Object.keys(pricesMap).length > 0) {
+        // 1. Update store state with latest prices & recalculate values
+        get().updateLivePrices(pricesMap);
+
+        // 2. Persist current_price and unrealized_pnl to Supabase
+        const updates = [];
+        get().positions.forEach(pos => {
+          const livePrice = pricesMap[pos.ticker];
+          if (livePrice !== undefined && !isNaN(livePrice)) {
+            const avgCost = parseFloat(pos.average_cost) || 0;
+            const shares = parseFloat(pos.total_shares) || 0;
+            const unrealizedPnl = shares * (livePrice - avgCost);
+            updates.push({
+              id: pos.id,
+              current_price: livePrice,
+              unrealized_pnl: unrealizedPnl
+            });
+          }
+        });
+
+        if (updates.length > 0) {
+          await batchUpdatePositionsPrices(updates);
+        }
+
+        set({ lastPriceUpdated: new Date() });
+      }
+    } catch (err) {
+      console.warn("Failed to refresh live prices in Alpha Picks:", err);
+    } finally {
+      set({ isFetchingPrices: false });
     }
   },
 
@@ -149,10 +207,10 @@ export const useMoonbagStore = create((set, get) => ({
       const newLivePrices = { ...state.livePrices, ...pricesMap };
       
       const enhancedPositions = state.positions.map(pos => {
-        const cp = parseFloat(pos.current_price);
+        const memPrice = newLivePrices[pos.ticker];
+        const cp = (memPrice !== undefined && !isNaN(memPrice)) ? memPrice : parseFloat(pos.current_price);
         const ac = parseFloat(pos.average_cost);
-        const dbPrice = !isNaN(cp) ? cp : (!isNaN(ac) ? ac : 0);
-        const currentPrice = newLivePrices[pos.ticker] || dbPrice;
+        const currentPrice = !isNaN(cp) && cp > 0 ? cp : (!isNaN(ac) ? ac : 0);
         
         const currentValue = parseFloat(pos.total_shares) * currentPrice;
         // Handle missing DB fields gracefully for old positions
@@ -183,8 +241,47 @@ export const useMoonbagStore = create((set, get) => ({
     });
   },
 
-  setManualPrice: (ticker, price) => {
-    get().updateLivePrices({ [ticker]: parseFloat(price) });
+  setManualPrice: async (ticker, price) => {
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice)) return;
+    get().updateLivePrices({ [ticker]: numPrice });
+    try {
+      const updates = [];
+      get().positions.forEach(pos => {
+        if (pos.ticker === ticker) {
+          const avg = parseFloat(pos.average_cost) || 0;
+          const sh = parseFloat(pos.total_shares) || 0;
+          updates.push({
+            id: pos.id,
+            current_price: numPrice,
+            unrealized_pnl: sh * (numPrice - avg)
+          });
+        }
+      });
+      if (updates.length > 0) {
+        await batchUpdatePositionsPrices(updates);
+      }
+    } catch (e) {
+      console.warn("Failed to persist manual price:", e);
+    }
+  },
+
+  auditAndSyncPortfolio: async () => {
+    const { userEmail, selectedPortfolioId } = get();
+    if (!userEmail || !selectedPortfolioId) throw new Error("Missing user or portfolio");
+    set({ isAuditing: true });
+    try {
+      const auditRes = await auditAndRecalculatePortfolioPositions(userEmail, selectedPortfolioId);
+      await get().loadPortfolios(userEmail);
+      await get().loadPositions(selectedPortfolioId);
+      await get().refreshLivePrices();
+      return auditRes;
+    } catch (error) {
+      console.error("Audit and sync error:", error);
+      throw error;
+    } finally {
+      set({ isAuditing: false });
+    }
   },
 
   handleRecoup: async (positionId, currentPrice, customSharesToSell) => {
